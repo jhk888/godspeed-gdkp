@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Godspeed GDKP</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Crimson+Pro:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  :root{
+    --gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:#7a6030;
+    --bg-deep:#0e0c09;--bg-panel:#161310;--bg-card:#1e1a14;--bg-input:#12100d;
+    --border-gold:rgba(201,168,76,0.25);--border-gold-strong:rgba(201,168,76,0.55);
+    --text-bright:#f0e8d0;--text-muted:#8a7a5a;
+    --epic:#a335ee;--rare:#0070dd;--uncommon:#1eff00;
+    --red:#e26060;--green:#5cba7a;--amber:#e8a430;
+  }
+  body{background:var(--bg-deep);font-family:'Crimson Pro',serif;color:var(--text-bright);min-height:100vh;}
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+  .hdr{border-bottom:1px solid var(--border-gold);padding:.8rem 1.5rem;display:flex;align-items:center;justify-content:space-between;background:rgba(201,168,76,0.04);}
+  .logo{font-family:'Cinzel',serif;font-size:1.3rem;font-weight:600;color:var(--gold);letter-spacing:.1em;}
+  .logo-sub{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.25em;color:var(--text-muted);text-transform:uppercase;margin-top:.1rem;}
+  .rl-badge{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.1em;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--border-gold-strong);padding:.2rem .55rem;border-radius:2px;margin-right:.5rem;}
+  .usr-chip{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.05em;color:var(--gold-light);background:rgba(201,168,76,0.08);border:1px solid var(--border-gold);padding:.25rem .65rem;border-radius:3px;}
+  .conn-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:.4rem;}
+  .conn-dot.online{background:var(--green);}
+  .conn-dot.offline{background:var(--red);}
+  .btn{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:3px;padding:.5rem 1rem;transition:all .15s;}
+  .btn-gold{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);font-weight:600;}
+  .btn-gold:hover{background:var(--gold-light);}
+  .btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border-gold-strong);}
+  .btn-outline:hover{border-color:var(--gold);background:rgba(201,168,76,0.07);}
+  .btn-green{background:transparent;color:var(--green);border:1px solid rgba(92,186,122,0.4);}
+  .btn-green:hover{background:rgba(92,186,122,0.1);border-color:var(--green);}
+  .btn-amber{background:transparent;color:var(--amber);border:1px solid rgba(232,164,48,0.4);}
+  .btn-amber:hover{background:rgba(232,164,48,0.1);border-color:var(--amber);}
+  .btn-sm{padding:.3rem .65rem;font-size:.62rem;}
+  .btn-danger{background:transparent;color:var(--red);border:1px solid rgba(226,96,96,0.3);font-size:.62rem;}
+  .btn-danger:hover{background:rgba(226,96,96,0.1);border-color:var(--red);}
+  .main{flex:1;padding:1.25rem 1.5rem;max-width:1100px;margin:0 auto;width:100%;}
+  input[type=text],input[type=number],input[type=password]{width:100%;background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);padding:.5rem .65rem;font-family:'Crimson Pro',serif;font-size:.95rem;border-radius:3px;outline:none;transition:border-color .2s;}
+  input[type=text]:focus,input[type=number]:focus,input[type=password]:focus{border-color:var(--gold);}
+  .lbl{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:.25rem;}
+  .fg{display:flex;flex-direction:column;gap:.25rem;}
+  .login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:1.5rem;}
+  .login-brand .wordmark{font-family:'Cinzel',serif;font-size:2.2rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;}
+  .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.25rem;text-align:center;}
+  .login-box{background:var(--bg-card);border:1px solid var(--border-gold);padding:1.75rem 2rem;border-radius:4px;width:100%;max-width:340px;display:flex;flex-direction:column;gap:.85rem;}
+  .pot-bar{background:var(--bg-card);border:1px solid var(--border-gold);border-radius:4px;padding:.9rem 1.25rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:1rem;flex-wrap:wrap;}
+  .pot-val{font-family:'Cinzel',serif;font-size:1.5rem;color:var(--gold);font-weight:600;}
+  .pot-lbl{font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;}
+  .settings-bar{background:var(--bg-card);border:1px solid var(--border-gold);border-radius:4px;padding:.75rem 1.25rem;display:flex;align-items:center;gap:1.5rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+  .settings-bar input{width:90px;}
+  .tabs{display:flex;border-bottom:1px solid var(--border-gold);margin-bottom:1.25rem;}
+  .tab{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.55rem 1.1rem;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;}
+  .tab:hover{color:var(--text-bright);}
+  .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem;}
+  .sec-title{font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.9rem;margin-bottom:1.5rem;}
+  .card{background:var(--bg-card);border:1px solid var(--border-gold);border-radius:4px;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.55rem;position:relative;transition:border-color .2s;}
+  .card:hover{border-color:var(--border-gold-strong);}
+  .card.leading{border-color:rgba(201,168,76,0.65);}
+  .card.expiring{border-color:rgba(226,96,96,0.5);}
+  .card.queued{border-color:rgba(201,168,76,0.15);opacity:.85;}
+  .card.paused{border-color:rgba(232,164,48,0.5);}
+  .item-name{font-family:'Cinzel',serif;font-size:.88rem;font-weight:500;}
+  .item-name.epic{color:var(--epic);}
+  .item-name.rare{color:var(--rare);}
+  .item-name.uncommon{color:var(--uncommon);}
+  .item-slot{font-size:.77rem;color:var(--text-muted);}
+  .bid-section{border-top:1px solid rgba(201,168,76,0.1);padding-top:.55rem;display:flex;flex-direction:column;gap:.45rem;}
+  .bid-amt{font-family:'Cinzel',serif;font-size:1.05rem;color:var(--gold-light);font-weight:500;}
+  .bid-ldr{font-size:.72rem;color:var(--text-muted);}
+  .bid-ldr.you{color:var(--green);}
+  .min-bid-note{font-size:.72rem;color:var(--text-muted);}
+  .quick-bids{display:flex;gap:.35rem;flex-wrap:wrap;}
+  .qb{font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.05em;cursor:pointer;border-radius:3px;padding:.28rem .55rem;background:rgba(201,168,76,0.08);border:1px solid var(--border-gold);color:var(--gold-light);transition:all .15s;}
+  .qb:hover{background:rgba(201,168,76,0.18);border-color:var(--gold);}
+  .qb-custom{background:rgba(201,168,76,0.04);color:var(--text-muted);border-style:dashed;}
+  .qb-custom.active-custom{background:rgba(201,168,76,0.12);border-color:var(--gold);color:var(--gold);border-style:solid;}
+  .custom-bid-row{display:flex;gap:.35rem;align-items:center;}
+  .custom-bid-row input{flex:1;padding:.38rem .5rem;font-size:.9rem;}
+  .badge{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;padding:.18rem .45rem;border-radius:2px;position:absolute;top:.7rem;right:.7rem;}
+  .badge-open{background:rgba(92,186,122,0.15);color:var(--green);border:1px solid rgba(92,186,122,0.3);}
+  .badge-sold{background:rgba(201,168,76,0.1);color:var(--gold-dim);border:1px solid var(--border-gold);}
+  .badge-queued{background:rgba(201,168,76,0.07);color:var(--text-muted);border:1px solid var(--border-gold);}
+  .badge-paused{background:rgba(232,164,48,0.12);color:var(--amber);border:1px solid rgba(232,164,48,0.4);}
+  .timer-row{display:flex;align-items:center;gap:.4rem;}
+  .timer{font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-muted);letter-spacing:.05em;}
+  .timer-bar{flex:1;height:3px;background:rgba(201,168,76,0.15);border-radius:2px;overflow:hidden;}
+  .timer-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .9s linear;}
+  .hist{font-size:.77rem;color:var(--text-muted);max-height:90px;overflow-y:auto;border-top:1px solid rgba(201,168,76,0.1);padding-top:.4rem;display:flex;flex-direction:column;gap:.18rem;}
+  .hist-row{display:flex;justify-content:space-between;}
+  .you-bid{color:var(--green);}
+  .empty{text-align:center;padding:2.5rem 1rem;color:var(--text-muted);border:1px dashed var(--border-gold);border-radius:4px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:flex;align-items:center;justify-content:center;z-index:50;}
+  .modal{background:#161310;border:1px solid var(--border-gold-strong);border-radius:4px;padding:1.5rem 1.75rem;width:380px;display:flex;flex-direction:column;gap:.85rem;max-height:90vh;overflow-y:auto;}
+  .modal-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
+  .q-row{display:flex;gap:.5rem;}
+  .q-btn-base{flex:1;padding:.55rem .4rem;border:2px solid #444;background:#1a1a1a;color:#888;cursor:pointer;border-radius:4px;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:500;}
+  .modal-divider{height:1px;background:var(--border-gold);margin:.25rem 0;}
+  .modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.35rem;}
+  .toast{position:fixed;bottom:1.25rem;right:1.25rem;background:var(--bg-card);border:1px solid var(--border-gold-strong);color:var(--text-bright);padding:.6rem 1.1rem;border-radius:4px;font-size:.88rem;z-index:100;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;}
+  .rl-controls{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.2rem;}
+  .loading{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:1rem;}
+  .loading-text{font-family:'Cinzel',serif;font-size:.8rem;color:var(--text-muted);letter-spacing:.15em;}
+  .spinner{width:32px;height:32px;border:2px solid var(--border-gold);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .run-selector{background:var(--bg-card);border:1px solid var(--border-gold);border-radius:4px;padding:.75rem 1.25rem;display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+  .run-id{font-family:'Cinzel',serif;font-size:.7rem;color:var(--text-muted);letter-spacing:.08em;}
+  .run-id span{color:var(--gold-light);}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hdr">
+    <div>
+      <div class="logo">Godspeed GDKP</div>
+      <div class="logo-sub">Gold DKP Run</div>
+    </div>
+    <div id="hdr-user" style="display:flex;align-items:center;gap:.6rem;"></div>
+  </div>
+  <div class="main" id="main">
+    <div class="loading"><div class="spinner"></div><div class="loading-text">Connecting...</div></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, update, onValue, push, remove, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBYw5IMl8p12HKuW-LbzEEJSC4ArId2ySM",
+  authDomain: "godspeed-gdkp.firebaseapp.com",
+  databaseURL: "https://godspeed-gdkp-default-rtdb.firebaseio.com",
+  projectId: "godspeed-gdkp",
+  storageBucket: "godspeed-gdkp.firebasestorage.app",
+  messagingSenderId: "750937911840",
+  appId: "1:750937911840:web:b376c2a829fa2c134c8245"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getDatabase(fbApp);
+
+// ── Constants ──────────────────────────────────────────────────────────────
+const RAID_LEADER_CODE = 'Oneworld123!';
+const Q_STYLES = {
+  epic:    { on: 'background:#7b1fa2;border-color:#e040fb;color:#ffffff;', off: 'background:#1a1a1a;border-color:#444;color:#888;' },
+  rare:    { on: 'background:#1565c0;border-color:#64b5f6;color:#ffffff;', off: 'background:#1a1a1a;border-color:#444;color:#888;' },
+  uncommon:{ on: 'background:#2e7d32;border-color:#69f04a;color:#ffffff;', off: 'background:#1a1a1a;border-color:#444;color:#888;' }
+};
+
+// ── Local state ────────────────────────────────────────────────────────────
+let user = null, isRL = false;
+let auctions = {};        // live mirror of Firebase data
+let runId = null;         // current run key in Firebase
+let tab = 'active';
+let modal = false, editId = null, modalQuality = 'epic';
+let raidSettings = { defaultTimer: 120, defaultIncrement: 100 };
+let customOpen = {};
+let tickInterval = null;
+let toastT = null;
+let unsubRun = null;      // Firebase listener unsubscribe
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2800);
+}
+function fmtTime(s) {
+  if (s == null || s < 0) return '0s';
+  if (s >= 60) return Math.floor(s / 60) + 'm ' + (s % 60).toString().padStart(2, '0') + 's';
+  return s + 's';
+}
+function auctionList() { return Object.values(auctions || {}); }
+function pot() { return auctionList().filter(a => a.status === 'sold').reduce((s, a) => s + (a.currentBid || 0), 0); }
+function raiderCount() {
+  const names = new Set(auctionList().flatMap(a => Object.values(a.bids || {}).map(b => b.bidder)));
+  if (user) names.add(user);
+  return Math.max(names.size, 1);
+}
+
+// ── Firebase paths ─────────────────────────────────────────────────────────
+function runRef(path = '') { return ref(db, `runs/${runId}${path}`); }
+
+// ── Timer tick (local only — updates DOM without re-render) ────────────────
+function startTick() {
+  if (tickInterval) clearInterval(tickInterval);
+  tickInterval = setInterval(() => {
+    const now = Date.now();
+    auctionList().forEach(a => {
+      if (a.status !== 'open' || a.paused || !a.endsAt) return;
+      const r = Math.max(0, Math.floor((a.endsAt - now) / 1000));
+      const dur = a.duration || 120;
+      const pct = Math.round((r / dur) * 100);
+      const urgent = r <= 15;
+      const fe = document.getElementById('tfill-' + a.id);
+      const te = document.getElementById('ttext-' + a.id);
+      if (fe) { fe.style.width = pct + '%'; fe.style.background = urgent ? '#e26060' : '#c9a84c'; }
+      if (te) { te.textContent = fmtTime(r); te.style.color = urgent ? 'var(--red)' : 'var(--text-muted)'; }
+      // Auto-close locally if expired — RL writes to Firebase
+      if (r === 0 && isRL) {
+        const winner = Object.values(a.bids || {}).sort((x, y) => y.amount - x.amount)[0];
+        update(runRef(`/auctions/${a.id}`), { status: 'sold', remaining: 0 });
+        toast(a.name + ' sold to ' + (winner ? winner.bidder : 'nobody') + ' for ' + (a.currentBid || 0).toLocaleString() + 'g');
+      }
+    });
+  }, 1000);
+}
+
+// ── Firebase listener ──────────────────────────────────────────────────────
+function subscribeToRun() {
+  if (unsubRun) unsubRun();
+  unsubRun = onValue(runRef(), snap => {
+    const data = snap.val() || {};
+    auctions = data.auctions || {};
+    if (data.settings) raidSettings = { ...raidSettings, ...data.settings };
+    render();
+  });
+}
+
+// ── Run management ─────────────────────────────────────────────────────────
+async function getOrCreateRun() {
+  // Check for active run
+  const snap = await get(ref(db, 'runs'));
+  const runs = snap.val() || {};
+  // Find most recent non-archived run or create new
+  const keys = Object.keys(runs).sort().reverse();
+  if (keys.length > 0) {
+    runId = keys[0];
+  } else {
+    const newRef = push(ref(db, 'runs'));
+    runId = newRef.key;
+    await set(newRef, { createdAt: Date.now(), settings: raidSettings, auctions: {} });
+  }
+  subscribeToRun();
+  startTick();
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function join() {
+  const name = document.getElementById('li')?.value?.trim();
+  if (!name) return;
+  const code = document.getElementById('rlcode')?.value;
+  user = name; isRL = code === RAID_LEADER_CODE;
+  getOrCreateRun();
+  renderHdr();
+}
+function logout() { user = null; isRL = false; if (unsubRun) unsubRun(); if (tickInterval) clearInterval(tickInterval); render(); }
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render() {
+  if (!user) { renderLogin(); return; }
+  renderHdr(); renderMain();
+}
+
+function renderHdr() {
+  document.getElementById('hdr-user').innerHTML = `
+    <span class="conn-dot online"></span>
+    ${isRL ? '<span class="rl-badge">Raid Leader</span>' : ''}
+    <span class="usr-chip">${user}</span>
+    <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>
+  `;
+}
+
+function renderLogin() {
+  document.getElementById('hdr-user').innerHTML = '';
+  document.getElementById('main').innerHTML = `
+    <div class="login-wrap">
+      <div class="login-brand">
+        <div class="wordmark">Godspeed GDKP</div>
+        <div class="wordmark-sub">Gold DKP Run</div>
+      </div>
+      <div class="login-box">
+        <div class="fg"><div class="lbl">Character name</div><input type="text" id="li" placeholder="Arthas" maxlength="24" onkeydown="if(event.key==='Enter')join()" /></div>
+        <div class="fg"><div class="lbl">Raid leader code <span style="color:var(--text-muted);font-family:'Crimson Pro',serif;font-size:.8rem;letter-spacing:0;">(optional)</span></div><input type="password" id="rlcode" placeholder="Leave blank for raider" maxlength="32" onkeydown="if(event.key==='Enter')join()" /></div>
+        <button class="btn btn-gold" onclick="join()">Join Raid</button>
+      </div>
+    </div>
+  `;
+  setTimeout(() => { const el = document.getElementById('li'); if (el) el.focus(); }, 50);
+}
+
+function qRowHTML(selected) {
+  return ['epic', 'rare', 'uncommon'].map(q => {
+    const s = selected === q ? Q_STYLES[q].on : Q_STYLES[q].off;
+    return `<button class="q-btn-base" id="q-${q}" style="${s}font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:${selected === q ? '600' : '400'};" onclick="setQ('${q}')">${q.charAt(0).toUpperCase() + q.slice(1)}</button>`;
+  }).join('');
+}
+
+function modalHTML(title, a, fn) {
+  return `<div class="modal-overlay" onclick="closeModal()"><div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">${title}</div>
+    <div class="fg"><div class="lbl">Item name</div><input type="text" id="m-name" value="${a ? a.name : ''}" placeholder="Thunderfury, Blessed Blade..." /></div>
+    <div class="fg"><div class="lbl">Slot / type</div><input type="text" id="m-slot" value="${a ? a.slot : ''}" placeholder="One-Hand Sword" /></div>
+    <div class="fg"><div class="lbl">Quality</div><div class="q-row">${qRowHTML(modalQuality)}</div></div>
+    <div class="modal-divider"></div>
+    <div class="three-col">
+      <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a ? a.currentBid : 1000}" min="1" step="100" /></div>
+      <div class="fg"><div class="lbl">Min increment (g)</div><input type="number" id="m-inc" value="${a ? a.minIncrement : raidSettings.defaultIncrement}" min="1" step="50" /></div>
+      <div class="fg"><div class="lbl">Timer (s)</div><input type="number" id="m-timer" value="${a ? a.duration : raidSettings.defaultTimer}" min="10" max="600" step="10" /></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="${fn}()">${a ? 'Save Changes' : 'Add to Queue'}</button>
+    </div>
+  </div></div>`;
+}
+
+function renderMain() {
+  const all = auctionList();
+  const queued = all.filter(a => a.status === 'queued');
+  const active = all.filter(a => a.status === 'open');
+  const sold = all.filter(a => a.status === 'sold');
+  const p = pot();
+
+  const potBar = isRL ? `<div class="pot-bar">
+    <div><div class="pot-lbl">Total Pot</div><div style="font-size:.8rem;color:var(--text-muted);">${sold.length} item${sold.length !== 1 ? 's' : ''} sold</div></div>
+    <div class="pot-val">${p.toLocaleString()}g</div>
+    <div style="text-align:right;"><div class="pot-lbl">Est. cut (${raiderCount()} raiders)</div><div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:.95rem;font-weight:500;">${Math.floor(p / raiderCount()).toLocaleString()}g</div></div>
+  </div>` : '';
+
+  const settingsBar = isRL ? `<div class="settings-bar">
+    <div style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;">Raid defaults</div>
+    <div class="fg"><div class="lbl">Default timer (s)</div><input type="number" id="s-timer" value="${raidSettings.defaultTimer}" min="10" max="600" step="10" style="width:85px;" onchange="updateSettings()" /></div>
+    <div class="fg"><div class="lbl">Default increment (g)</div><input type="number" id="s-inc" value="${raidSettings.defaultIncrement}" min="1" step="50" style="width:85px;" onchange="updateSettings()" /></div>
+  </div>` : '';
+
+  let secActions = '';
+  if (isRL) {
+    if (tab === 'active') secActions = `<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openModal()">+ Add Item</button></div>`;
+    else if (tab === 'queued') secActions = `<div class="rl-controls">${queued.length ? `<button class="btn btn-green btn-sm" onclick="startAll()">&#9654; Start All</button>` : ''}<button class="btn btn-outline btn-sm" onclick="openModal()">+ Add Item</button></div>`;
+  }
+
+  const gridContent = tab === 'active' ? renderGrid(active, 'open')
+    : tab === 'queued' ? renderGrid(queued, 'queued')
+    : renderGrid(sold, 'sold');
+
+  const mHTML = modal ? (editId ? modalHTML('Edit Item', auctions[editId], 'saveEdit') : modalHTML('Add Item to Queue', null, 'addToQueue')) : '';
+
+  document.getElementById('main').innerHTML = `
+    ${potBar}${settingsBar}
+    <div class="tabs">
+      <div class="tab ${tab === 'active' ? 'active' : ''}" onclick="setTab('active')">Live (${active.length})</div>
+      <div class="tab ${tab === 'queued' ? 'active' : ''}" onclick="setTab('queued')">Queue (${queued.length})</div>
+      <div class="tab ${tab === 'sold' ? 'active' : ''}" onclick="setTab('sold')">Sold (${sold.length})</div>
+    </div>
+    <div class="sec-hdr">
+      <div class="sec-title">${tab === 'active' ? 'Live Auctions' : tab === 'queued' ? 'Auction Queue' : 'Sold Items'}</div>
+      ${secActions}
+    </div>
+    ${gridContent}${mHTML}
+  `;
+}
+
+function renderGrid(list, mode) {
+  if (!list.length) {
+    const msgs = { open: 'No live auctions', queued: 'Queue is empty — add items to get started', sold: 'No items sold yet' };
+    return `<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">${msgs[mode] || 'Nothing here'}</div></div>`;
+  }
+  return `<div class="grid">${list.map(a => renderCard(a, mode)).join('')}</div>`;
+}
+
+function renderCard(a, mode) {
+  const bids = Object.values(a.bids || {}).sort((x, y) => y.amount - x.amount);
+  const top = bids[0] || null;
+  const isLeading = top && top.bidder === user;
+  const now = Date.now();
+  const rem = a.status === 'open' && !a.paused && a.endsAt ? Math.max(0, Math.floor((a.endsAt - now) / 1000)) : (a.remaining || 0);
+  const pct = a.status === 'open' ? Math.round((rem / (a.duration || 120)) * 100) : 0;
+  const urgent = rem <= 15 && a.status === 'open' && !a.paused;
+  const minNext = (a.currentBid || 0) + (a.minIncrement || 100);
+  const showCustom = !!customOpen[a.id];
+  const histItems = bids.slice(0, 5).map(b =>
+    `<div class="hist-row"><span class="${b.bidder === user ? 'you-bid' : ''}">${b.bidder === user ? 'You' : b.bidder}</span><span>${b.amount.toLocaleString()}g</span></div>`
+  ).join('');
+
+  let timerSection = '';
+  if (mode === 'open') {
+    const fc = a.paused ? '#e8a430' : urgent ? '#e26060' : '#c9a84c';
+    const tc = a.paused ? 'var(--amber)' : urgent ? 'var(--red)' : 'var(--text-muted)';
+    timerSection = `<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused ? 'Paused' : fmtTime(rem)}</span></div>`;
+  }
+
+  let bidSection = '';
+  if (mode === 'open' && !a.paused) {
+    const qbtns = [100, 250, 500].map(b => `<button class="qb" onclick="quickBid('${a.id}',${(a.currentBid || 0) + b})">+${b.toLocaleString()}g</button>`).join('');
+    const cbtn = `<button class="qb qb-custom ${showCustom ? 'active-custom' : ''}" onclick="toggleCustom('${a.id}')">${showCustom ? '&#x2715; Custom' : 'Custom'}</button>`;
+    const crow = showCustom ? `<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement || 100}" onkeydown="if(event.key==='Enter')placeBid('${a.id}')" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}')">Bid</button></div>` : '';
+    bidSection = `<div class="bid-section"><div><div class="bid-amt">${(a.currentBid || 0).toLocaleString()}g</div><div class="bid-ldr ${isLeading ? 'you' : ''}">${top ? (top.bidder === user ? 'You are leading' : top.bidder + ' leads') : 'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}${cbtn}</div>${crow}</div>`;
+  } else if (mode === 'open' && a.paused) {
+    bidSection = `<div class="bid-section"><div class="bid-amt">${(a.currentBid || 0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
+  } else if (mode === 'queued') {
+    bidSection = `<div class="bid-section"><div class="bid-amt">${(a.currentBid || 0).toLocaleString()}g</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g (+${(a.minIncrement || 100).toLocaleString()}g)</div></div>`;
+  } else if (mode === 'sold') {
+    bidSection = `<div class="bid-section"><div class="bid-amt">${(a.currentBid || 0).toLocaleString()}g</div><div class="bid-ldr">Won by ${top ? top.bidder : '&mdash;'}</div></div>`;
+  }
+
+  let rlControls = '';
+  if (isRL) {
+    if (mode === 'open') rlControls = `<div class="rl-controls"><button class="btn ${a.paused ? 'btn-green' : 'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused ? '&#9654; Resume' : '&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-danger btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
+    else if (mode === 'queued') rlControls = `<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
+  }
+
+  const cc = mode === 'queued' ? 'queued' : isLeading ? 'leading' : a.paused ? 'paused' : urgent ? 'expiring' : '';
+  let badge = '';
+  if (mode === 'open' && a.paused) badge = `<div class="badge badge-paused">Paused</div>`;
+  else if (mode === 'open') badge = `<div class="badge badge-open">Live</div>`;
+  else if (mode === 'queued') badge = `<div class="badge badge-queued">Queued</div>`;
+  else badge = `<div class="badge badge-sold">Sold</div>`;
+
+  return `<div class="card ${cc}" id="card-${a.id}">${badge}<div><div class="item-name ${a.quality}">${a.name}</div><div class="item-slot">${a.slot}</div></div>${timerSection}${bidSection}${bids.length ? `<div class="hist">${histItems}</div>` : ''}${rlControls}</div>`;
+}
+
+// ── Actions (write to Firebase) ────────────────────────────────────────────
+function updateSettings() {
+  const t = Math.max(10, parseInt(document.getElementById('s-timer')?.value) || 120);
+  const i = Math.max(1, parseInt(document.getElementById('s-inc')?.value) || 100);
+  raidSettings = { defaultTimer: t, defaultIncrement: i };
+  update(runRef('/settings'), raidSettings);
+}
+
+function addToQueue() {
+  const f = readModalFields(); if (!f.name) { toast('Enter an item name'); return; }
+  const newRef = push(runRef('/auctions'));
+  set(newRef, { id: newRef.key, ...f, bids: {}, status: 'queued', remaining: f.duration, paused: false, endsAt: null });
+  modal = false; tab = 'queued'; toast(f.name + ' added to queue');
+}
+
+function saveEdit() {
+  const f = readModalFields(); if (!f.name) { toast('Enter an item name'); return; }
+  update(runRef(`/auctions/${editId}`), { name: f.name, slot: f.slot, quality: f.quality, currentBid: f.currentBid, minIncrement: f.minIncrement, duration: f.duration, remaining: f.duration });
+  modal = false; editId = null; toast(f.name + ' updated');
+}
+
+function startOne(id) {
+  const a = auctions[id]; if (!a || a.status !== 'queued') return;
+  const endsAt = Date.now() + a.duration * 1000;
+  update(runRef(`/auctions/${id}`), { status: 'open', paused: false, endsAt, remaining: a.duration });
+  toast(a.name + ' auction started!'); tab = 'active';
+}
+
+function startAll() {
+  const now = Date.now();
+  auctionList().filter(a => a.status === 'queued').forEach(a => {
+    update(runRef(`/auctions/${a.id}`), { status: 'open', paused: false, endsAt: now + a.duration * 1000, remaining: a.duration });
+  });
+  toast('All queued auctions started!'); tab = 'active';
+}
+
+function togglePause(id) {
+  const a = auctions[id]; if (!a || a.status !== 'open') return;
+  if (a.paused) {
+    const newEndsAt = Date.now() + (a.remaining || 0) * 1000;
+    update(runRef(`/auctions/${id}`), { paused: false, endsAt: newEndsAt });
+    toast(a.name + ' resumed');
+  } else {
+    const rem = Math.max(0, Math.floor((a.endsAt - Date.now()) / 1000));
+    update(runRef(`/auctions/${id}`), { paused: true, remaining: rem });
+    toast(a.name + ' paused');
+  }
+}
+
+function extendTimer(id) {
+  const a = auctions[id]; if (!a || a.status !== 'open') return;
+  if (a.paused) {
+    update(runRef(`/auctions/${id}`), { remaining: (a.remaining || 0) + 30 });
+  } else {
+    const newEndsAt = (a.endsAt || Date.now()) + 30000;
+    update(runRef(`/auctions/${id}`), { endsAt: newEndsAt });
+  }
+  toast('+30s added to ' + a.name);
+}
+
+function closeAuction(id) {
+  const a = auctions[id]; if (!a) return;
+  const bids = Object.values(a.bids || {}).sort((x, y) => y.amount - x.amount);
+  const w = bids[0] ? bids[0].bidder : 'nobody';
+  update(runRef(`/auctions/${id}`), { status: 'sold', remaining: 0, paused: false });
+  toast(a.name + ' closed — ' + w + ' wins for ' + (a.currentBid || 0).toLocaleString() + 'g');
+}
+
+function removeQueued(id) {
+  remove(runRef(`/auctions/${id}`));
+  toast('Item removed from queue');
+}
+
+function quickBid(id, amount) {
+  const a = auctions[id]; if (!a || a.status !== 'open' || a.paused) return;
+  const minNext = (a.currentBid || 0) + (a.minIncrement || 100);
+  if (amount < minNext) { toast('Below min bid of ' + minNext.toLocaleString() + 'g'); return; }
+  submitBid(id, amount);
+}
+
+function placeBid(id) {
+  const input = document.getElementById('bid-' + id);
+  const val = parseInt(input?.value);
+  const a = auctions[id]; if (!a || a.status !== 'open' || a.paused) return;
+  const minNext = (a.currentBid || 0) + (a.minIncrement || 100);
+  if (!val || val < minNext) { toast('Min bid is ' + minNext.toLocaleString() + 'g'); return; }
+  customOpen[id] = false;
+  submitBid(id, val);
+  if (input) input.value = '';
+}
+
+function submitBid(id, val) {
+  const a = auctions[id]; if (!a) return;
+  const bidRef = push(runRef(`/auctions/${id}/bids`));
+  set(bidRef, { bidder: user, amount: val, ts: Date.now() });
+  update(runRef(`/auctions/${id}`), { currentBid: val });
+  // Extend timer if under 30s
+  if (!a.paused && a.endsAt) {
+    const rem = Math.floor((a.endsAt - Date.now()) / 1000);
+    if (rem < 30) {
+      update(runRef(`/auctions/${id}`), { endsAt: Date.now() + 30000, remaining: 30 });
+      toast('Bid placed: ' + val.toLocaleString() + 'g — timer extended to 30s');
+      return;
+    }
+  }
+  toast('Bid placed: ' + val.toLocaleString() + 'g');
+}
+
+function toggleCustom(id) {
+  customOpen[id] = !customOpen[id];
+  const a = auctions[id]; if (!a) return;
+  const el = document.getElementById('card-' + id);
+  if (el) { const t = document.createElement('div'); t.innerHTML = renderCard(a, 'open'); el.replaceWith(t.firstElementChild); }
+}
+
+function readModalFields() {
+  return {
+    name: document.getElementById('m-name')?.value?.trim(),
+    slot: document.getElementById('m-slot')?.value?.trim() || 'Unknown',
+    quality: modalQuality,
+    currentBid: parseInt(document.getElementById('m-start')?.value) || 1000,
+    minIncrement: Math.max(1, parseInt(document.getElementById('m-inc')?.value) || raidSettings.defaultIncrement),
+    duration: Math.max(10, parseInt(document.getElementById('m-timer')?.value) || raidSettings.defaultTimer)
+  };
+}
+
+function setQ(q) {
+  modalQuality = q;
+  ['epic', 'rare', 'uncommon'].forEach(x => {
+    const b = document.getElementById('q-' + x); if (!b) return;
+    const s = x === q ? Q_STYLES[x].on : Q_STYLES[x].off;
+    b.setAttribute('style', s + "font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:" + (x === q ? '600' : '400') + ';');
+  });
+}
+
+function openModal() { modal = true; editId = null; modalQuality = 'epic'; render(); }
+function openEdit(id) { const a = auctions[id]; if (!a) return; modal = true; editId = id; modalQuality = a.quality || 'epic'; render(); }
+function closeModal() { modal = false; editId = null; render(); }
+function setTab(t) { tab = t; render(); }
+
+// Expose functions to global scope for inline onclick handlers
+Object.assign(window, {
+  join, logout, setTab, openModal, closeModal, openEdit,
+  addToQueue, saveEdit, startOne, startAll, togglePause,
+  extendTimer, closeAuction, removeQueued, quickBid, placeBid,
+  toggleCustom, setQ, updateSettings
+});
+
+// Boot
+render();
+</script>
+</body>
+</html>

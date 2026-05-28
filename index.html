@@ -107,7 +107,7 @@
   .tab:hover{color:var(--text-bright);}
   .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
-  .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;}
+  .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
   @media(max-width:600px){
     html{font-size:14px;}
 
@@ -842,7 +842,7 @@ function renderMain(){
 
   document.getElementById('main').innerHTML=`
     ${membersBar}${potBar}${myLootHTML}${settingsBar}${tabs}
-    ${tab!=='splits'?`<div class="sec-hdr"><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div>${secActions}</div>`:''}
+    ${tab!=='splits'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
     ${content}${mHTML}`;
 
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();

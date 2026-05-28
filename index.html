@@ -1073,6 +1073,59 @@ function renderMembersBar(presenceData){
   return `<div class="members-bar"><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;">${members.length} Online</span>${chips}</div>`;
 }
 
+// ── Ban System ─────────────────────────────────────────────────────────────
+let banList={};
+
+function banKey(m){return m.discordId?'discord_'+m.discordId:'name_'+m.name;}
+
+function subscribeToBans(){
+  onValue(ref(db,'bans'),snap=>{
+    banList=snap.val()||{};
+    if(user&&isBanned({discordId:discordUser?.id,name:user}))handleBanned();
+  });
+}
+
+function isBanned(m){
+  if(m.discordId&&banList['discord_'+m.discordId])return true;
+  if(m.name&&banList['name_'+m.name])return true;
+  return false;
+}
+
+function kickBan(m){
+  if(!isRL)return;
+  if(!confirm('Kick and ban '+m.name+'? They cannot rejoin until unbanned.'))return;
+  const key=banKey(m);
+  set(ref(db,'bans/'+key),{name:m.name,discordId:m.discordId||null,discordName:m.discordName||null,bannedAt:Date.now(),bannedBy:user});
+  if(m.name)remove(ref(db,`runs/${runId}/presence/${m.name}`));
+  writeAudit(user+' banned '+m.name);
+  toast(m.name+' has been banned');
+}
+
+function unban(key){
+  if(!isRL)return;
+  const b=banList[key];
+  remove(ref(db,'bans/'+key));
+  writeAudit(user+' unbanned '+(b?.name||key));
+  toast((b?.name||key)+' has been unbanned');
+  if(panelOpen)renderPanel();
+}
+
+function handleBanned(){
+  if(unsubRun)unsubRun();
+  clearPresence();
+  user=null;isRL=false;discordUser=null;
+  localStorage.clear();
+  document.getElementById('main').innerHTML=`
+    <div class="login-wrap">
+      <div class="login-brand"><div class="wordmark">Godspeed GDKP</div><div class="wordmark-sub">Gold DKP Run</div></div>
+      <div style="background:rgba(226,96,96,0.1);border:1px solid var(--red);border-radius:4px;padding:1.25rem 1.5rem;text-align:center;max-width:340px;">
+        <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--red);margin-bottom:.5rem;">Access Denied</div>
+        <div style="font-size:.88rem;color:var(--text-muted);">You have been removed from this raid by the Raid Leader.</div>
+      </div>
+    </div>`;
+  document.getElementById('hdr-user').innerHTML='';
+}
+
 // ── Audit Log ─────────────────────────────────────────────────────────────
 function writeAudit(msg){
   if(!runId) return;

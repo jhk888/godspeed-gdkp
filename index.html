@@ -445,6 +445,8 @@ function subscribeToRun(){
     presenceData=data.presence||{};
     if(data.settings)raidSettings={...raidSettings,...data.settings};
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
+    // Don't re-render if modal is open — would wipe user's typed input
+    if(modal) return;
     render();
     if(panelOpen&&panelTab==='raiders')renderPanel();
     if(panelOpen&&panelTab==='audit')renderAuditPanel();
@@ -879,7 +881,22 @@ function addToQueue(){
   const name=selectedItem.name;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
   set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
-  modal=false;selectedItem=null;searchQuery='';tab='queued';toast(name+' added to queue');
+  // Keep modal open for adding more items — just reset the search fields
+  selectedItem=null;searchQuery='';
+  const inp=document.getElementById('item-search-input');
+  if(inp){inp.value='';inp.focus();}
+  const wrap=document.getElementById('search-preview-wrap');
+  if(wrap)wrap.innerHTML='';
+  const dd=document.getElementById('item-dropdown');
+  if(dd)dd.style.display='none';
+  // Reset quality to epic
+  modalQuality='epic';
+  ['legendary','epic','rare','uncommon'].forEach(x=>{
+    const b=document.getElementById('q-'+x);if(!b)return;
+    const s=x==='epic'?Q_STYLES[x].on:Q_STYLES[x].off;
+    b.setAttribute('style',s+"font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;font-weight:"+(x==='epic'?'600':'400')+';');
+  });
+  toast(name+' added — search for next item or close');
 }
 function saveEdit(){
   const raw=document.getElementById('item-search-input')?.value?.trim();
@@ -1072,7 +1089,12 @@ function renderAuditPanel(){
   });
 }
 
-function closeModal(){modal=false;editId=null;selectedItem=null;searchQuery='';render();}
+function closeModal(){
+  const wasAdding=modal&&!editId;
+  modal=false;editId=null;selectedItem=null;searchQuery='';
+  if(wasAdding)tab='queued';
+  render();
+}
 let _dragId=null;
 function dragStart(e,id){_dragId=id;e.currentTarget.style.opacity='0.4';e.dataTransfer.effectAllowed='move';}
 function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.style.outline='2px solid var(--gold)';}

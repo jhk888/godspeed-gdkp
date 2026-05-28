@@ -186,7 +186,7 @@
   .cat-filter-btn{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:.3rem .75rem;border-radius:3px;cursor:pointer;transition:all .15s;}
   .cat-filter-btn.active{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);}
   .cat-filter-btn.inactive{background:transparent;color:var(--text-muted);border:1px solid var(--border-gold);}
-  .member-tooltip{position:fixed;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:4px;padding:.65rem .85rem;z-index:1000;min-width:220px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.85);pointer-events:none;}
+  .member-tooltip{position:fixed;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:4px;padding:.65rem .85rem;z-index:1000;min-width:220px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.85);pointer-events:auto;}
   .member-chip{position:relative;}
   .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
   .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
@@ -987,7 +987,11 @@ function renderCard(a,mode){
   const minNext=(a.currentBid||0)+(a.minIncrement||100);
   const showCustom=!!customOpen[a.id];
   const histItems=bids.slice(0,5).map(b=>`<div class="hist-row"><span class="${b.bidder===user?'you-bid':''}">${b.bidder===user?'You':b.bidder}</span><span>${b.amount.toLocaleString()}g</span></div>`).join('');
-  const iconHTML=a.itemIcon?`<img class="item-icon" src="${iconUrl(a.itemIcon)}" onerror="this.style.display='none'" />`:`<div class="item-icon-placeholder"></div>`;
+  const iconHTML=a.itemIcon&&a.itemId
+    ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;"><img class="item-icon" src="${iconUrl(a.itemIcon)}" onerror="this.style.display='none'" /></a>`
+    :a.itemIcon
+    ?`<img class="item-icon" src="${iconUrl(a.itemIcon)}" onerror="this.style.display='none'" />`
+    :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
   const itemHeader=`<div class="item-header">${iconHTML}<div>${nameHTML}<div class="item-slot">${a.slot||''}${catBadge?` ${catBadge}`:''}</div></div></div>`;

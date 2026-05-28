@@ -1886,6 +1886,29 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
+// ── Swipe gestures ────────────────────────────────────────────────────────
+(function(){
+  let tx=0, ty=0;
+  document.addEventListener('touchstart', e=>{
+    tx=e.touches[0].clientX;
+    ty=e.touches[0].clientY;
+  }, {passive:true});
+
+  document.addEventListener('touchend', e=>{
+    const dx=e.changedTouches[0].clientX - tx;
+    const dy=e.changedTouches[0].clientY - ty;
+    if(Math.abs(dy) > Math.abs(dx)) return; // vertical scroll, ignore
+    if(Math.abs(dx) < 40) return; // too short
+
+    // Left sidebar — swipe left to collapse, swipe right from edge to open
+    if(dx < -40 && !sidebarCollapsed) toggleMembersSidebar();
+    if(dx > 40 && tx < 30 && sidebarCollapsed) toggleMembersSidebar();
+
+    // Right raiders panel — swipe left from right edge to open, swipe right to close
+    if(dx < -40 && tx > window.innerWidth - 30 && !panelOpen) togglePanel();
+    if(dx > 40 && panelOpen) togglePanel();
+  }, {passive:true});
+})();
 Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback

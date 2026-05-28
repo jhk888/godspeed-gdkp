@@ -137,7 +137,15 @@
   .card.quality-epic{border-color:rgba(180,74,255,0.5);box-shadow:0 0 12px rgba(180,74,255,0.18);}
   .card.quality-legendary{border-color:rgba(255,128,0,0.6);box-shadow:0 0 16px rgba(255,128,0,0.22);}
   [draggable=true]:active{cursor:grabbing;}
-  .chat-box{position:fixed;bottom:0;right:0;width:280px;background:rgba(14,12,9,0.97);border:1px solid var(--border-gold);border-bottom:none;border-right:none;border-radius:4px 0 0 0;z-index:95;display:flex;flex-direction:column;transition:height .2s;height:320px;backdrop-filter:blur(8px);}
+  .chat-box{position:fixed;bottom:0;right:0;width:300px;max-width:calc(100vw - 16px);background:rgba(14,12,9,0.97);border:1px solid var(--border-gold);border-bottom:none;border-right:none;border-radius:4px 0 0 0;z-index:95;display:flex;flex-direction:column;transition:height .2s;height:360px;backdrop-filter:blur(8px);}
+  .chat-tabs{display:flex;border-bottom:1px solid var(--border-gold);overflow-x:auto;flex-shrink:0;scrollbar-width:none;}
+  .chat-tabs::-webkit-scrollbar{display:none;}
+  .chat-tab{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;padding:.35rem .6rem;cursor:pointer;color:var(--text-muted);border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:.3rem;flex-shrink:0;}
+  .chat-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .chat-tab:hover{color:var(--text-bright);}
+  .chat-tab-close{color:var(--text-muted);font-size:.65rem;padding:.1rem .2rem;background:none;border:none;cursor:pointer;opacity:.5;}
+  .chat-tab-close:hover{opacity:1;color:var(--red);}
+  .chat-tab-unread{background:var(--red);color:#fff;border-radius:50%;width:14px;height:14px;font-size:.55rem;display:inline-flex;align-items:center;justify-content:center;}
   .chat-box.collapsed{height:36px;}
   .chat-hdr{padding:.45rem .75rem;border-bottom:1px solid var(--border-gold);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;cursor:pointer;user-select:none;}
   .chat-hdr-title{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;}
@@ -347,13 +355,14 @@
 
 <!-- Chat Box -->
 <div class="chat-box" id="chat-box">
-  <div class="chat-hdr" onclick="toggleChat()">
-    <span class="chat-hdr-title">Raid Chat</span>
+  <div class="chat-hdr" onclick="toggleChat()" style="cursor:pointer;">
+    <span class="chat-hdr-title" id="chat-hdr-title">Raid Chat</span>
     <div style="display:flex;align-items:center;gap:.4rem;">
       <span id="chat-unread" class="chat-unread" style="display:none;">0</span>
       <span id="chat-toggle-icon" style="font-size:.7rem;color:var(--text-muted);">▼</span>
     </div>
   </div>
+  <div class="chat-tabs" id="chat-tabs" style="display:none;"></div>
   <div class="chat-messages" id="chat-messages"></div>
   <div class="chat-input-row" id="chat-input-row">
     <input class="chat-input" id="chat-input" placeholder="Message..." maxlength="200"
@@ -1256,7 +1265,7 @@ function renderChatMessages(msgs){
     return`<div class="chat-msg${mine?' mine':''}">
       ${delBtn}
       <div class="chat-msg-header">${avatarEl}<span class="chat-msg-name${rlClass}">${m.sender}${m.senderIsRL?' ★':''}</span><span class="chat-msg-time">${time}</span></div>
-      <div class="chat-msg-text">${escapeHtml(m.text)}</div>
+      <div class="chat-msg-text">${formatChatText(m.text)}</div>
     </div>`;
   }).join('');
   if(wasAtBottom) box.scrollTop=box.scrollHeight;
@@ -1269,6 +1278,14 @@ function renderChatMessages(msgs){
 }
 
 function escapeHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function formatChatText(s){
+  return escapeHtml(s).replace(/@(\w+)/g,'<span style="color:var(--gold);font-weight:500;">@$1</span>');
+}
+
+function mentionMember(name){
+  if(name===user) return; // can't DM yourself
+  openDM(name);
+}
 
 function sendChat(){
   const inp=document.getElementById('chat-input');
@@ -1335,7 +1352,7 @@ function renderMembersSidebar(presenceData){
     const spendStr=spend>0?spend.toLocaleString()+'g':'';
     const rlBadge=m.isRL?`<span style="color:var(--gold);font-size:.6rem;margin-left:.2rem;">★</span>`:'';
     const kickBtn=isRL&&!m.isRL?`<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:.1rem .2rem;opacity:.5;flex-shrink:0;" title="Kick">✕</button>`:'';
-    return`<div class="member-row" onmouseenter="cancelHide(this);showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)">
+    return`<div class="member-row" onmouseenter="cancelHide(this);showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)" onclick="mentionMember('${m.name}')" title="Click to mention in chat">
       ${avatarEl}
       <div class="member-row-info">
         <div class="member-row-name">${m.name}${rlBadge}</div>
@@ -1506,7 +1523,7 @@ async function fetchCrossRunStats(forceRefresh){
         if(!stats[winner])stats[winner]={totalSpent:0,itemsWon:0,items:[],runs:new Set()};
         stats[winner].totalSpent+=(a.currentBid||0);
         stats[winner].itemsWon++;
-        stats[winner].items.push({name:a.name,price:a.currentBid,quality:a.quality||'common'});
+        stats[winner].items.push({name:a.name,price:a.currentBid,quality:a.quality||'common',itemId:a.itemId||null});
         if(run.createdAt) stats[winner].runs.add(run.createdAt);
       });
     });
@@ -1567,7 +1584,8 @@ async function _loadTipContent(tip, memberName){
     <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g</div>
     <div style="font-size:.72rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won</div>
     ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border-gold);">This run: ${currentSpend.toLocaleString()}g</div>`:''}
-    ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
+    ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.itemId?`<a href="https://www.wowhead.com/tbc/item=${i.itemId}" data-wowhead="item=${i.itemId}&domain=tbc" onclick="return false;" class="item-name ${i.quality}" style="font-size:.73rem;text-decoration:none;">${i.name}</a>`:i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
+  if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
 }
 
 function _scheduleHideTip(){
@@ -1663,7 +1681,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

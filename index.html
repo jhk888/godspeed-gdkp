@@ -52,8 +52,8 @@
   .member-row-info{flex:1;min-width:0;}
   .member-row-name{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .member-row-spend{font-size:.65rem;color:var(--text-muted);}
-  .sidebar-toggle-tab{position:fixed;left:200px;top:50%;transform:translateY(-50%);background:rgba(14,12,9,0.97);border:1px solid var(--border-gold);border-left:none;border-radius:0 4px 4px 0;padding:.5rem .35rem;cursor:pointer;z-index:91;font-size:.75rem;color:var(--text-muted);transition:left .25s;}
-  .sidebar-toggle-tab:hover{color:var(--gold);}
+  .sidebar-toggle-tab{position:fixed;left:200px;top:50%;transform:translateY(-50%);background:rgba(14,12,9,0.97);border:1px solid var(--border-gold);border-left:none;border-radius:0 4px 4px 0;padding:.6rem .4rem;cursor:pointer;z-index:91;color:var(--text-muted);transition:left .25s;display:flex;flex-direction:column;align-items:center;gap:.4rem;}
+  .sidebar-toggle-tab:hover{color:var(--gold);border-color:var(--gold);}
   .sidebar-toggle-tab.collapsed{left:0px;}
   .main{flex:1;padding:1.5rem 2rem;max-width:1600px;margin:0 auto;width:100%;transition:padding-left .25s;}
   .member-chip{display:none;}
@@ -108,23 +108,31 @@
   .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;}
   @media(max-width:600px){
-    html{font-size:15px;}
-    .main{padding:1rem;}
-    .hdr{padding:.7rem 1rem;}
-    .logo{font-size:1.1rem;}
+    html{font-size:14px;}
+    .main{padding:.75rem;}
+    .hdr{padding:.5rem .75rem;flex-wrap:nowrap;gap:.3rem;}
+    .hdr>div:first-child{width:0;display:none;}
+    .logo{font-size:1rem;}
+    .logo-sub{display:none;}
+    .rl-badge{display:none;}
+    .usr-chip{font-size:.65rem;padding:.2rem .45rem;}
+    .btn-sm{padding:.25rem .45rem;font-size:.6rem;}
     .grid{grid-template-columns:1fr;}
-    .pot-bar{flex-direction:column;text-align:center;gap:.75rem;}
+    .pot-bar{flex-direction:column;text-align:center;gap:.6rem;}
     .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-    .tab{padding:.55rem .75rem;font-size:.7rem;white-space:nowrap;}
-    .modal{width:calc(100vw - 2rem);max-width:100%;padding:1.25rem;}
+    .tab{padding:.45rem .6rem;font-size:.62rem;white-space:nowrap;}
+    .modal{width:calc(100vw - 1.5rem);max-width:100%;padding:1rem;}
     .three-col{grid-template-columns:1fr;}
-    .btn{font-size:.75rem;padding:.5rem .8rem;}
-    .btn-sm{padding:.35rem .6rem;font-size:.68rem;}
     .rl-controls{flex-wrap:wrap;}
     .side-panel{width:100vw;right:-100vw;}
-    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.95);z-index:10;padding:.5rem 0;backdrop-filter:blur(4px);}
-    .hdr-btns{flex-wrap:wrap;gap:.35rem;}
+    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.95);z-index:10;padding:.4rem 0;backdrop-filter:blur(4px);}
     .fab{display:flex;}
+    .chat-box{right:4px;width:calc(100vw - 8px);}
+    .members-sidebar{width:150px;}
+    .sidebar-toggle-tab{left:150px;}
+    .sidebar-toggle-tab.collapsed{left:0;}
+    body.sidebar-open .main{padding-left:166px;}
+    .hdr-user-inner{flex-wrap:wrap;gap:.3rem;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
@@ -337,7 +345,7 @@
   </div>
   <div class="members-sidebar-body" id="members-sidebar-body"></div>
 </div>
-<button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()">▶</button>
+<button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()"><span id="sidebar-tab-label" style="writing-mode:vertical-rl;text-orientation:mixed;font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);">Members</span></button>
 
 <!-- Side Panel -->
 <div class="side-panel" id="side-panel">
@@ -619,12 +627,16 @@ function renderHdr(){
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
-    ${avatarEl}<span class="usr-chip">${user}</span>
+    ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
     ${isRL?`<button class="btn btn-outline btn-sm" onclick="togglePanel()">&#9776; Raiders</button>`:''}
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
   if(logoWrap){logoWrap.style.position='absolute';logoWrap.style.left='50%';logoWrap.style.transform='translateX(-50%)';}
+}
+
+function showMemberTooltipFromHeader(event){
+  showMemberTooltipFixed({clientX:event.clientX, clientY:event.clientY+20}, user);
 }
 
 function startEditTitle(){editingTitle=true;renderHdr();}
@@ -1540,15 +1552,19 @@ async function renderPastRunsPanel(){
     }
     body.innerHTML=sorted.map(([runKey,run])=>{
       const sold=Object.entries(run.auctions||{}).filter(([,a])=>a.status==='sold');
+      if(!sold.length) return '';
       const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
       const date=run.createdAt?new Date(run.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unknown date';
       const title=run.settings?.raidTitle||'Untitled Run';
       const itemRows=sold.map(([aId,a])=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         const winner=bids[0]?.bidder||'Unknown';
+        const nameEl=a.itemId
+          ?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;" style="flex:1;font-size:.78rem;text-decoration:none;">${a.name}</a>`
+          :`<span class="item-name ${a.quality||'common'}" style="flex:1;font-size:.78rem;">${a.name}</span>`;
         return`<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-radius:3px;font-size:.78rem;">
           ${a.itemIcon?`<img src="https://wow.zamimg.com/images/wow/icons/medium/${a.itemIcon}.jpg" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:''}
-          <span class="item-name ${a.quality||'common'}" style="flex:1;font-size:.78rem;">${a.name}</span>
+          ${nameEl}
           <span style="color:var(--text-muted);font-size:.72rem;">${winner}</span>
           <span style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;min-width:55px;text-align:right;">${(a.currentBid||0).toLocaleString()}g</span>
           ${isRL?`<button onclick="removePastItem('${runKey}','${aId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:.1rem .25rem;opacity:.5;flex-shrink:0;" title="Remove">✕</button>`:''}
@@ -1567,6 +1583,7 @@ async function renderPastRunsPanel(){
   }catch(e){
     body.innerHTML='<div style="color:var(--red);font-size:.82rem;padding:1rem;">Failed to load past runs</div>';
   }
+  if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
 }
 
 async function removePastItem(runKey, auctionId){
@@ -1770,7 +1787,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

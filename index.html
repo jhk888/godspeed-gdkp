@@ -44,6 +44,10 @@
   .discord-btn{display:flex;align-items:center;gap:.5rem;background:#5865F2;color:#fff;border:none;border-radius:4px;padding:.55rem 1rem;font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.06em;cursor:pointer;transition:background .15s;}
   .discord-btn:hover{background:#4752c4;}
   .discord-btn img{width:18px;height:18px;}
+
+  .banned-row{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;border-bottom:1px solid rgba(201,168,76,0.08);}
+  .banned-name{flex:1;font-size:.85rem;color:var(--text-muted);}
+  .banned-label{font-size:.7rem;color:var(--red);font-family:'Cinzel',serif;letter-spacing:.05em;}
   .audit-row{display:flex;gap:.75rem;padding:.35rem 0;border-bottom:1px solid rgba(201,168,76,0.08);font-size:.82rem;}
   .audit-time{color:var(--text-muted);font-size:.75rem;white-space:nowrap;min-width:55px;}
   .audit-msg{color:var(--text-bright);}
@@ -459,7 +463,7 @@ async function getOrCreateRun(){
   if(keys.length>0){runId=keys[0];}
   else{const nr=push(ref(db,'runs'));runId=nr.key;await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{}});}
   splitsLoaded=false;
-  subscribeToRun();startTick();startPresence();
+  subscribeToRun();startTick();startPresence();subscribeToBans();
   // Write audit entry
   const loginType = discordUser ? ` (Discord: ${discordUser.username})` : ' (character name)';
   writeAudit(`${user} joined${loginType}`);
@@ -472,6 +476,8 @@ function joinDiscord(){
 function join(){
   const name=document.getElementById('li')?.value?.trim();if(!name)return;
   user=name;isRL=document.getElementById('rlcode')?.value===RAID_LEADER_CODE;
+  // Check ban before joining
+  if(isBanned({name:user})){handleBanned();return;}
   localStorage.setItem('gdkp_user',user);
   localStorage.setItem('gdkp_isRL',isRL?'1':'0');
   getOrCreateRun();renderHdr();
@@ -1061,7 +1067,8 @@ function renderMembersBar(presenceData){
       ? `<img class="member-avatar" src="${m.avatar}" onerror="this.style.display='none'" />`
       : `<div class="member-avatar-placeholder">${(m.name||'?')[0].toUpperCase()}</div>`;
     const rlDot = m.isRL ? `<span style="color:var(--gold);font-size:.6rem;">★</span>` : '';
-    return `<div class="member-chip">${avatarEl}<span class="member-name">${m.name}</span>${rlDot}</div>`;
+    const kickBtn = isRL && !m.isRL ? `<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0 .2rem;opacity:.6;" title="Kick">✕</button>` : '';
+    return `<div class="member-chip">${avatarEl}<span class="member-name">${m.name}</span>${rlDot}${kickBtn}</div>`;
   }).join('');
   return `<div class="members-bar"><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;">${members.length} Online</span>${chips}</div>`;
 }
@@ -1120,7 +1127,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

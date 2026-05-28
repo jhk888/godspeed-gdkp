@@ -1550,6 +1550,7 @@ let _deleteUndoTimer=null;
 async function renderPastRunsPanel(){
   const body=document.getElementById('side-panel-body');
   if(!body) return;
+  const scrollTop=body.scrollTop; // save scroll position
   body.innerHTML='<div style="color:var(--text-muted);font-size:.82rem;text-align:center;padding:1.5rem 0;">Loading...</div>';
   try{
     const snap=await get(ref(db,'runs'));
@@ -1570,7 +1571,8 @@ async function renderPastRunsPanel(){
       const sold=Object.entries(run.auctions||{}).filter(([,a])=>a&&a.status==='sold'&&(a.currentBid||0)>0);
       if(!sold.length) return '';
       const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
-      const date=run.createdAt?new Date(run.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unknown date';
+      const _d=run.createdAt?new Date(run.createdAt):null;
+      const date=_d?_d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/New_York'})+' '+_d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'})+' ET':'Unknown date';
       const title=run.settings?.raidTitle||'Untitled Run';
       const itemRows=sold.map(([aId,a])=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
@@ -1601,6 +1603,8 @@ async function renderPastRunsPanel(){
     body.innerHTML='<div style="color:var(--red);font-size:.82rem;padding:1rem;">Failed to load past runs</div>';
   }
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+  // Restore scroll position
+  requestAnimationFrame(()=>{ body.scrollTop=scrollTop; });
 }
 
 async function deleteRun(runKey){

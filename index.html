@@ -610,7 +610,7 @@ function renderHdr(){
         titleEl.innerHTML=`<input class="raid-title-input" id="raid-title-inp" value="${raidTitle}" placeholder="e.g. SSC — Week 4" maxlength="40" onblur="saveRaidTitle()" onkeydown="if(event.key==='Enter')saveRaidTitle()" />`;
         setTimeout(()=>document.getElementById('raid-title-inp')?.focus(),50);
       } else {
-        titleEl.innerHTML=`<span class="raid-title-display" onclick="editingTitle=true;renderHdr();" title="Click to edit">${raidTitle||'Click to set raid title'}</span>`;
+        titleEl.innerHTML=`<span class="raid-title-display" onclick="startEditTitle()" title="Click to edit">${raidTitle||'Click to set raid title'}</span>`;
       }
     } else {
       titleEl.textContent=raidTitle||'Gold DKP Run';
@@ -627,6 +627,7 @@ function renderHdr(){
   if(logoWrap){logoWrap.style.position='absolute';logoWrap.style.left='50%';logoWrap.style.transform='translateX(-50%)';}
 }
 
+function startEditTitle(){editingTitle=true;renderHdr();}
 function saveRaidTitle(){
   editingTitle=false;
   const val=document.getElementById('raid-title-inp')?.value?.trim()||'';
@@ -1769,7 +1770,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

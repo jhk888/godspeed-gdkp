@@ -1577,15 +1577,16 @@ async function renderPastRunsPanel(){
       const itemRows=sold.map(([aId,a])=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         const winner=bids[0]?.bidder||'Unknown';
+        const nameStyle='flex:1;min-width:0;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
         const nameEl=a.itemId
-          ?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;" style="flex:1;font-size:.78rem;text-decoration:none;">${a.name}</a>`
-          :`<span class="item-name ${a.quality||'common'}" style="flex:1;font-size:.78rem;">${a.name}</span>`;
-        return`<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border-bottom:1px solid rgba(201,168,76,0.06);">
+          ?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" style="${nameStyle}text-decoration:none;">${a.name}</a>`
+          :`<span class="item-name ${a.quality||'common'}" style="${nameStyle}">${a.name}</span>`;
+        return`<div style="display:flex;align-items:center;gap:.4rem;padding:.3rem .6rem;border-bottom:1px solid rgba(201,168,76,0.06);min-width:0;">
           ${a.itemIcon?`<img src="https://wow.zamimg.com/images/wow/icons/medium/${a.itemIcon}.jpg" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:'<div style="width:20px;flex-shrink:0;"></div>'}
           ${nameEl}
-          <span style="color:var(--text-muted);font-size:.7rem;white-space:nowrap;flex-shrink:0;">${winner!=='Unknown'?winner:''}</span>
-          <span style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;white-space:nowrap;flex-shrink:0;">${(a.currentBid||0).toLocaleString()}g</span>
-          ${isRL?`<button onclick="removePastItem('${runKey}','${aId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:.1rem .2rem;opacity:.5;flex-shrink:0;" title="Remove">✕</button>`:''}
+          <span style="color:var(--text-muted);font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70px;flex-shrink:0;">${winner!=='Unknown'?winner:''}</span>
+          <span style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;white-space:nowrap;flex-shrink:0;margin-left:auto;">${(a.currentBid||0).toLocaleString()}g</span>
+          ${isRL?`<button onclick="removePastItem('${runKey}','${aId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:.1rem .2rem;flex-shrink:0;" title="Remove">✕</button>`:''}
         </div>`;
       }).join('');
       return`<div style="background:rgba(30,26,16,0.8);border:1px solid var(--border-gold);border-radius:4px;margin-bottom:.75rem;overflow:hidden;width:100%;">

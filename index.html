@@ -1290,21 +1290,21 @@ function mentionMember(name){
 function sendChat(){
   const inp=document.getElementById('chat-input');
   const text=inp?.value?.trim();
-  if(!text||!runId||!user) return;
+  if(!text||!user) return;
   inp.value='';
-  const nr=push(chatRef());
-  set(nr,{
-    sender:user,
-    senderIsRL:isRL,
-    avatar:discordUser?.avatar||null,
-    text,
-    ts:Date.now()
-  });
+  const msgData={sender:user,senderIsRL:isRL,avatar:discordUser?.avatar||null,text,ts:Date.now()};
+  if(activeChatTab==='raid'){
+    if(!runId) return;
+    set(push(chatRef()),msgData);
+  } else {
+    set(push(dmRef(activeChatTab)),msgData);
+  }
 }
 
 function deleteChat(key){
   if(!isRL) return;
-  remove(ref(db,`runs/${runId}/chat/${key}`));
+  if(activeChatTab==='raid') remove(ref(db,`runs/${runId}/chat/${key}`));
+  else remove(ref(db,`dms/${dmKey(user,activeChatTab)}/${key}`));
 }
 
 function toggleChat(){
@@ -1312,17 +1312,103 @@ function toggleChat(){
   const box=document.getElementById('chat-box');
   const icon=document.getElementById('chat-toggle-icon');
   const inputRow=document.getElementById('chat-input-row');
+  const tabBar=document.getElementById('chat-tabs');
   if(box) box.classList.toggle('collapsed',chatCollapsed);
   if(icon) icon.textContent=chatCollapsed?'▲':'▼';
   if(inputRow) inputRow.style.display=chatCollapsed?'none':'flex';
+  if(tabBar&&openDMs.length>0) tabBar.style.display=chatCollapsed?'none':'flex';
   if(!chatCollapsed){
     chatUnread=0;
-    const badge=document.getElementById('chat-unread');
-    if(badge) badge.style.display='none';
+    if(activeChatTab!=='raid') dmUnread[activeChatTab]=0;
+    updateChatUnread();
     const msgs=document.getElementById('chat-messages');
     if(msgs) setTimeout(()=>msgs.scrollTop=msgs.scrollHeight,50);
   }
 }
+
+// ── DM System ─────────────────────────────────────────────────────────────
+let activeChatTab='raid';
+let openDMs=[];
+let dmSubs={};
+let dmUnread={};
+
+function dmKey(a,b){ return [a,b].sort().join('__'); }
+function dmRef(partner){ return ref(db,`dms/${dmKey(user,partner)}`); }
+
+function openDM(partner){
+  if(partner===user) return;
+  if(!openDMs.includes(partner)) openDMs.push(partner);
+  activeChatTab=partner;
+  if(chatCollapsed) toggleChat();
+  dmUnread[partner]=0;
+  renderChatTabs();
+  updateChatHeader();
+  subscribeToDM(partner);
+  get(dmRef(partner)).then(snap=>{
+    const msgs=Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>a.ts-b.ts).slice(-100);
+    renderChatMessages(msgs);
+  });
+}
+
+function subscribeToDM(partner){
+  if(dmSubs[partner]) return;
+  dmSubs[partner]=onValue(dmRef(partner), snap=>{
+    const msgs=Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>a.ts-b.ts).slice(-100);
+    if(activeChatTab===partner){ renderChatMessages(msgs); }
+    else{ dmUnread[partner]=(dmUnread[partner]||0)+1; renderChatTabs(); updateChatUnread(); }
+  });
+}
+
+function closeDM(partner,e){
+  if(e) e.stopPropagation();
+  openDMs=openDMs.filter(d=>d!==partner);
+  if(dmSubs[partner]){ dmSubs[partner](); delete dmSubs[partner]; }
+  delete dmUnread[partner];
+  if(activeChatTab===partner){ activeChatTab='raid'; updateChatHeader(); }
+  renderChatTabs();
+}
+
+function switchChatTab(tab){
+  activeChatTab=tab;
+  if(tab==='raid'){
+    chatUnread=0;
+    subscribeToChat();
+  } else {
+    dmUnread[tab]=0;
+    subscribeToDM(tab);
+    get(dmRef(tab)).then(snap=>{
+      const msgs=Object.entries(snap.val()||{}).map(([k,v])=>({key:k,...v})).sort((a,b)=>a.ts-b.ts).slice(-100);
+      renderChatMessages(msgs);
+    });
+  }
+  renderChatTabs();
+  updateChatHeader();
+  updateChatUnread();
+}
+
+function updateChatHeader(){
+  const title=document.getElementById('chat-hdr-title');
+  if(title) title.textContent=activeChatTab==='raid'?'Raid Chat':'DM: '+activeChatTab;
+}
+
+function updateChatUnread(){
+  const badge=document.getElementById('chat-unread');
+  const total=chatUnread+Object.values(dmUnread).reduce((s,v)=>s+v,0);
+  if(badge){ badge.textContent=total>9?'9+':total; badge.style.display=total>0?'flex':'none'; }
+}
+
+function renderChatTabs(){
+  const bar=document.getElementById('chat-tabs');
+  if(!bar) return;
+  if(!openDMs.length){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  const tabs=[
+    `<div class="chat-tab ${activeChatTab==='raid'?'active':''}" onclick="switchChatTab('raid')">Raid${chatUnread>0&&activeChatTab!=='raid'?` <span class="chat-tab-unread">${chatUnread>9?'9+':chatUnread}</span>`:''}</div>`,
+    ...openDMs.map(p=>`<div class="chat-tab ${activeChatTab===p?'active':''}" onclick="switchChatTab('${p}')">${p}${dmUnread[p]>0&&activeChatTab!==p?` <span class="chat-tab-unread">${dmUnread[p]>9?'9+':dmUnread[p]}</span>`:''}<button class="chat-tab-close" onclick="closeDM('${p}',event)">✕</button></div>`)
+  ];
+  bar.innerHTML=tabs.join('');
+}
+
 
 function cancelHide(el){
   _tipActive=true;

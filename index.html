@@ -36,8 +36,26 @@
   .rl-badge{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;background:rgba(212,169,60,0.18);color:var(--gold);border:1px solid var(--border-gold-strong);padding:.25rem .65rem;border-radius:2px;margin-right:.5rem;}
   .usr-chip{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.05em;color:var(--gold-light);background:rgba(212,169,60,0.1);border:1px solid var(--border-gold);padding:.3rem .8rem;border-radius:3px;}
   .conn-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:.4rem;background:var(--green);}
-  .members-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:.6rem 1.25rem;display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;backdrop-filter:blur(4px);}
-  .member-chip{display:flex;align-items:center;gap:.4rem;background:rgba(201,168,76,0.08);border:1px solid var(--border-gold);border-radius:20px;padding:.2rem .55rem .2rem .2rem;}
+  .members-sidebar{position:fixed;left:0;top:0;height:100vh;width:200px;background:rgba(14,12,9,0.97);border-right:1px solid var(--border-gold);z-index:90;display:flex;flex-direction:column;transition:transform .25s;backdrop-filter:blur(8px);}
+  .members-sidebar.collapsed{transform:translateX(-168px);}
+  .members-sidebar-hdr{padding:.75rem .75rem .5rem;border-bottom:1px solid var(--border-gold);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+  .members-sidebar-title{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.12em;color:var(--text-muted);text-transform:uppercase;}
+  .members-sidebar-toggle{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.8rem;padding:.1rem .3rem;}
+  .members-sidebar-toggle:hover{color:var(--gold);}
+  .members-sidebar-body{flex:1;overflow-y:auto;padding:.5rem .5rem;}
+  .member-row{display:flex;align-items:center;gap:.5rem;padding:.35rem .4rem;border-radius:3px;cursor:pointer;transition:background .1s;position:relative;}
+  .member-row:hover{background:rgba(201,168,76,0.07);}
+  .member-row-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;object-fit:cover;border:1px solid var(--border-gold);}
+  .member-row-placeholder{width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--bg-input);border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;font-size:.7rem;color:var(--text-muted);}
+  .member-row-info{flex:1;min-width:0;}
+  .member-row-name{font-family:'Cinzel',serif;font-size:.7rem;color:var(--gold-light);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .member-row-spend{font-size:.65rem;color:var(--text-muted);}
+  .sidebar-toggle-tab{position:fixed;left:200px;top:50%;transform:translateY(-50%);background:rgba(14,12,9,0.97);border:1px solid var(--border-gold);border-left:none;border-radius:0 4px 4px 0;padding:.4rem .3rem;cursor:pointer;z-index:91;font-size:.7rem;color:var(--text-muted);transition:left .25s;}
+  .sidebar-toggle-tab:hover{color:var(--gold);}
+  .sidebar-toggle-tab.collapsed{left:32px;}
+  body.sidebar-open .main{margin-left:200px;}
+  body.sidebar-collapsed .main{margin-left:32px;}
+  .member-chip{display:none;}
   .member-avatar{width:24px;height:24px;border-radius:50%;object-fit:cover;border:1px solid var(--border-gold);}
   .member-avatar-placeholder{width:24px;height:24px;border-radius:50%;background:var(--bg-input);border:1px solid var(--border-gold);display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--text-muted);}
   .member-name{font-family:'Cinzel',serif;font-size:.65rem;color:var(--gold-light);letter-spacing:.04em;}
@@ -128,7 +146,7 @@
   .cat-filter-btn{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:.3rem .75rem;border-radius:3px;cursor:pointer;transition:all .15s;}
   .cat-filter-btn.active{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);}
   .cat-filter-btn.inactive{background:transparent;color:var(--text-muted);border:1px solid var(--border-gold);}
-  .member-tooltip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:4px;padding:.65rem .85rem;z-index:300;min-width:200px;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.7);pointer-events:none;}
+  .member-tooltip{position:fixed;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:4px;padding:.65rem .85rem;z-index:1000;min-width:220px;max-width:280px;box-shadow:0 4px 20px rgba(0,0,0,0.85);pointer-events:none;}
   .member-chip{position:relative;}
   .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
   .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
@@ -274,6 +292,16 @@
     </div>
   </div>
 </div>
+
+<!-- Members Sidebar -->
+<div class="members-sidebar" id="members-sidebar">
+  <div class="members-sidebar-hdr">
+    <span class="members-sidebar-title" id="members-online-count">0 Online</span>
+    <button class="members-sidebar-toggle" onclick="toggleMembersSidebar()" title="Collapse">◀</button>
+  </div>
+  <div class="members-sidebar-body" id="members-sidebar-body"></div>
+</div>
+<button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()">▶</button>
 
 <!-- Side Panel -->
 <div class="side-panel" id="side-panel">
@@ -1128,25 +1156,53 @@ function getMemberSpend(name){
   },0);
 }
 
-function renderMembersBar(presenceData){
-  const members = getActiveMembers(presenceData);
-  if(!members.length) return '';
-  // Sort by spend descending, RL always last (pinned)
+let sidebarCollapsed=false;
+
+function toggleMembersSidebar(){
+  sidebarCollapsed=!sidebarCollapsed;
+  const sb=document.getElementById('members-sidebar');
+  const tab=document.getElementById('sidebar-toggle-tab');
+  if(sb) sb.classList.toggle('collapsed', sidebarCollapsed);
+  if(tab){tab.textContent=sidebarCollapsed?'▶':'◀';tab.classList.toggle('collapsed',sidebarCollapsed);}
+  document.body.classList.toggle('sidebar-open',!sidebarCollapsed);
+  document.body.classList.toggle('sidebar-collapsed',sidebarCollapsed);
+}
+
+function renderMembersSidebar(presenceData){
+  const body=document.getElementById('members-sidebar-body');
+  const countEl=document.getElementById('members-online-count');
+  if(!body) return;
+  const members=getActiveMembers(presenceData);
+  if(countEl) countEl.textContent=members.length+' Online';
   const sorted=[...members].sort((a,b)=>{
-    if(a.isRL)return 1;if(b.isRL)return -1;
+    if(a.isRL&&!b.isRL)return 1;
+    if(!a.isRL&&b.isRL)return-1;
     return getMemberSpend(b.name)-getMemberSpend(a.name);
   });
-  const chips = sorted.map(m => {
-    const avatarEl = m.avatar
-      ? `<img class="member-avatar" src="${m.avatar}" onerror="this.style.display='none'" />`
-      : `<div class="member-avatar-placeholder">${(m.name||'?')[0].toUpperCase()}</div>`;
-    const rlDot = m.isRL ? `<span style="color:var(--gold);font-size:.6rem;">★</span>` : '';
-    const kickBtn = isRL && !m.isRL ? `<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0 .2rem;opacity:.6;" title="Kick">✕</button>` : '';
-    const spend = getMemberSpend(m.name);
-    const spendLabel = spend>0?`<span style="font-size:.6rem;color:var(--gold-light);margin-left:.1rem;">${(spend/1000).toFixed(1)}k</span>`:'';
-    return `<div class="member-chip" onmouseenter="showMemberTooltip(this,'${m.name}')" onmouseleave="hideMemberTooltip(this)">${avatarEl}<span class="member-name">${m.name}</span>${spendLabel}${rlDot}${kickBtn}</div>`;
+  body.innerHTML=sorted.map(m=>{
+    const avatarEl=m.avatar
+      ?`<img class="member-row-avatar" src="${m.avatar}" onerror="this.style.background='var(--bg-input)'" />`
+      :`<div class="member-row-placeholder">${(m.name||'?')[0].toUpperCase()}</div>`;
+    const spend=getMemberSpend(m.name);
+    const spendStr=spend>0?spend.toLocaleString()+'g':'';
+    const rlBadge=m.isRL?`<span style="color:var(--gold);font-size:.6rem;margin-left:.2rem;">★</span>`:'';
+    const kickBtn=isRL&&!m.isRL?`<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:.1rem .2rem;opacity:.5;flex-shrink:0;" title="Kick">✕</button>`:'';
+    return`<div class="member-row" onmouseenter="showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)">
+      ${avatarEl}
+      <div class="member-row-info">
+        <div class="member-row-name">${m.name}${rlBadge}</div>
+        ${spendStr?`<div class="member-row-spend">${spendStr}</div>`:''}
+      </div>
+      ${kickBtn}
+    </div>`;
   }).join('');
-  return `<div class="members-bar"><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;">${members.length} Online</span>${chips}</div>`;
+  // Set body margin
+  document.body.classList.toggle('sidebar-open',!sidebarCollapsed&&members.length>0);
+}
+
+function renderMembersBar(presenceData){
+  renderMembersSidebar(presenceData);
+  return ''; // Members bar replaced by sidebar
 }
 
 // ── Ban System ─────────────────────────────────────────────────────────────
@@ -1257,37 +1313,44 @@ async function fetchCrossRunStats(){
   finally{crossRunFetching=false;}
 }
 
-async function showMemberTooltip(el, memberName){
-  // Remove any existing tooltip
+async function showMemberTooltipFixed(event, memberName){
   document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());
   const tip=document.createElement('div');
   tip.className='member-tooltip';
   tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">Loading...</div>';
-  el.appendChild(tip);
+  // Position to the right of the sidebar
+  tip.style.left=(event.clientX+210)+'px';
+  tip.style.top=Math.min(event.clientY, window.innerHeight-220)+'px';
+  document.body.appendChild(tip);
   const stats=await fetchCrossRunStats();
-  if(!el.contains(tip))return; // user already left
+  if(!document.body.contains(tip))return;
   if(!stats||!stats[memberName]){
-    tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">No purchase history</div>';
+    tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">No purchase history yet</div>';
     return;
   }
   const s=stats[memberName];
-  // Current run spend
   const currentSpend=auctionList().filter(a=>a.status==='sold').reduce((sum,a)=>{
     const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
     return sum+(bids[0]?.bidder===memberName?a.currentBid:0);
   },0);
-  const topItems=s.items.sort((a,b)=>b.price-a.price).slice(0,3);
+  const topItems=[...s.items].sort((a,b)=>b.price-a.price).slice(0,3);
   tip.innerHTML=`
-    <div style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);margin-bottom:.4rem;">${memberName}</div>
-    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.2rem;">All runs</div>
-    <div style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g spent</div>
-    <div style="font-size:.75rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won</div>
-    ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.3rem;">This run: ${currentSpend.toLocaleString()}g</div>`:''}
-    ${topItems.length?`<div style="margin-top:.4rem;font-size:.72rem;color:var(--text-muted);">Top items:</div>${topItems.map(i=>`<div style="font-size:.75rem;" class="item-name ${i.quality}">${i.name} — ${i.price.toLocaleString()}g</div>`).join('')}`:''}`;
+    <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);margin-bottom:.4rem;border-bottom:1px solid var(--border-gold);padding-bottom:.3rem;">${memberName}</div>
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.15rem;">All-time</div>
+    <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g</div>
+    <div style="font-size:.72rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won across all runs</div>
+    ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border-gold);">This run: ${currentSpend.toLocaleString()}g</div>`:''}
+    ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
+}
+
+// Keep old name as alias for any remaining calls
+function showMemberTooltip(el, memberName){
+  const rect=el.getBoundingClientRect();
+  showMemberTooltipFixed({clientX:rect.left, clientY:rect.top}, memberName);
 }
 
 function hideMemberTooltip(el){
-  setTimeout(()=>{ el.querySelectorAll('.member-tooltip').forEach(t=>t.remove()); },200);
+  setTimeout(()=>document.querySelectorAll('.member-tooltip').forEach(t=>t.remove()), 150);
 }
 
 // ── Categories ─────────────────────────────────────────────────────────────
@@ -1345,7 +1408,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,hideMemberTooltip,saveRaidTitle,saveCategories,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,saveRaidTitle,saveCategories,toggleMembersSidebar,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);
@@ -1363,6 +1426,8 @@ if (_discordError) {
   window.history.replaceState({}, '', window.location.pathname);
 }
 
+// Init sidebar
+document.body.classList.add('sidebar-open');
 // Restore session on refresh
 const _savedUser = localStorage.getItem('gdkp_user');
 const _savedIsRL = localStorage.getItem('gdkp_isRL');

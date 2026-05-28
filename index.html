@@ -1542,6 +1542,9 @@ function writeAudit(msg){
   set(ar, { msg, ts: Date.now() });
 }
 
+let _pendingDeleteRun=null;
+let _deleteUndoTimer=null;
+
 async function renderPastRunsPanel(){
   const body=document.getElementById('side-panel-body');
   if(!body) return;
@@ -1550,14 +1553,19 @@ async function renderPastRunsPanel(){
     const snap=await get(ref(db,'runs'));
     const runs=snap.val()||{};
     const sorted=Object.entries(runs)
-      .filter(([k,r])=>k!==runId) // exclude current run
+      .filter(([k,r])=>k!==runId)
       .sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
-    if(!sorted.length){
+    // Filter to only runs with actual sold items
+    const withItems=sorted.filter(([k,r])=>{
+      const sold=Object.entries(r.auctions||{}).filter(([,a])=>a&&a.status==='sold'&&(a.currentBid||0)>0);
+      return sold.length>0;
+    });
+    if(!withItems.length){
       body.innerHTML='<div style="color:var(--text-muted);font-size:.82rem;text-align:center;padding:1.5rem 0;">No past runs yet</div>';
       return;
     }
-    body.innerHTML=sorted.map(([runKey,run])=>{
-      const sold=Object.entries(run.auctions||{}).filter(([,a])=>a&&a.status==='sold'&&a.currentBid>0);
+    body.innerHTML=withItems.map(([runKey,run])=>{
+      const sold=Object.entries(run.auctions||{}).filter(([,a])=>a&&a.status==='sold'&&(a.currentBid||0)>0);
       if(!sold.length) return '';
       const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
       const date=run.createdAt?new Date(run.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unknown date';
@@ -1582,14 +1590,48 @@ async function renderPastRunsPanel(){
             <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);">${title}</div>
             <div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items · ${pot.toLocaleString()}g</div>
           </div>
+          ${isRL?`<button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.62rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.2rem .5rem;border-radius:3px;opacity:.7;" title="Delete run">Delete</button>`:''}
         </div>
-        <div style="padding:.35rem .4rem;">${itemRows||'<div style="color:var(--text-muted);font-size:.78rem;padding:.5rem;">No sold items</div>'}</div>
+        <div style="padding:.35rem .4rem;">${itemRows}</div>
       </div>`;
     }).join('');
   }catch(e){
     body.innerHTML='<div style="color:var(--red);font-size:.82rem;padding:1rem;">Failed to load past runs</div>';
   }
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+}
+
+async function deleteRun(runKey){
+  if(!isRL) return;
+  // Store for undo
+  const snap=await get(ref(db,`runs/${runKey}`));
+  _pendingDeleteRun={key:runKey, data:snap.val()};
+  // Remove immediately
+  await remove(ref(db,`runs/${runKey}`));
+  crossRunCache=null;
+  renderPastRunsPanel();
+  // Show undo toast
+  clearTimeout(_deleteUndoTimer);
+  const el=document.getElementById('toast');
+  if(el){
+    el.innerHTML=`Run deleted. <button onclick="undoDeleteRun()" style="background:none;border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-family:'Cinzel',serif;font-size:.7rem;padding:.1rem .4rem;border-radius:3px;margin-left:.5rem;">Undo</button>`;
+    el.classList.add('show');
+  }
+  _deleteUndoTimer=setTimeout(()=>{
+    _pendingDeleteRun=null;
+    const el=document.getElementById('toast');
+    if(el){el.classList.remove('show');el.textContent='';}
+  }, 10000);
+}
+
+async function undoDeleteRun(){
+  if(!_pendingDeleteRun) return;
+  clearTimeout(_deleteUndoTimer);
+  await set(ref(db,`runs/${_pendingDeleteRun.key}`), _pendingDeleteRun.data);
+  _pendingDeleteRun=null;
+  crossRunCache=null;
+  renderPastRunsPanel();
+  toast('Run restored');
 }
 
 async function removePastItem(runKey, auctionId){
@@ -1696,7 +1738,7 @@ async function _loadTipContent(tip, memberName){
     <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g</div>
     <div style="font-size:.72rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won</div>
     ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border-gold);">This run: ${currentSpend.toLocaleString()}g</div>`:''}
-    ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.itemId?`<a href="https://www.wowhead.com/tbc/item=${i.itemId}" data-wowhead="item=${i.itemId}&domain=tbc" onclick="return false;" class="item-name ${i.quality}" style="font-size:.73rem;text-decoration:none;">${i.name}</a>`:i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
+    ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.itemId?`<a href="https://www.wowhead.com/tbc/item=${i.itemId}" data-wowhead="item=${i.itemId}&domain=tbc" class="item-name ${i.quality}" style="font-size:.73rem;text-decoration:none;">${i.name}</a>`:i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
 }
 
@@ -1793,7 +1835,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

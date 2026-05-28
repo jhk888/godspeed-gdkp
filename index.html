@@ -137,7 +137,7 @@
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.2rem;margin-bottom:1.75rem;}
-  .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);}
+  .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;}
   .card:hover{border-color:var(--border-gold-strong);}
   .card.leading{border-color:rgba(212,169,60,0.7);}
   .card.expiring{border-color:rgba(255,96,96,0.6);}
@@ -267,7 +267,7 @@
   .dropdown-status{padding:.6rem .65rem;font-size:.82rem;color:var(--text-muted);}
 
   /* Side panel */
-  .side-panel{position:fixed;top:0;right:-420px;width:400px;height:100vh;background:rgba(16,13,10,0.97);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .3s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
+  .side-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .3s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
   .side-panel.open{right:0;}
   .side-panel-hdr{padding:1rem 1.25rem;border-bottom:1px solid var(--border-gold);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
   .side-panel-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);letter-spacing:.1em;}
@@ -345,7 +345,7 @@
   </div>
   <div class="members-sidebar-body" id="members-sidebar-body"></div>
 </div>
-<button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()"><span id="sidebar-tab-label" style="writing-mode:vertical-rl;text-orientation:mixed;font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);">Members</span></button>
+<button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()" title="Members"><span id="sidebar-tab-count" style="font-family:'Cinzel',serif;font-size:.6rem;color:var(--text-muted);">0</span></button>
 
 <!-- Side Panel -->
 <div class="side-panel" id="side-panel">
@@ -1440,6 +1440,8 @@ function renderMembersSidebar(presenceData){
   if(!body) return;
   const members=getActiveMembers(presenceData);
   if(countEl) countEl.textContent=members.length+' Online';
+  const tabCount=document.getElementById('sidebar-tab-count');
+  if(tabCount) tabCount.textContent=members.length;
   const sorted=[...members].sort((a,b)=>{
     // Self always first
     if(a.name===user)return-1;
@@ -1555,7 +1557,7 @@ async function renderPastRunsPanel(){
       return;
     }
     body.innerHTML=sorted.map(([runKey,run])=>{
-      const sold=Object.entries(run.auctions||{}).filter(([,a])=>a.status==='sold');
+      const sold=Object.entries(run.auctions||{}).filter(([,a])=>a&&a.status==='sold'&&a.currentBid>0);
       if(!sold.length) return '';
       const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
       const date=run.createdAt?new Date(run.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unknown date';

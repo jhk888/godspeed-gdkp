@@ -119,6 +119,19 @@
   .card.quality-epic{border-color:rgba(180,74,255,0.5);box-shadow:0 0 12px rgba(180,74,255,0.18);}
   .card.quality-legendary{border-color:rgba(255,128,0,0.6);box-shadow:0 0 16px rgba(255,128,0,0.22);}
   [draggable=true]:active{cursor:grabbing;}
+  .category-badge{font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;padding:.15rem .4rem;border-radius:2px;display:inline-block;}
+  .cat-tier{background:rgba(163,53,238,0.2);color:#c97aff;border:1px solid rgba(163,53,238,0.4);}
+  .cat-physical{background:rgba(226,96,96,0.15);color:#ff8080;border:1px solid rgba(226,96,96,0.35);}
+  .cat-caster{background:rgba(50,150,255,0.15);color:#80c0ff;border:1px solid rgba(50,150,255,0.35);}
+  .cat-other{background:rgba(201,168,76,0.1);color:var(--text-muted);border:1px solid var(--border-gold);}
+  .cat-filter-bar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;}
+  .cat-filter-btn{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:.3rem .75rem;border-radius:3px;cursor:pointer;transition:all .15s;}
+  .cat-filter-btn.active{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);}
+  .cat-filter-btn.inactive{background:transparent;color:var(--text-muted);border:1px solid var(--border-gold);}
+  .member-tooltip{position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:4px;padding:.65rem .85rem;z-index:300;min-width:200px;max-width:260px;box-shadow:0 4px 16px rgba(0,0,0,0.7);pointer-events:none;}
+  .member-chip{position:relative;}
+  .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
+  .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
   .item-header{display:flex;align-items:center;gap:.75rem;padding-right:5rem;}
   .item-icon{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.35);flex-shrink:0;object-fit:cover;}
   .item-icon-placeholder{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.2);background:var(--bg-input);flex-shrink:0;}
@@ -447,7 +460,10 @@ function subscribeToRun(){
     const data=snap.val()||{};
     auctions=data.auctions||{};
     presenceData=data.presence||{};
-    if(data.settings)raidSettings={...raidSettings,...data.settings};
+    if(data.settings){
+      raidSettings={...raidSettings,...data.settings};
+      if(data.settings.categories) raidCategories=data.settings.categories;
+    }
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
     // Don't re-render if modal is open — would wipe user's typed input
     if(modal) return;
@@ -501,12 +517,35 @@ function renderHdr(){
   const avatarEl = discordUser?.avatar
     ? `<img src="${discordUser.avatar}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);margin-right:.25rem;" />`
     : '';
+  // Raid title in logo area
+  const raidTitle = raidSettings.raidTitle||'';
+  const titleEl = document.querySelector('.logo-sub');
+  if(titleEl){
+    if(isRL){
+      if(editingTitle){
+        titleEl.innerHTML=`<input class="raid-title-input" id="raid-title-inp" value="${raidTitle}" placeholder="e.g. SSC — Week 4" maxlength="40" onblur="saveRaidTitle()" onkeydown="if(event.key==='Enter')saveRaidTitle()" />`;
+        setTimeout(()=>document.getElementById('raid-title-inp')?.focus(),50);
+      } else {
+        titleEl.innerHTML=`<span class="raid-title-display" onclick="editingTitle=true;renderHdr();" title="Click to edit">${raidTitle||'Click to set raid title'}</span>`;
+      }
+    } else {
+      titleEl.textContent=raidTitle||'Gold DKP Run';
+    }
+  }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
     ${avatarEl}<span class="usr-chip">${user}</span>
     ${isRL?`<button class="btn btn-outline btn-sm" onclick="togglePanel()">&#9776; Raiders</button>`:''}
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
+}
+
+function saveRaidTitle(){
+  editingTitle=false;
+  const val=document.getElementById('raid-title-inp')?.value?.trim()||'';
+  raidSettings.raidTitle=val;
+  update(runRef('/settings'),{raidTitle:val});
+  renderHdr();
 }
 
 function renderLogin(){
@@ -638,8 +677,14 @@ function renderMain(){
 
   let content='';
   if(tab==='splits'&&isRL){content=renderSplits();}
-  else if(tab==='active') content=renderGrid(active,'open');
-  else if(tab==='queued') content=renderGrid(queued,'queued');
+  else if(tab==='active'){
+    const filtered=activeCategory==='all'?active:active.filter(a=>(a.category||'Other')===activeCategory);
+    content=renderCategoryFilterBar(active)+renderGrid(filtered,'open');
+  }
+  else if(tab==='queued'){
+    const filtered=activeCategory==='all'?queued:queued.filter(a=>(a.category||'Other')===activeCategory);
+    content=renderCategoryFilterBar(queued)+renderGrid(filtered,'queued');
+  }
   else if(tab==='expired') content=renderGrid(expired,'expired');
   else content=renderGrid(sold,'sold');
 
@@ -657,6 +702,16 @@ function updateSettings(){
   raidSettings.defaultTimer=Math.max(10,parseInt(document.getElementById('s-timer')?.value)||120);
   raidSettings.defaultIncrement=Math.max(1,parseInt(document.getElementById('s-inc')?.value)||100);
   update(runRef('/settings'),raidSettings);
+}
+
+function saveCategories(){
+  const raw=document.getElementById('cat-settings-inp')?.value||'';
+  const cats=raw.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!cats.length)return;
+  raidCategories=[...cats];
+  update(runRef('/settings'),{categories:cats});
+  toast('Categories saved');
+  render();
 }
 
 // ── Splits ────────────────────────────────────────────────────────────────
@@ -705,6 +760,11 @@ function renderSplits(){
       <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold-light);">${distributable.toLocaleString()}g to raiders</div>
       <div style="margin-left:auto;">${sanityOk?`<span class="sanity-ok">&#10003; 100%</span>`:`<span class="sanity-warn">&#9888; ${totalPct.toFixed(2)}% (should be 100%)</span>`}</div>
       <button class="btn btn-outline btn-sm" onclick="saveSplits()">Save</button>
+    </div>
+    <div class="admin-cut-bar" style="gap:.75rem;">
+      <div style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;white-space:nowrap;">Loot categories</div>
+      <input type="text" id="cat-settings-inp" value="${raidCategories.join(', ')}" placeholder="Tier, Physical, Caster/Healer" style="flex:1;" />
+      <button class="btn btn-outline btn-sm" onclick="saveCategories()">Save</button>
     </div>
     <div class="splits-summary">
       <div class="splits-stat"><div class="splits-stat-lbl">Total Pot</div><div class="splits-stat-val">${p.toLocaleString()}g</div></div>
@@ -825,7 +885,8 @@ function renderCard(a,mode){
   const histItems=bids.slice(0,5).map(b=>`<div class="hist-row"><span class="${b.bidder===user?'you-bid':''}">${b.bidder===user?'You':b.bidder}</span><span>${b.amount.toLocaleString()}g</span></div>`).join('');
   const iconHTML=a.itemIcon?`<img class="item-icon" src="${iconUrl(a.itemIcon)}" onerror="this.style.display='none'" />`:`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
-  const itemHeader=`<div class="item-header">${iconHTML}<div>${nameHTML}<div class="item-slot">${a.slot||''}</div></div></div>`;
+  const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
+  const itemHeader=`<div class="item-header">${iconHTML}<div>${nameHTML}<div class="item-slot">${a.slot||''}${catBadge?` ${catBadge}`:''}</div></div></div>`;
   let timerSection='';
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';
@@ -886,7 +947,7 @@ function addToQueue(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||25);
   const name=selectedItem.name;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
+  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:document.getElementById('m-cat')?.value||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
   // Keep modal open for adding more items — just reset the search fields
   selectedItem=null;searchQuery='';
   const inp=document.getElementById('item-search-input');
@@ -912,6 +973,7 @@ function saveEdit(){
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||10);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||25);
   const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
+  updates.category=document.getElementById('m-cat')?.value||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
   update(runRef(`/auctions/${editId}`),updates);
@@ -1059,22 +1121,41 @@ function getActiveMembers(presenceData){
   return Object.values(presenceData||{}).filter(p => now - (p.lastSeen||0) < 45000);
 }
 
+function getMemberSpend(name){
+  return auctionList().filter(a=>a.status==='sold').reduce((sum,a)=>{
+    const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+    return sum+(bids[0]?.bidder===name?a.currentBid:0);
+  },0);
+}
+
 function renderMembersBar(presenceData){
   const members = getActiveMembers(presenceData);
   if(!members.length) return '';
-  const chips = members.map(m => {
+  // Sort by spend descending, RL always last (pinned)
+  const sorted=[...members].sort((a,b)=>{
+    if(a.isRL)return 1;if(b.isRL)return -1;
+    return getMemberSpend(b.name)-getMemberSpend(a.name);
+  });
+  const chips = sorted.map(m => {
     const avatarEl = m.avatar
       ? `<img class="member-avatar" src="${m.avatar}" onerror="this.style.display='none'" />`
       : `<div class="member-avatar-placeholder">${(m.name||'?')[0].toUpperCase()}</div>`;
     const rlDot = m.isRL ? `<span style="color:var(--gold);font-size:.6rem;">★</span>` : '';
     const kickBtn = isRL && !m.isRL ? `<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0 .2rem;opacity:.6;" title="Kick">✕</button>` : '';
-    return `<div class="member-chip">${avatarEl}<span class="member-name">${m.name}</span>${rlDot}${kickBtn}</div>`;
+    const spend = getMemberSpend(m.name);
+    const spendLabel = spend>0?`<span style="font-size:.6rem;color:var(--gold-light);margin-left:.1rem;">${(spend/1000).toFixed(1)}k</span>`:'';
+    return `<div class="member-chip" onmouseenter="showMemberTooltip(this,'${m.name}')" onmouseleave="hideMemberTooltip(this)">${avatarEl}<span class="member-name">${m.name}</span>${spendLabel}${rlDot}${kickBtn}</div>`;
   }).join('');
   return `<div class="members-bar"><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;">${members.length} Online</span>${chips}</div>`;
 }
 
 // ── Ban System ─────────────────────────────────────────────────────────────
 let banList={};
+let crossRunCache=null;
+let crossRunFetching=false;
+let activeCategory='all';
+let raidCategories=['Tier','Physical','Caster/Healer','Other'];
+let editingTitle=false;
 
 function banKey(m){return m.discordId?'discord_'+m.discordId:'name_'+m.name;}
 
@@ -1149,6 +1230,90 @@ function renderAuditPanel(){
   });
 }
 
+
+// ── Cross-run stats ────────────────────────────────────────────────────────
+async function fetchCrossRunStats(){
+  if(crossRunCache) return crossRunCache;
+  if(crossRunFetching) return null;
+  crossRunFetching=true;
+  try{
+    const snap=await get(ref(db,'runs'));
+    const runs=snap.val()||{};
+    const stats={}; // keyed by discordId or name
+    Object.values(runs).forEach(run=>{
+      Object.values(run.auctions||{}).filter(a=>a.status==='sold').forEach(a=>{
+        const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+        if(!bids[0])return;
+        const winner=bids[0].bidder;
+        if(!stats[winner])stats[winner]={totalSpent:0,itemsWon:0,items:[]};
+        stats[winner].totalSpent+=(a.currentBid||0);
+        stats[winner].itemsWon++;
+        stats[winner].items.push({name:a.name,price:a.currentBid,quality:a.quality||'common'});
+      });
+    });
+    crossRunCache=stats;
+    return stats;
+  }catch(e){return null;}
+  finally{crossRunFetching=false;}
+}
+
+async function showMemberTooltip(el, memberName){
+  // Remove any existing tooltip
+  document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());
+  const tip=document.createElement('div');
+  tip.className='member-tooltip';
+  tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">Loading...</div>';
+  el.appendChild(tip);
+  const stats=await fetchCrossRunStats();
+  if(!el.contains(tip))return; // user already left
+  if(!stats||!stats[memberName]){
+    tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">No purchase history</div>';
+    return;
+  }
+  const s=stats[memberName];
+  // Current run spend
+  const currentSpend=auctionList().filter(a=>a.status==='sold').reduce((sum,a)=>{
+    const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+    return sum+(bids[0]?.bidder===memberName?a.currentBid:0);
+  },0);
+  const topItems=s.items.sort((a,b)=>b.price-a.price).slice(0,3);
+  tip.innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold);margin-bottom:.4rem;">${memberName}</div>
+    <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.2rem;">All runs</div>
+    <div style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g spent</div>
+    <div style="font-size:.75rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won</div>
+    ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.3rem;">This run: ${currentSpend.toLocaleString()}g</div>`:''}
+    ${topItems.length?`<div style="margin-top:.4rem;font-size:.72rem;color:var(--text-muted);">Top items:</div>${topItems.map(i=>`<div style="font-size:.75rem;" class="item-name ${i.quality}">${i.name} — ${i.price.toLocaleString()}g</div>`).join('')}`:''}`;
+}
+
+function hideMemberTooltip(el){
+  setTimeout(()=>{ el.querySelectorAll('.member-tooltip').forEach(t=>t.remove()); },200);
+}
+
+// ── Categories ─────────────────────────────────────────────────────────────
+function catClass(cat){
+  if(!cat||cat==='Other')return'cat-other';
+  if(cat==='Tier')return'cat-tier';
+  if(cat==='Physical')return'cat-physical';
+  return'cat-caster';
+}
+
+function getCategoryOptions(selected){
+  return raidCategories.map(cat=>`<option value="${cat}" ${selected===cat?'selected':''}>${cat}</option>`).join('');
+}
+
+function renderCategoryFilterBar(list){
+  const counts={all:list.length};
+  raidCategories.forEach(cat=>{counts[cat]=list.filter(a=>a.category===cat||(!a.category&&cat==='Other')).length;});
+  const buttons=[['all','All'],...raidCategories.map(c=>[c,c])].map(([key,label])=>`
+    <button class="cat-filter-btn ${activeCategory===key?'active':'inactive'}" onclick="setCategoryFilter('${key}')">
+      ${label} ${counts[key]?`<span style="opacity:.6;font-size:.6em;">(${counts[key]})</span>`:''}
+    </button>`).join('');
+  return`<div class="cat-filter-bar">${buttons}</div>`;
+}
+
+function setCategoryFilter(cat){activeCategory=cat;render();}
+
 function closeModal(){
   const wasAdding=modal&&!editId;
   modal=false;editId=null;selectedItem=null;searchQuery='';
@@ -1180,7 +1345,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,hideMemberTooltip,saveRaidTitle,saveCategories,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

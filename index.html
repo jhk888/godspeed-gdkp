@@ -108,76 +108,75 @@
   .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;}
   @media(max-width:600px){
-    /* Base */
     html{font-size:14px;}
 
-    /* Header */
-    .hdr{padding:.5rem .75rem;flex-wrap:nowrap;gap:.3rem;position:relative;}
-    .hdr>div:first-child{display:none;}
-    .logo{font-size:1rem;}
+    /* Header — flat row, no centering trick on mobile */
+    .hdr{padding:.5rem .75rem;flex-wrap:nowrap;gap:.3rem;justify-content:space-between;}
+    .hdr>div:first-child{display:none !important;}
+    .hdr>div[style*="position:absolute"]{position:static !important;transform:none !important;left:auto !important;}
+    .logo{font-size:.95rem;}
     .logo-sub{display:none;}
     .rl-badge{display:none;}
-    .usr-chip{font-size:.62rem;padding:.2rem .4rem;}
-    .conn-dot{width:7px;height:7px;}
+    .usr-chip{font-size:.6rem;padding:.2rem .35rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .conn-dot{width:7px;height:7px;margin-right:.2rem;}
 
     /* Layout */
-    .main{padding:.6rem .75rem;}
+    .main{padding:.6rem .75rem;padding-bottom:120px;} /* room for chat bar */
     .grid{grid-template-columns:1fr;}
     .three-col{grid-template-columns:1fr;}
 
     /* Buttons */
     .btn{font-size:.72rem;padding:.45rem .7rem;}
-    .btn-sm{padding:.25rem .45rem;font-size:.6rem;min-height:32px;}
+    .btn-sm{padding:.3rem .5rem;font-size:.62rem;min-height:36px;}
     .rl-controls{flex-wrap:wrap;gap:.3rem;}
 
     /* Pot bar */
-    .pot-bar{flex-direction:column;text-align:center;gap:.6rem;padding:.75rem;}
+    .pot-bar{flex-direction:column;text-align:center;gap:.5rem;padding:.75rem 1rem;}
 
     /* Tabs */
     .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
     .tabs::-webkit-scrollbar{display:none;}
-    .tab{padding:.45rem .6rem;font-size:.62rem;white-space:nowrap;}
+    .tab{padding:.45rem .55rem;font-size:.6rem;white-space:nowrap;}
 
     /* Section header */
     .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.95);z-index:10;padding:.4rem 0;backdrop-filter:blur(4px);}
 
     /* Modal */
-    .modal{width:calc(100vw - 1rem);max-width:100%;padding:.85rem;max-height:90vh;overflow-y:auto;}
+    .modal{width:calc(100vw - 1rem);max-width:100%;padding:.85rem;max-height:88vh;overflow-y:auto;}
     .modal-title{font-size:.95rem;}
     .modal-actions{flex-wrap:wrap;gap:.4rem;}
 
-    /* Side panel (Raiders) */
+    /* Side panel */
     .side-panel{width:100vw;right:-100vw;}
     .side-panel.open{right:0;}
-    .side-panel-body{padding:.75rem;}
 
-    /* Members sidebar */
-    .members-sidebar{width:160px;}
-    .sidebar-toggle-tab{left:160px;}
-    .sidebar-toggle-tab.collapsed{left:0;}
-    body.sidebar-open .main{padding-left:172px;}
+    /* Members sidebar — hidden on mobile, use toggle */
+    .members-sidebar{width:180px;transform:translateX(-180px);}
+    .members-sidebar.collapsed{transform:translateX(-180px);}
+    .members-sidebar:not(.collapsed){transform:translateX(0);}
+    .sidebar-toggle-tab{left:0 !important;border-radius:0 4px 4px 0;}
+    body.sidebar-open .main{padding-left:0;}
 
-    /* Chat */
-    .chat-box{right:4px;left:4px;width:auto;max-width:none;}
-    .chat-box.collapsed{height:36px;}
+    /* Chat — full width, above browser nav */
+    .chat-box{right:0;left:0;width:100%;border-radius:0;border-left:none;border-right:none;bottom:0;}
 
     /* Category filters */
     .cat-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:.2rem;}
     .cat-filter-bar::-webkit-scrollbar{display:none;}
     .cat-filter-btn{white-space:nowrap;font-size:.58rem;padding:.25rem .55rem;}
 
-    /* Member tooltip — keep on screen */
-    .member-tooltip{max-width:calc(100vw - 24px) !important;left:8px !important;}
+    /* Tooltip — stay on screen */
+    .member-tooltip{position:fixed !important;left:8px !important;right:8px !important;width:auto !important;max-width:none !important;}
 
-    /* FAB */
-    .fab{display:flex;}
+    /* FAB — above chat */
+    .fab{display:flex;bottom:56px;}
 
     /* Cards */
-    .card{padding:.9rem 1rem;}
+    .card{padding:.85rem .9rem;}
     .item-icon{width:40px;height:40px;}
-    .bid-amt{font-size:1.4rem;}
+    .bid-amt{font-size:1.35rem;}
     .quick-bids{flex-wrap:wrap;gap:.3rem;}
-    .qb{padding:.4rem .5rem;font-size:.72rem;}
+    .qb{padding:.4rem .5rem;font-size:.72rem;min-height:36px;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}

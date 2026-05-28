@@ -107,18 +107,21 @@
   .tab:hover{color:var(--text-bright);}
   .tab.active{color:var(--gold);border-bottom-color:var(--gold);}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;}
+  .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;}
   @media(max-width:600px){
     html{font-size:14px;}
 
-    /* Header — flat row, no centering trick on mobile */
-    .hdr{padding:.5rem .75rem;flex-wrap:nowrap;gap:.3rem;justify-content:space-between;}
+    /* Header */
+    .hdr{padding:.5rem .75rem;flex-wrap:nowrap;gap:.3rem;justify-content:space-between;position:relative;}
     .hdr>div:first-child{display:none !important;}
-    .hdr>div[style*="position:absolute"]{position:static !important;transform:none !important;left:auto !important;}
-    .logo{font-size:.95rem;}
+    .hdr>div[style*="position:absolute"]{position:absolute !important;left:50% !important;transform:translateX(-50%) !important;pointer-events:none;}
+    .hdr>div[style*="position:absolute"] .logo-sub{pointer-events:auto;}
+    .logo{font-size:.9rem;white-space:nowrap;}
     .logo-sub{display:none;}
     .rl-badge{display:none;}
-    .usr-chip{font-size:.6rem;padding:.2rem .35rem;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .usr-chip{font-size:.6rem;padding:.2rem .35rem;max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .conn-dot{width:7px;height:7px;margin-right:.2rem;}
+    #hdr-user{z-index:1;}
 
     /* Layout */
     .main{padding:.6rem .75rem;padding-bottom:120px;} /* room for chat bar */

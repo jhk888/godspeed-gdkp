@@ -1307,7 +1307,11 @@ function toggleChat(){
   }
 }
 
-function cancelHide(el){clearTimeout(el._hideTimer);}
+function cancelHide(el){
+  _tipActive=true;
+  clearTimeout(_tipHideTimer);
+  clearTimeout(el._hideTimer);
+}
 function renderMembersSidebar(presenceData){
   const body=document.getElementById('members-sidebar-body');
   const countEl=document.getElementById('members-online-count');
@@ -1514,19 +1518,32 @@ async function fetchCrossRunStats(forceRefresh){
   finally{crossRunFetching=false;}
 }
 
-async function showMemberTooltipFixed(event, memberName){
+let _tipHideTimer=null;
+let _tipActive=false;
+
+function showMemberTooltipFixed(event, memberName){
+  _tipActive=true;
+  clearTimeout(_tipHideTimer);
+  const existing=document.querySelector('.member-tooltip');
+  if(existing&&existing.dataset.member===memberName) return;
   document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());
   const tip=document.createElement('div');
   tip.className='member-tooltip';
+  tip.dataset.member=memberName;
   tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">Loading...</div>';
-  tip.style.left=(event.clientX+16)+'px';
-  tip.style.top=Math.min(event.clientY-10, window.innerHeight-240)+'px';
-  // Keep tooltip alive when mouse moves into it
-  tip.addEventListener('mouseenter',()=>clearTimeout(tip._hideTimer));
-  tip.addEventListener('mouseleave',()=>{ tip._hideTimer=setTimeout(()=>tip.remove(),300); });
+  const x=Math.min(event.clientX+16, window.innerWidth-300);
+  const y=Math.min(event.clientY-10, window.innerHeight-260);
+  tip.style.left=x+'px';
+  tip.style.top=y+'px';
+  tip.addEventListener('mouseenter',()=>{ _tipActive=true; clearTimeout(_tipHideTimer); });
+  tip.addEventListener('mouseleave',()=>{ _scheduleHideTip(); });
   document.body.appendChild(tip);
+  _loadTipContent(tip, memberName);
+}
+
+async function _loadTipContent(tip, memberName){
   const stats=await fetchCrossRunStats();
-  if(!document.body.contains(tip))return;
+  if(!document.body.contains(tip)) return;
   if(!stats||!stats[memberName]){
     tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">No purchase history yet</div>';
     return;
@@ -1537,10 +1554,11 @@ async function showMemberTooltipFixed(event, memberName){
     return sum+(bids[0]?.bidder===memberName?a.currentBid:0);
   },0);
   const topItems=[...s.items].sort((a,b)=>b.price-a.price).slice(0,3);
+  if(!document.body.contains(tip)) return;
   tip.innerHTML=`
     <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);margin-bottom:.4rem;border-bottom:1px solid var(--border-gold);padding-bottom:.3rem;display:flex;align-items:center;justify-content:space-between;">
       <span>${memberName}</span>
-      <button onclick="crossRunCache=null;showMemberTooltipFixed(event,'${memberName}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.65rem;padding:0;" title="Refresh">↻</button>
+      <button onclick="crossRunCache=null;document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.65rem;padding:0;" title="Refresh stats">↻</button>
     </div>
     <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.15rem;">All-time (${s.runCount||'?'} run${s.runCount!==1?'s':''})</div>
     <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g</div>
@@ -1549,20 +1567,21 @@ async function showMemberTooltipFixed(event, memberName){
     ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
 }
 
-// Keep old name as alias for any remaining calls
+function _scheduleHideTip(){
+  _tipActive=false;
+  clearTimeout(_tipHideTimer);
+  _tipHideTimer=setTimeout(()=>{
+    if(!_tipActive) document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());
+  }, 600);
+}
+
 function showMemberTooltip(el, memberName){
   const rect=el.getBoundingClientRect();
-  showMemberTooltipFixed({clientX:rect.left, clientY:rect.top}, memberName);
+  showMemberTooltipFixed({clientX:rect.right, clientY:rect.top+rect.height/2}, memberName);
 }
 
 function hideMemberTooltip(el){
-  el._hideTimer=setTimeout(()=>{
-    if(!el.matches(':hover')){
-      document.querySelectorAll('.member-tooltip').forEach(t=>{
-        if(!t.matches(':hover')) t.remove();
-      });
-    }
-  }, 350);
+  _scheduleHideTip();
 }
 
 // ── Categories ─────────────────────────────────────────────────────────────

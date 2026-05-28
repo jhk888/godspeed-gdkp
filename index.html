@@ -335,6 +335,7 @@
     <div style="display:flex;gap:.5rem;">
       <button id="panel-tab-raiders" class="btn btn-gold btn-sm" onclick="setPanelTab('raiders')">Raiders</button>
       <button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')">Audit Log</button>
+      <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')">Past Runs</button>
     </div>
     <button class="btn btn-outline btn-sm" onclick="togglePanel()">&#x2715; Close</button>
   </div>
@@ -541,6 +542,7 @@ function subscribeToRun(){
     render();
     if(panelOpen&&panelTab==='raiders')renderPanel();
     if(panelOpen&&panelTab==='audit')renderAuditPanel();
+    if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
   });
 }
 
@@ -679,6 +681,7 @@ function buildModal(title,a,fn){
         <span style="font-size:.8rem;color:var(--text-muted);">% each</span>
       </div>
     </div>
+    <div class="fg"><div class="lbl">Category</div><select id="m-cat" style="width:100%;background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);padding:.5rem .65rem;font-family:'Inter',sans-serif;font-size:.9rem;border-radius:3px;outline:none;">${getCategoryOptions(a?a.category:'Tier')}</select></div>
     <div class="fg"><div class="lbl">Note <span style="color:var(--text-muted);font-size:.7rem;">(RL only)</span></div><input type="text" id="m-note" value="${a?a.note||'':''}" placeholder="e.g. reserved, officer only..." /></div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
@@ -869,10 +872,13 @@ function setPanelTab(t){
   panelTab=t;
   const rb=document.getElementById('panel-tab-raiders');
   const ab=document.getElementById('panel-tab-audit');
+  const xb=document.getElementById('panel-tab-runs');
   if(rb)rb.className='btn '+(t==='raiders'?'btn-gold':'btn-outline')+' btn-sm';
   if(ab)ab.className='btn '+(t==='audit'?'btn-gold':'btn-outline')+' btn-sm';
+  if(xb)xb.className='btn '+(t==='runs'?'btn-gold':'btn-outline')+' btn-sm';
   if(t==='raiders')renderPanel();
-  else renderAuditPanel();
+  else if(t==='audit')renderAuditPanel();
+  else if(t==='runs')renderPastRunsPanel();
 }
 
 function togglePanel(){
@@ -1408,6 +1414,60 @@ function writeAudit(msg){
   set(ar, { msg, ts: Date.now() });
 }
 
+async function renderPastRunsPanel(){
+  const body=document.getElementById('side-panel-body');
+  if(!body) return;
+  body.innerHTML='<div style="color:var(--text-muted);font-size:.82rem;text-align:center;padding:1.5rem 0;">Loading...</div>';
+  try{
+    const snap=await get(ref(db,'runs'));
+    const runs=snap.val()||{};
+    const sorted=Object.entries(runs)
+      .filter(([k,r])=>k!==runId) // exclude current run
+      .sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+    if(!sorted.length){
+      body.innerHTML='<div style="color:var(--text-muted);font-size:.82rem;text-align:center;padding:1.5rem 0;">No past runs yet</div>';
+      return;
+    }
+    body.innerHTML=sorted.map(([runKey,run])=>{
+      const sold=Object.entries(run.auctions||{}).filter(([,a])=>a.status==='sold');
+      const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
+      const date=run.createdAt?new Date(run.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Unknown date';
+      const title=run.settings?.raidTitle||'Untitled Run';
+      const itemRows=sold.map(([aId,a])=>{
+        const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+        const winner=bids[0]?.bidder||'Unknown';
+        return`<div style="display:flex;align-items:center;gap:.5rem;padding:.3rem .4rem;border-radius:3px;font-size:.78rem;">
+          ${a.itemIcon?`<img src="https://wow.zamimg.com/images/wow/icons/medium/${a.itemIcon}.jpg" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:''}
+          <span class="item-name ${a.quality||'common'}" style="flex:1;font-size:.78rem;">${a.name}</span>
+          <span style="color:var(--text-muted);font-size:.72rem;">${winner}</span>
+          <span style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;min-width:55px;text-align:right;">${(a.currentBid||0).toLocaleString()}g</span>
+          ${isRL?`<button onclick="removePastItem('${runKey}','${aId}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:.1rem .25rem;opacity:.5;flex-shrink:0;" title="Remove">✕</button>`:''}
+        </div>`;
+      }).join('');
+      return`<div style="background:rgba(30,26,16,0.8);border:1px solid var(--border-gold);border-radius:4px;margin-bottom:.75rem;overflow:hidden;">
+        <div style="padding:.6rem .85rem;border-bottom:1px solid var(--border-gold);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);">${title}</div>
+            <div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items · ${pot.toLocaleString()}g</div>
+          </div>
+        </div>
+        <div style="padding:.35rem .4rem;">${itemRows||'<div style="color:var(--text-muted);font-size:.78rem;padding:.5rem;">No sold items</div>'}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    body.innerHTML='<div style="color:var(--red);font-size:.82rem;padding:1rem;">Failed to load past runs</div>';
+  }
+}
+
+async function removePastItem(runKey, auctionId){
+  if(!isRL) return;
+  if(!confirm('Remove this item from history? This will affect cross-run totals.')) return;
+  await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
+  crossRunCache=null; // invalidate cache
+  toast('Item removed from history');
+  renderPastRunsPanel();
+}
+
 function renderAuditPanel(){
   // RL-only panel rendered inside side panel when audit tab selected
   const body = document.getElementById('side-panel-body');
@@ -1426,28 +1486,31 @@ function renderAuditPanel(){
 
 
 // ── Cross-run stats ────────────────────────────────────────────────────────
-async function fetchCrossRunStats(){
-  if(crossRunCache) return crossRunCache;
-  if(crossRunFetching) return null;
+async function fetchCrossRunStats(forceRefresh){
+  if(crossRunCache&&!forceRefresh) return crossRunCache;
+  if(crossRunFetching) return crossRunCache;
   crossRunFetching=true;
   try{
     const snap=await get(ref(db,'runs'));
     const runs=snap.val()||{};
-    const stats={}; // keyed by discordId or name
+    const stats={};
     Object.values(runs).forEach(run=>{
       Object.values(run.auctions||{}).filter(a=>a.status==='sold').forEach(a=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         if(!bids[0])return;
         const winner=bids[0].bidder;
-        if(!stats[winner])stats[winner]={totalSpent:0,itemsWon:0,items:[]};
+        if(!stats[winner])stats[winner]={totalSpent:0,itemsWon:0,items:[],runs:new Set()};
         stats[winner].totalSpent+=(a.currentBid||0);
         stats[winner].itemsWon++;
         stats[winner].items.push({name:a.name,price:a.currentBid,quality:a.quality||'common'});
+        if(run.createdAt) stats[winner].runs.add(run.createdAt);
       });
     });
+    // Convert Set to count
+    Object.values(stats).forEach(s=>{ s.runCount=s.runs.size; delete s.runs; });
     crossRunCache=stats;
     return stats;
-  }catch(e){return null;}
+  }catch(e){return crossRunCache||null;}
   finally{crossRunFetching=false;}
 }
 
@@ -1456,9 +1519,11 @@ async function showMemberTooltipFixed(event, memberName){
   const tip=document.createElement('div');
   tip.className='member-tooltip';
   tip.innerHTML='<div style="color:var(--text-muted);font-size:.78rem;">Loading...</div>';
-  // Position to the right of the sidebar
-  tip.style.left=(event.clientX+210)+'px';
-  tip.style.top=Math.min(event.clientY, window.innerHeight-220)+'px';
+  tip.style.left=(event.clientX+16)+'px';
+  tip.style.top=Math.min(event.clientY-10, window.innerHeight-240)+'px';
+  // Keep tooltip alive when mouse moves into it
+  tip.addEventListener('mouseenter',()=>clearTimeout(tip._hideTimer));
+  tip.addEventListener('mouseleave',()=>{ tip._hideTimer=setTimeout(()=>tip.remove(),300); });
   document.body.appendChild(tip);
   const stats=await fetchCrossRunStats();
   if(!document.body.contains(tip))return;
@@ -1473,10 +1538,13 @@ async function showMemberTooltipFixed(event, memberName){
   },0);
   const topItems=[...s.items].sort((a,b)=>b.price-a.price).slice(0,3);
   tip.innerHTML=`
-    <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);margin-bottom:.4rem;border-bottom:1px solid var(--border-gold);padding-bottom:.3rem;">${memberName}</div>
-    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.15rem;">All-time</div>
+    <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);margin-bottom:.4rem;border-bottom:1px solid var(--border-gold);padding-bottom:.3rem;display:flex;align-items:center;justify-content:space-between;">
+      <span>${memberName}</span>
+      <button onclick="crossRunCache=null;showMemberTooltipFixed(event,'${memberName}')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.65rem;padding:0;" title="Refresh">↻</button>
+    </div>
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:.15rem;">All-time (${s.runCount||'?'} run${s.runCount!==1?'s':''})</div>
     <div style="font-family:'Cinzel',serif;font-size:.95rem;color:var(--gold-light);">${s.totalSpent.toLocaleString()}g</div>
-    <div style="font-size:.72rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won across all runs</div>
+    <div style="font-size:.72rem;color:var(--text-muted);">${s.itemsWon} item${s.itemsWon!==1?'s':''} won</div>
     ${currentSpend?`<div style="font-size:.75rem;color:var(--amber);margin-top:.35rem;padding-top:.35rem;border-top:1px solid var(--border-gold);">This run: ${currentSpend.toLocaleString()}g</div>`:''}
     ${topItems.length?`<div style="margin-top:.35rem;font-size:.68rem;color:var(--text-muted);padding-top:.35rem;border-top:1px solid var(--border-gold);">Top wins:</div>${topItems.map(i=>`<div style="font-size:.73rem;" class="item-name ${i.quality}">${i.name} <span style="color:var(--text-muted);">${i.price.toLocaleString()}g</span></div>`).join('')}`:''}`;
 }
@@ -1489,8 +1557,12 @@ function showMemberTooltip(el, memberName){
 
 function hideMemberTooltip(el){
   el._hideTimer=setTimeout(()=>{
-    if(!el.matches(':hover'))document.querySelectorAll('.member-tooltip').forEach(t=>t.remove());
-  }, 400);
+    if(!el.matches(':hover')){
+      document.querySelectorAll('.member-tooltip').forEach(t=>{
+        if(!t.matches(':hover')) t.remove();
+      });
+    }
+  }, 350);
 }
 
 // ── Categories ─────────────────────────────────────────────────────────────
@@ -1548,7 +1620,7 @@ document.addEventListener('click',e=>{
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
 });
 
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,hideMemberTooltip,cancelHide,saveRaidTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,removePastItem,setTab,openModal,closeModal,openEdit,addToQueue,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

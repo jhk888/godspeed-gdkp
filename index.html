@@ -616,6 +616,7 @@ let presenceData = {};
 function subscribeToRun(){
   if(unsubRun)unsubRun();
   unsubRun=onValue(runRef(),snap=>{
+    if(!user) return; // not logged in yet, ignore Firebase updates
     const data=snap.val()||{};
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
@@ -757,10 +758,7 @@ function logout(){
 }
 let loginRendered=false;
 function render(){
-  if(!user){
-    if(!loginRendered){loginRendered=true;renderLogin();}
-    return;
-  }
+  if(!user){renderLogin();return;}
   loginRendered=false;
   renderHdr();renderMain();
   const fab=document.getElementById('fab');

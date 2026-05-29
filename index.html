@@ -1228,7 +1228,7 @@ function renderCard(a,mode){
   let bidSection='';
   if(mode==='open'&&!a.paused){
     const btns=a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000];
-    const cur=bids[0]?.amount||a.currentBid||0;
+    const cur=bids[0]?.amount||(bids.length===0?(a.startBid||1000):0);
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const qbtns=hasBids
@@ -1256,7 +1256,7 @@ function renderCard(a,mode){
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
+    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-outline btn-sm" onclick="resetAuction('${a.id}')">Reset</button><button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
@@ -1282,7 +1282,7 @@ function addToQueue(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
+  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
   // Keep modal open for adding more items — just reset the search fields
   selectedItem=null;searchQuery='';
   const inp=document.getElementById('item-search-input');
@@ -1309,7 +1309,7 @@ function addToQueueAndStart(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',order:0,remaining:dur,paused:false,endsAt:Date.now()+dur*1000});
+  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid:startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',order:0,remaining:dur,paused:false,endsAt:Date.now()+dur*1000});
   modal=false;editId=null;selectedItem=null;searchQuery='';
   tab='active';
   toast(name+' started!');
@@ -1321,7 +1321,7 @@ function saveEdit(){
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
-  const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
+  const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
   updates.category=modalCategory||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
@@ -1505,6 +1505,12 @@ function rlRetractBid(id, specificKey){
   update(runRef(),updates);
   writeAudit(`${user} retracted ${bidToRetract.bidder}'s bid of ${bidToRetract.amount.toLocaleString()}g on ${a.name}`);
   toast(`${bidToRetract.bidder}'s bid retracted — price now ${newCurrentBid.toLocaleString()}g`);
+}
+function resetAuction(id){
+  const a=auctions[id];if(!a||!isRL)return;
+  const sb=a.startBid||a.currentBid||1000;
+  update(runRef(`/auctions/${id}`),{bids:{},currentBid:sb});
+  toast('Bids cleared');
 }
 function cancelAuction(id){
   const a=auctions[id];if(!a||!isRL)return;
@@ -2235,7 +2241,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

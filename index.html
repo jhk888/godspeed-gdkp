@@ -510,7 +510,7 @@
       <div style="display:flex;gap:.3rem;">
         <button id="panel-tab-raiders" class="btn btn-gold btn-sm" onclick="setPanelTab('raiders')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Raiders</button>
         <button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;display:none;">Audit</button>
-        <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Past Runs</button>
+        <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Archive</button>
       </div>
       <button class="btn btn-outline btn-sm" onclick="togglePanel()" style="flex-shrink:0;white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;">&#x2715; Close</button>
     </div>
@@ -994,7 +994,7 @@ function renderHdr(){
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
     ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
-    ${isRL?`<button class="btn btn-outline btn-sm" onclick="togglePanel()">&#9776; Raiders</button>`:''}
+    ${isRL?`<button class="btn btn-outline btn-sm" onclick="togglePanel()">&#9776; Raiders</button>`:`<button class="btn btn-outline btn-sm" onclick="togglePanel();setPanelTab('runs')">Archive</button>`}
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');

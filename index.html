@@ -376,7 +376,12 @@
 <body>
 <div id="app">
   <div class="hdr">
-    <div style="width:140px;flex-shrink:0;"></div>
+    <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
+      <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;"></span>
+      </div>
+    </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
       <div class="logo">Godspeed GDKP</div>
       <div class="logo-sub" id="logo-sub">Gold DKP Run</div>
@@ -679,6 +684,14 @@ function renderHdr(){
     } else {
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
+  }
+  // Online count (left side)
+  const onlineEl=document.getElementById('hdr-online');
+  const onlineCount=document.getElementById('hdr-online-count');
+  if(onlineEl&&onlineCount&&user){
+    const n=getActiveMembers(presenceData).length||1;
+    onlineCount.textContent=`${n} Online`;
+    onlineEl.style.display='flex';
   }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>

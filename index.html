@@ -1222,7 +1222,7 @@ function renderCard(a,mode){
   let bidSection='';
   if(mode==='open'&&!a.paused){
     const btns=a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000];
-    const cur=a.currentBid||0;
+    const cur=bids[0]?.amount||a.currentBid||0;
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const qbtns=hasBids
@@ -1231,7 +1231,9 @@ function renderCard(a,mode){
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="flex:1;text-align:center;padding:.55rem .7rem;font-size:.8rem;font-weight:600;border-width:2px;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Custom':'Custom'}</button>`;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const retractBtn='';
-    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}${cbtn}</div>${crow}</div>`;
+    const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-bottom:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
+    const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
+    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div>${cbtn}<div class="quick-bids">${qbtns}</div>${crow}</div>`;
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
@@ -1374,8 +1376,8 @@ function coinExplosion(auctionId, goldAmount, preRect){
 function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
 function restartAuction(id){
   const a=auctions[id];if(!a||a.status!=='expired')return;
-  update(runRef(`/auctions/${id}`),{status:'queued',remaining:a.duration,paused:false,endsAt:null,bids:{}});
-  toast(a.name+' moved back to queue');tab='queued';
+  update(runRef(`/auctions/${id}`),{status:'open',remaining:a.duration,paused:false,endsAt:Date.now()+a.duration*1000,bids:{}});
+  toast(a.name+' restarted!');tab='active';
 }
 function removeQueued(id){remove(runRef(`/auctions/${id}`));toast('Removed from queue');}
 
@@ -1491,7 +1493,6 @@ function rlRetractBid(id, specificKey){
   if(!keyToRetract){toast('No bids to retract');return;}
   const bidToRetract=a.bids[keyToRetract];
   if(!bidToRetract){toast('Bid not found');return;}
-  if(!confirm(`Retract ${bidToRetract.bidder}'s bid of ${bidToRetract.amount.toLocaleString()}g?`))return;
   // Find highest remaining active bid after this one is retracted
   const remaining=activeEntries.filter(([k])=>k!==keyToRetract);
   const newCurrentBid=remaining[0]?.[1]?.amount||0;
@@ -1504,7 +1505,6 @@ function rlRetractBid(id, specificKey){
 }
 function cancelAuction(id){
   const a=auctions[id];if(!a||!isRL)return;
-  if(!confirm('Cancel this auction? It will return to the queue.'))return;
   update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
   tab='queued';
   toast(a.name+' cancelled — returned to queue');

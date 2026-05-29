@@ -757,8 +757,7 @@ function logout(){
 }
 function render(){
   if(!user){
-    // Only render login if not already showing it (prevents wiping typed input)
-    if(!document.getElementById('li')) renderLogin();
+    if(!document.getElementById('main').innerHTML.includes('login-wrap')) renderLogin();
     return;
   }
   renderHdr();renderMain();

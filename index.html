@@ -2333,21 +2333,21 @@ function renderCategoryFilterBar(list){
   const counts={all:list.length};
   raidCategories.forEach(cat=>{counts[cat]=list.filter(a=>a.category===cat||(!a.category&&cat==='Other')).length;});
   const catColors={
-    'Tier':    {on:'border-color:#ffcc44;background:rgba(255,180,0,0.22);color:#ffcc44;',     off:'border-color:rgba(255,180,0,0.25);background:transparent;color:#888;'},
-    'Physical':{on:'border-color:#ff8080;background:rgba(226,96,96,0.22);color:#ff8080;',     off:'border-color:rgba(226,96,96,0.2);background:transparent;color:#888;'},
-    'Caster/Healer':{on:'border-color:#80c0ff;background:rgba(50,150,255,0.22);color:#80c0ff;',off:'border-color:rgba(50,150,255,0.2);background:transparent;color:#888;'},
-    'Other':   {on:'border-color:#ccc;background:rgba(200,200,200,0.15);color:#ccc;',         off:'border-color:rgba(180,180,180,0.2);background:transparent;color:#888;'},
+    'Tier':    {on:'border-color:#ffcc44;background:#ffcc44;color:#1a1208;font-weight:600;',     off:'border-color:rgba(255,180,0,0.4);background:rgba(255,180,0,0.12);color:#ffcc44;'},
+    'Physical':{on:'border-color:#ff8080;background:#ff8080;color:#1a1208;font-weight:600;',     off:'border-color:rgba(226,96,96,0.4);background:rgba(226,96,96,0.12);color:#ff8080;'},
+    'Caster/Healer':{on:'border-color:#80c0ff;background:#80c0ff;color:#1a1208;font-weight:600;',off:'border-color:rgba(50,150,255,0.4);background:rgba(50,150,255,0.12);color:#80c0ff;'},
+    'Other':   {on:'border-color:#ccc;background:#ccc;color:#1a1208;font-weight:600;',           off:'border-color:rgba(180,180,180,0.4);background:rgba(180,180,180,0.1);color:#bbb;'},
   };
   const allActive=activeCategory==='all';
   const buttons=[
-    `<button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:rgba(212,169,60,0.22);color:var(--gold-light);font-weight:600;':'border-color:var(--border-gold);background:transparent;color:var(--text-muted);'}" onclick="setCategoryFilter('all')">
-      All ${counts.all?`<span style="opacity:.6;font-size:.6em;">(${counts.all})</span>`:''}
+    `<button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:var(--gold);color:#1a1208;font-weight:600;':'border-color:rgba(201,168,76,0.4);background:rgba(212,169,60,0.12);color:var(--gold);'}" onclick="setCategoryFilter('all')">
+      All ${counts.all?`<span style="opacity:.7;font-size:.6em;">(${counts.all})</span>`:''}
     </button>`,
     ...raidCategories.map(cat=>{
       const isActive=activeCategory===cat;
       const c=catColors[cat]||catColors['Other'];
-      return`<button class="cat-filter-btn" style="${isActive?c.on:c.off}${isActive?'font-weight:600;':''}" onclick="setCategoryFilter('${cat}')">
-        ${cat} ${counts[cat]?`<span style="opacity:.6;font-size:.6em;">(${counts[cat]})</span>`:''}
+      return`<button class="cat-filter-btn" style="${isActive?c.on:c.off}" onclick="setCategoryFilter('${cat}')">
+        ${cat} ${counts[cat]?`<span style="opacity:.7;font-size:.6em;">(${counts[cat]})</span>`:''}
       </button>`;
     })
   ].join('');

@@ -1311,8 +1311,12 @@ function renderCard(a,mode){
       ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
       : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
+    const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;">
+      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Dupe</button>
+      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
+    </div>`:'' ;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
-    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}</div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}</div>`;
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
@@ -1331,33 +1335,46 @@ function renderCard(a,mode){
   }
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
+  let badge='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls" style="display:flex;flex-direction:column;gap:.35rem;margin-top:.2rem;">
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.35rem;">
+    if(mode==='open'){
+      // Top-right cluster (replaces just the badge)
+      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
+        <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
+        <div style="display:flex;gap:.25rem;">
+          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
+          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
+        </div>
+      </div>`;
+      // Right of bid amount
+      const bidRightBtns=`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-items:flex-end;">
+        <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Dupe</button>
+        <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
+      </div>`;
+      // Bottom row only
+      const bottomBtns=`<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:.35rem;">
         <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="display:flex;align-items:center;justify-content:center;gap:.3rem;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="9" height="11" viewBox="0 0 9 11"><rect x="0" y="0" width="3" height="11" rx="1" fill="currentColor"/><rect x="6" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg> Pause'}</button>
-        <button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button>
-        <button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button>
-        <button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:.35rem;">
-        <button class="btn btn-outline btn-sm" onclick="resetAuction('${a.id}')">Reset</button>
         <button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button>
         <button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button>
-      </div>
-    </div>`;
+      </div>`;
+      badge=topBtns;
+      rlControls=bottomBtns;
+    }
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
   }
   const qualityClass=(a.quality==='legendary')?'quality-legendary':(a.quality==='epic')?'quality-epic':'';
   const cc=[mode==='queued'?'queued':mode==='expired'?'expiring':isLeading?'leading':a.paused?'paused':urgent?'expiring':'', qualityClass].filter(Boolean).join(' ');
-  let badge='';
-  if(mode==='open'&&a.paused)badge=`<div class="badge badge-paused">Paused</div>`;
-  else if(mode==='open')badge=`<div class="badge badge-open">Live</div>`;
-  else if(mode==='queued')badge=`<div class="badge badge-queued">Queued</div>`;
-  else if(mode==='expired')badge=`<div class="badge badge-expired">Expired</div>`;
-  else badge=`<div class="badge badge-sold">Sold</div>`;
-  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}${bidSection}${bids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  // Badge is set inside RL open block if RL, otherwise here
+  if(!badge){
+    if(mode==='open'&&a.paused)badge=`<div class="badge badge-paused">Paused</div>`;
+    else if(mode==='open')badge=`<div class="badge badge-open">Live</div>`;
+    else if(mode==='queued')badge=`<div class="badge badge-queued">Queued</div>`;
+    else if(mode==='expired')badge=`<div class="badge badge-expired">Expired</div>`;
+    else badge=`<div class="badge badge-sold">Sold</div>`;
+  }
+  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────

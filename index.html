@@ -1199,12 +1199,14 @@ function renderCard(a,mode){
   const urgent=rem<=15&&a.status==='open'&&!a.paused;
   const minNext=(a.currentBid||0)+(a.minIncrement||250);
   const showCustom=!!customOpen[a.id];
-  const histItems=allBids.slice(0,8).map(([,b])=>{
+  const histItems=allBids.slice(0,8).map(([key,b])=>{
     const isRetracted=!!b.retracted;
     const name=b.bidder===user?'You':b.bidder;
+    const rlX=isRL&&!isRetracted?`<button onclick="rlRetractBid('${a.id}','${key}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.65rem;padding:0 .2rem;opacity:.5;flex-shrink:0;" title="Retract this bid">✕</button>`:'';
     return`<div class="hist-row" style="${isRetracted?'opacity:.4;':''}">
-      <span class="${b.bidder===user&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${name}${isRetracted?' ↩':''}</span>
-      <span style="${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${b.amount.toLocaleString()}g</span>
+      <span class="${b.bidder===user&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''};">${name}${isRetracted?' ↩':''}</span>
+      <span style="margin-left:auto;${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${b.amount.toLocaleString()}g</span>
+      ${rlX}
     </div>`;
   }).join('');
   const iconHTML=a.itemIcon&&a.itemId
@@ -1228,8 +1230,8 @@ function renderCard(a,mode){
       : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="flex:1;text-align:center;padding:.55rem .7rem;font-size:.8rem;font-weight:600;border-width:2px;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Custom':'Custom'}</button>`;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
-    const retractBtn=isLeading&&!isRL?`<button class="btn btn-danger btn-sm" onclick="retractBid('${a.id}')" style="margin-top:.3rem;">Retract Bid</button>`:'';
-    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}${cbtn}</div>${crow}${retractBtn}</div>`;
+    const retractBtn='';
+    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}${cbtn}</div>${crow}</div>`;
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
@@ -1249,7 +1251,7 @@ function renderCard(a,mode){
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button>${bids.length?`<button class="btn btn-danger btn-sm" onclick="rlRetractBid('${a.id}')">Retract</button>`:''}<button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
+    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
@@ -1481,19 +1483,24 @@ function retractBid(id){
   update(runRef(),updates);
   toast('Bid retracted');
 }
-function rlRetractBid(id){
+function rlRetractBid(id, specificKey){
   const a=auctions[id];if(!a||a.status!=='open'||!isRL)return;
-  const bidEntries=Object.entries(a.bids||{}).filter(([,b])=>!b.retracted).sort((x,y)=>y[1].amount-x[1].amount);
-  if(!bidEntries.length){toast('No bids to retract');return;}
-  const [topKey,topBid]=bidEntries[0];
-  if(!confirm(`Retract ${topBid.bidder}'s bid of ${topBid.amount.toLocaleString()}g?`))return;
-  const prevBid=bidEntries[1]?.[1]?.amount||0;
+  const bidEntries=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
+  const activeEntries=bidEntries.filter(([,b])=>!b.retracted);
+  const keyToRetract=specificKey||(activeEntries[0]?.[0]);
+  if(!keyToRetract){toast('No bids to retract');return;}
+  const bidToRetract=a.bids[keyToRetract];
+  if(!bidToRetract){toast('Bid not found');return;}
+  if(!confirm(`Retract ${bidToRetract.bidder}'s bid of ${bidToRetract.amount.toLocaleString()}g?`))return;
+  // Find highest remaining active bid after this one is retracted
+  const remaining=activeEntries.filter(([k])=>k!==keyToRetract);
+  const newCurrentBid=remaining[0]?.[1]?.amount||0;
   const updates={};
-  updates[`auctions/${id}/bids/${topKey}/retracted`]=true;
-  updates[`auctions/${id}/currentBid`]=prevBid;
+  updates[`auctions/${id}/bids/${keyToRetract}/retracted`]=true;
+  updates[`auctions/${id}/currentBid`]=newCurrentBid;
   update(runRef(),updates);
-  writeAudit(`${user} retracted ${topBid.bidder}'s bid of ${topBid.amount.toLocaleString()}g on ${a.name}`);
-  toast(`${topBid.bidder}'s bid retracted`);
+  writeAudit(`${user} retracted ${bidToRetract.bidder}'s bid of ${bidToRetract.amount.toLocaleString()}g on ${a.name}`);
+  toast(`${bidToRetract.bidder}'s bid retracted — price now ${newCurrentBid.toLocaleString()}g`);
 }
 function cancelAuction(id){
   const a=auctions[id];if(!a||!isRL)return;

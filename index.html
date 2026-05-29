@@ -816,12 +816,34 @@ function subscribeToRun(){
     }
 
     // Always fire explosions regardless of modal state
-    const explodeNow=()=>pendingExplosions.forEach(({id,amount,rect})=>{
-      const r=rect||cardRects[id];
+    const explodeNow=(rects)=>pendingExplosions.forEach(({id,amount,rect})=>{
+      const r=rect||rects[id];
       setTimeout(()=>coinExplosionAt(amount,r),50);
     });
 
-    if(modal){explodeNow();return;}
+    if(modal){
+      // Update live cards in-place behind the modal — timers/bids/glows still work
+      const bgRects={};
+      pendingExplosions.forEach(({id})=>{const c=document.getElementById('card-'+id);if(c)bgRects[id]=c.getBoundingClientRect();});
+      // Update bid cards in-place
+      pendingGlows.concat(pendingExplosions.map(e=>({id:e.id}))).forEach(({id})=>{
+        const a=auctions[id];if(!a)return;
+        const wrap=document.getElementById('wrap-'+id);
+        if(wrap){
+          const t=document.createElement('div');
+          t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='sold'?'sold':'expired');
+          if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
+        }
+      });
+      // Apply glows
+      pendingGlows.forEach(({id})=>{
+        const card=document.getElementById('card-'+id);
+        if(card){card.classList.remove('bid-glow');void card.offsetWidth;card.classList.add('bid-glow');setTimeout(()=>card.classList.remove('bid-glow'),950);}
+      });
+      explodeNow(bgRects);
+      renderHdr();
+      return;
+    }
 
     // Capture card rects BEFORE render wipes the DOM
     const cardRects={};

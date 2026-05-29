@@ -1214,8 +1214,8 @@ function renderCard(a,mode){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const qbtns=hasBids
-      ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">${amt.toLocaleString()}g</span></button>`;}).join('')
-      : `<button class="qb" style="flex:1;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">starting bid</span></button>`;
+      ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
+      : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Custom':'Custom'}</button>`;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const retractBtn=isLeading&&!isRL?`<button class="btn btn-danger btn-sm" onclick="retractBid('${a.id}')" style="margin-top:.3rem;">Retract Bid</button>`:'';

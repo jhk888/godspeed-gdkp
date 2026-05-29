@@ -318,8 +318,8 @@
   .side-panel.open{right:0;}
   .side-panel-hdr{padding:.6rem .75rem;border-bottom:1px solid var(--border-gold);display:flex;flex-direction:column;gap:.5rem;flex-shrink:0;}
   .side-panel-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);letter-spacing:.1em;}
-  .side-panel-body{flex:1;overflow-y:auto;padding:.75rem;display:flex;flex-direction:column;gap:.75rem;min-height:0;}
-  .raider-row{background:rgba(30,26,20,0.8);border:1px solid var(--border-gold);border-radius:4px;padding:.75rem .9rem;}
+  .side-panel-body{flex:1;overflow-y:auto;padding:.75rem;min-height:0;}
+  .raider-row{background:rgba(30,26,20,0.8);border:1px solid var(--border-gold);border-radius:4px;padding:.75rem .9rem;margin-bottom:.75rem;}
   .raider-name{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold-light);margin-bottom:.4rem;display:flex;justify-content:space-between;}
   .raider-total{font-family:'Cinzel',serif;font-size:.8rem;color:var(--gold);}
   .raider-item{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--text-muted);padding:.2rem 0;}
@@ -1644,7 +1644,7 @@ async function renderPastRunsPanel(){
           </div>
           ${isRL?`<button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;flex-shrink:0;align-self:center;">Delete</button>`:''}
         </div>
-        <div style="border-top:1px solid var(--border-gold);padding:.35rem 0;">${itemRows}</div>
+        <div style="border-top:1px solid var(--border-gold);padding:.35rem 0;max-height:60vh;overflow-y:auto;">${itemRows}</div>
       </div>`;
     }).join('');
   }catch(e){

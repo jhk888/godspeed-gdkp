@@ -381,6 +381,51 @@
   .coin-burst{position:fixed;pointer-events:none;z-index:9999;animation:coinBurst var(--cd) ease-out forwards;}
   @keyframes bidGlow {0%{box-shadow:0 0 0 0 rgba(212,169,60,0);border-color:var(--border-gold);}35%{box-shadow:0 0 22px 8px rgba(212,169,60,0.6);border-color:var(--gold-light);}100%{box-shadow:0 0 0 0 rgba(212,169,60,0);border-color:var(--border-gold);}}
   .bid-glow{animation:bidGlow .9s ease-out;}
+  /* WoW-style confirm dialog */
+  .wow-dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  .wow-dialog{
+    position:relative;
+    background:linear-gradient(160deg,#1a1208 0%,#110d06 60%,#0e0a04 100%);
+    border:2px solid #6b4f1a;
+    min-width:300px;max-width:420px;width:90%;
+    padding:1.75rem 1.75rem 1.5rem;
+    font-family:'Cinzel',serif;
+    box-shadow:0 0 0 1px #3a2a0a,0 0 40px rgba(180,120,0,0.25),inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  /* Rough corner ornaments */
+  .wow-dialog::before,.wow-dialog::after{
+    content:'';position:absolute;width:18px;height:18px;
+    background:radial-gradient(circle,#c8960a 0%,#6b4f1a 60%,transparent 100%);
+    border-radius:50%;
+  }
+  .wow-dialog::before{top:-6px;left:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog::after{top:-6px;right:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog-corners::before,.wow-dialog-corners::after{
+    content:'';position:absolute;width:18px;height:18px;
+    background:radial-gradient(circle,#c8960a 0%,#6b4f1a 60%,transparent 100%);
+    border-radius:50%;
+  }
+  .wow-dialog-corners::before{bottom:-6px;left:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog-corners::after{bottom:-6px;right:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog-title{
+    font-size:1rem;letter-spacing:.12em;text-transform:uppercase;
+    color:#f0cc6a;text-align:center;margin-bottom:1rem;
+    text-shadow:0 0 12px rgba(240,180,50,0.6);
+    border-bottom:1px solid rgba(180,130,20,0.3);padding-bottom:.75rem;
+  }
+  .wow-dialog-msg{font-family:'Inter',sans-serif;font-size:.88rem;color:#d4c090;text-align:center;line-height:1.5;margin-bottom:1.4rem;}
+  .wow-dialog-btns{display:flex;gap:.6rem;justify-content:center;}
+  .wow-dialog-btn{
+    font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
+    padding:.55rem 1.4rem;cursor:pointer;border-radius:2px;
+    transition:all .15s;
+  }
+  .wow-dialog-btn-confirm{background:linear-gradient(180deg,#c8860a,#7a4e06);color:#fff8e0;border:1px solid #e8a020;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+  .wow-dialog-btn-confirm:hover{background:linear-gradient(180deg,#e09818,#9a6010);border-color:#f0c040;}
+  .wow-dialog-btn-danger{background:linear-gradient(180deg,#8a1a1a,#5a0e0e);color:#ffd0d0;border:1px solid #cc3030;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+  .wow-dialog-btn-danger:hover{background:linear-gradient(180deg,#aa2222,#721212);border-color:#ff4040;}
+  .wow-dialog-btn-cancel{background:linear-gradient(180deg,#2a2318,#1a160e);color:#a08040;border:1px solid #4a3a18;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
+  .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e,#221a10);border-color:#6a5228;}
 </style>
 </head>
 <body>
@@ -501,6 +546,29 @@ let splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
 let splitsLoaded=false;
 
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+
+function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,onConfirm}){
+  const existing=document.getElementById('wow-dialog-overlay');
+  if(existing)existing.remove();
+  const overlay=document.createElement('div');
+  overlay.id='wow-dialog-overlay';
+  overlay.className='wow-dialog-overlay';
+  overlay.innerHTML=`
+    <div class="wow-dialog">
+      <div class="wow-dialog-corners"></div>
+      <div class="wow-dialog-title">${title}</div>
+      ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
+      <div class="wow-dialog-btns">
+        <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
+        <button class="wow-dialog-btn ${danger?'wow-dialog-btn-danger':'wow-dialog-btn-confirm'}" id="wow-confirm">${confirmLabel}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close=()=>overlay.remove();
+  document.getElementById('wow-cancel').onclick=close;
+  document.getElementById('wow-confirm').onclick=()=>{close();onConfirm();};
+  overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+}
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
 function auctionList(){return Object.values(auctions||{});}
 function pot(){return auctionList().filter(a=>a.status==='sold').reduce((s,a)=>s+(a.currentBid||0),0);}
@@ -1170,8 +1238,13 @@ function renderPanel(){
 
 // ── Reset ─────────────────────────────────────────────────────────────────
 function confirmReset(){
-  if(!confirm('Archive this run and start a new one?\n\nThe current run will be saved and a fresh run will begin.'))return;
-  resetRun();
+  wowConfirm({
+    title:'Start New Run?',
+    msg:'The current run will be archived and a fresh run will begin.',
+    confirmLabel:'Start New Run',
+    danger:false,
+    onConfirm:resetRun
+  });
 }
 
 async function resetRun(){
@@ -1259,7 +1332,19 @@ function renderCard(a,mode){
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls" style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="grid-column:span 2;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="10" height="12" viewBox="0 0 10 12" style="vertical-align:middle;margin-right:4px;"><rect x="0" y="0" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="6.5" y="0" width="3.5" height="12" rx="1" fill="currentColor"/></svg>Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-outline btn-sm" onclick="resetAuction('${a.id}')">Reset</button><button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" style="grid-column:span 2;" onclick="closeAuction('${a.id}')">Close</button></div>`;
+    if(mode==='open')rlControls=`<div class="rl-controls" style="display:flex;flex-direction:column;gap:.4rem;">
+      <div style="display:flex;gap:.4rem;">
+        <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="flex:2;overflow:hidden;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="10" height="12" viewBox="0 0 10 12" style="vertical-align:middle;margin-right:5px;flex-shrink:0;"><rect x="0" y="0" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="6.5" y="0" width="3.5" height="12" rx="1" fill="currentColor"/></svg>Pause'}</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="extendTimer('${a.id}')">+30s</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="openEdit('${a.id}')">Edit</button>
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="duplicateItem('${a.id}')">Dupe</button>
+      </div>
+      <div style="display:flex;gap:.4rem;">
+        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="resetAuction('${a.id}')">Reset</button>
+        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="cancelAuction('${a.id}')">Cancel</button>
+        <button class="btn btn-gold btn-sm" style="flex:2;" onclick="closeAuction('${a.id}')">Close</button>
+      </div>
+    </div>`;
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
@@ -1388,8 +1473,14 @@ function restartAuction(id){
 function removeQueued(id){remove(runRef(`/auctions/${id}`));toast('Removed from queue');}
 
 function removeSold(id){
-  if(!confirm('Remove this sold item? This will reduce the pot total.'))return;
-  remove(runRef(`/auctions/${id}`));
+  const a=auctions[id];
+  wowConfirm({
+    title:'Remove Item?',
+    msg:`Remove ${a?.name||'this item'} from sold? This will reduce the pot total.`,
+    confirmLabel:'Remove',
+    danger:true,
+    onConfirm:()=>remove(runRef(`/auctions/${id}`))
+  });
   toast('Item removed');
 }
 
@@ -1861,12 +1952,19 @@ function isBanned(m){
 
 function kickBan(m){
   if(!isRL)return;
-  if(!confirm('Kick and ban '+m.name+'? They cannot rejoin until unbanned.'))return;
-  const key=banKey(m);
-  set(ref(db,'bans/'+key),{name:m.name,discordId:m.discordId||null,discordName:m.discordName||null,bannedAt:Date.now(),bannedBy:user});
-  if(m.name)remove(ref(db,`runs/${runId}/presence/${m.name}`));
-  writeAudit(user+' banned '+m.name);
-  toast(m.name+' has been banned');
+  wowConfirm({
+    title:'Kick & Ban',
+    msg:`Ban ${m.name}? They cannot rejoin until unbanned.`,
+    confirmLabel:'Ban',
+    danger:true,
+    onConfirm:()=>{
+      const key=banKey(m);
+      set(ref(db,'bans/'+key),{name:m.name,discordId:m.discordId||null,discordName:m.discordName||null,bannedAt:Date.now(),bannedBy:user});
+      if(m.name)remove(ref(db,`runs/${runId}/presence/${m.name}`));
+      writeAudit(user+' banned '+m.name);
+      toast(m.name+' has been banned');
+    }
+  });
 }
 
 function unban(key){
@@ -2000,11 +2098,18 @@ async function undoDeleteRun(){
 
 async function removePastItem(runKey, auctionId){
   if(!isRL) return;
-  if(!confirm('Remove this item from history? This will affect cross-run totals.')) return;
-  await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
-  crossRunCache=null; // invalidate cache
-  toast('Item removed from history');
-  renderPastRunsPanel();
+  wowConfirm({
+    title:'Remove from History?',
+    msg:'This will affect cross-run totals and cannot be undone.',
+    confirmLabel:'Remove',
+    danger:true,
+    onConfirm:async()=>{
+      await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
+      crossRunCache=null;
+      toast('Item removed from history');
+      renderPastRunsPanel();
+    }
+  });
 }
 
 function renderAuditPanel(){
@@ -2244,7 +2349,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

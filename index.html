@@ -1753,12 +1753,10 @@ function renderMembersSidebar(presenceData){
   const tabCount=document.getElementById('sidebar-tab-count');
   if(tabCount) tabCount.textContent=members.length;
   const sorted=[...members].sort((a,b)=>{
-    // Self always first
-    if(a.name===user)return-1;
-    if(b.name===user)return 1;
-    // RL pinned last
-    if(a.isRL&&!b.isRL)return 1;
-    if(!a.isRL&&b.isRL)return-1;
+    // RL always first
+    if(a.isRL&&!b.isRL)return-1;
+    if(!a.isRL&&b.isRL)return 1;
+    // Then by spend descending
     return getMemberSpend(b.name)-getMemberSpend(a.name);
   });
   body.innerHTML=sorted.map(m=>{

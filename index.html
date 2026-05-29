@@ -755,9 +755,9 @@ function buildModal(title,a,fn){
     </div>
     <div class="fg"><div class="lbl">Bid buttons (g increments)</div>
       <div style="display:flex;gap:.5rem;align-items:center;">
-        <input type="number" id="m-btn1" value="${bidBtns[0]}" min="1" max="999999" step="50" style="width:90px;" />
-        <input type="number" id="m-btn2" value="${bidBtns[1]}" min="1" max="999999" step="50" style="width:90px;" />
-        <input type="number" id="m-btn3" value="${bidBtns[2]}" min="1" max="999999" step="50" style="width:90px;" />
+        <input type="number" id="m-btn1" value="${bidBtns[0]}" min="1" max="999999" step="50" style="width:115px;" />
+        <input type="number" id="m-btn2" value="${bidBtns[1]}" min="1" max="999999" step="50" style="width:115px;" />
+        <input type="number" id="m-btn3" value="${bidBtns[2]}" min="1" max="999999" step="50" style="width:115px;" />
         <span style="font-size:.8rem;color:var(--text-muted);">g each</span>
       </div>
     </div>
@@ -1214,7 +1214,7 @@ const _coinSrc='data:audio/mp3;base64,//vQxAAALDYLRLT9AA5RQ+ZDNeAAgAAGKUePGBWJxD
 function playCoinSound(){
   try{
     const a=new Audio(_coinSrc);
-    a.volume=0.75;
+    a.volume=0.38;
     a.play().catch(()=>{});
   }catch(e){}
 }

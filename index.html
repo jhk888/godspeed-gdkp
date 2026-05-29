@@ -287,7 +287,7 @@
   .toast{position:fixed;bottom:1.25rem;right:1.25rem;background:rgba(30,26,20,0.97);border:1px solid var(--border-gold-strong);color:var(--text-bright);padding:.6rem 1.1rem;border-radius:4px;font-size:.88rem;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;}
   .toast.show{opacity:1;transform:translateY(0);}
   .three-col{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
-  .rl-controls{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.2rem;}
+  .rl-controls{margin-top:.2rem;}
   .search-wrap{position:relative;}
   .search-preview{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:rgba(201,168,76,0.06);border:1px solid var(--border-gold);border-radius:3px;margin-top:.3rem;}
   .search-preview img{width:24px;height:24px;border-radius:2px;}
@@ -1332,17 +1332,17 @@ function renderCard(a,mode){
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls" style="display:flex;flex-direction:column;gap:.4rem;">
-      <div style="display:flex;gap:.4rem;">
-        <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="flex:2;overflow:hidden;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="10" height="12" viewBox="0 0 10 12" style="vertical-align:middle;margin-right:5px;flex-shrink:0;"><rect x="0" y="0" width="3.5" height="12" rx="1" fill="currentColor"/><rect x="6.5" y="0" width="3.5" height="12" rx="1" fill="currentColor"/></svg>Pause'}</button>
-        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="extendTimer('${a.id}')">+30s</button>
-        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="openEdit('${a.id}')">Edit</button>
-        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="duplicateItem('${a.id}')">Dupe</button>
+    if(mode==='open')rlControls=`<div class="rl-controls" style="display:flex;flex-direction:column;gap:.35rem;margin-top:.2rem;">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:.35rem;">
+        <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="display:flex;align-items:center;justify-content:center;gap:.3rem;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="9" height="11" viewBox="0 0 9 11"><rect x="0" y="0" width="3" height="11" rx="1" fill="currentColor"/><rect x="6" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg> Pause'}</button>
+        <button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button>
+        <button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button>
+        <button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button>
       </div>
-      <div style="display:flex;gap:.4rem;">
-        <button class="btn btn-outline btn-sm" style="flex:1;" onclick="resetAuction('${a.id}')">Reset</button>
-        <button class="btn btn-danger btn-sm" style="flex:1;" onclick="cancelAuction('${a.id}')">Cancel</button>
-        <button class="btn btn-gold btn-sm" style="flex:2;" onclick="closeAuction('${a.id}')">Close</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:.35rem;">
+        <button class="btn btn-outline btn-sm" onclick="resetAuction('${a.id}')">Reset</button>
+        <button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button>
+        <button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button>
       </div>
     </div>`;
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;

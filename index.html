@@ -191,6 +191,16 @@
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
+  .cat-row{margin-bottom:1.5rem;}
+  .cat-row-label{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;font-family:'Cinzel',serif;font-weight:600;padding:.25rem .6rem;border-radius:2px;display:inline-block;margin-bottom:.6rem;}
+  .cat-row-label.cat-row-tier{background:rgba(255,180,0,0.18);color:#ffcc44;border-left:3px solid #ffcc44;}
+  .cat-row-label.cat-row-physical{background:rgba(226,96,96,0.18);color:#ff8080;border-left:3px solid #ff8080;}
+  .cat-row-label.cat-row-caster{background:rgba(50,150,255,0.18);color:#80c0ff;border-left:3px solid #80c0ff;}
+  .cat-row-label.cat-row-other{background:rgba(200,200,200,0.1);color:#ccc;border-left:3px solid #ccc;}
+  .cat-row-scroll{display:flex;gap:1.2rem;overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch;}
+  .cat-row-scroll::-webkit-scrollbar{height:4px;}
+  .cat-row-scroll::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:2px;}
+  .cat-row-scroll > div{flex-shrink:0;width:340px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.2rem;margin-bottom:1.75rem;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
@@ -569,6 +579,7 @@ let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab='active';
 let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
+let autoBids={}; // {auctionId: maxAmount} — raider's auto-bid limits
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
 let panelOpen=false,panelTab='raiders';
 let splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
@@ -645,9 +656,11 @@ async function searchWowhead(query){
   if(!query||query.length<2){searchResults=[];isSearching=false;refreshDropdown();return;}
   isSearching=true;refreshDropdown();
   try{
-    const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);
+    const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}&expansion=tbc`);
     if(!res.ok)throw new Error('Worker '+res.status);
-    searchResults=await res.json();
+    const all=await res.json();
+    // Filter to Classic/TBC items (IDs up to ~35000) and exclude vendor/crafted junk
+    searchResults=all.filter(i=>i.id&&i.id<=35000);
   }catch(e){searchResults=[];}
   isSearching=false;refreshDropdown();
 }
@@ -749,9 +762,21 @@ function subscribeToRun(){
           const newBidCount=Object.keys(a.bids||{}).length;
           if(newBidCount>prevBidCount){
             pendingGlows.push({id});
-            const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
-            const isMine=bids[0]?.bidder===user;
+            const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+            const topBid=bids[0];
+            const isMine=topBid?.bidder===user;
             if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
+            // Auto-bid: if outbid and user has a limit set
+            if(!isMine&&autoBids[id]){
+              const maxBid=autoBids[id];
+              const minNext=(topBid?.amount||0)+(a.minIncrement||250);
+              if(minNext<=maxBid){
+                setTimeout(()=>submitBid(id,minNext,null),600+(Math.random()*400));
+              } else {
+                toast(`Auto-bid limit reached for ${a.name}`);
+                delete autoBids[id];
+              }
+            }
           }
           // If non-bid fields changed (timer, pause, retraction) need full render
           if(prev&&(a.paused!==prev.paused||a.status!==prev.status)) bidOnlyUpdate=false;
@@ -777,7 +802,13 @@ function subscribeToRun(){
       bidOnlyUpdate=false;
     }
 
-    if(modal) return;
+    // Always fire explosions regardless of modal state
+    const explodeNow=()=>pendingExplosions.forEach(({id,amount,rect})=>{
+      const r=rect||cardRects[id];
+      setTimeout(()=>coinExplosionAt(amount,r),50);
+    });
+
+    if(modal){explodeNow();return;}
 
     // Capture card rects BEFORE render wipes the DOM
     const cardRects={};
@@ -831,7 +862,7 @@ function subscribeToRun(){
       }
     });
 
-    // Fire coin explosions for newly sold items
+    // Fire coin explosions for newly sold items (non-modal case)
     pendingExplosions.forEach(({id,amount,rect})=>{
       const r=rect||cardRects[id];
       setTimeout(()=>coinExplosionAt(amount,r),50);
@@ -1115,8 +1146,7 @@ function renderMain(){
   let content='';
   if(tab==='splits'&&isRL){content=renderSplits();}
   else if(tab==='active'){
-    const filtered=activeCategory==='all'?active:active.filter(a=>(a.category||'Other')===activeCategory);
-    content=renderCategoryFilterBar(active)+renderGrid(filtered,'open');
+    content=renderCategoryRows(active,'open');
   }
   else if(tab==='queued'){
     const filtered=activeCategory==='all'?queued:queued.filter(a=>(a.category||'Other')===activeCategory);
@@ -1312,6 +1342,38 @@ async function resetRun(){
 }
 
 // ── Grids & Cards ─────────────────────────────────────────────────────────
+function renderCategoryRows(list,mode){
+  if(!list.length)return`<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">No live auctions</div></div>`;
+  const catOrder=['Tier','Physical','Caster/Healer','Other'];
+  const catLabelClass={'Tier':'cat-row-tier','Physical':'cat-row-physical','Caster/Healer':'cat-row-caster','Other':'cat-row-other'};
+  // Group by category
+  const groups={};
+  list.forEach(a=>{
+    const cat=a.category||'Other';
+    if(!groups[cat])groups[cat]=[];
+    groups[cat].push(a);
+  });
+  // Render in order, skip empty categories
+  const rows=catOrder.filter(c=>groups[c]?.length).map(cat=>{
+    const items=groups[cat];
+    const cls=catLabelClass[cat]||'cat-row-other';
+    const cards=items.map(a=>`<div id="wrap-${a.id}">${renderCard(a,mode)}</div>`).join('');
+    return`<div class="cat-row">
+      <div class="cat-row-label ${cls}">${cat}</div>
+      <div class="cat-row-scroll">${cards}</div>
+    </div>`;
+  });
+  // Any uncategorized categories not in catOrder
+  Object.keys(groups).filter(c=>!catOrder.includes(c)).forEach(cat=>{
+    const cards=groups[cat].map(a=>`<div id="wrap-${a.id}">${renderCard(a,mode)}</div>`).join('');
+    rows.push(`<div class="cat-row">
+      <div class="cat-row-label cat-row-other">${cat}</div>
+      <div class="cat-row-scroll">${cards}</div>
+    </div>`);
+  });
+  return rows.join('');
+}
+
 function renderGrid(list,mode){
   if(!list.length){const msgs={open:'No live auctions',queued:'Queue is empty',sold:'No items sold yet',expired:'No expired items'};return`<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">${msgs[mode]||'Nothing here'}</div></div>`;}
   const draggable=mode==='queued'&&isRL;
@@ -1366,7 +1428,15 @@ function renderCard(a,mode){
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
     </div>`:'' ;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
-    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}</div>`;
+    const autoBidSet=autoBids[a.id];
+    const autoBidBtn=!isRL?`<div style="margin-top:.3rem;display:flex;align-items:center;gap:.4rem;">
+      ${autoBidSet
+        ?`<span style="font-size:.7rem;color:var(--amber);font-family:'Cinzel',serif;">Auto: up to ${autoBidSet.toLocaleString()}g</span>
+           <button onclick="clearAutoBid('${a.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0;">✕</button>`
+        :`<button onclick="setAutoBid('${a.id}')" style="background:none;border:1px solid rgba(201,168,76,0.3);color:var(--text-muted);cursor:pointer;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;padding:.2rem .5rem;border-radius:3px;">Set Limit Bid</button>`
+      }
+    </div>`:'' ;
+    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
@@ -1483,7 +1553,31 @@ function saveEdit(){
   update(runRef(`/auctions/${editId}`),updates);
   modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' updated');
 }
-function startOne(id){const a=auctions[id];if(!a||a.status!=='queued')return;update(runRef(`/auctions/${id}`),{status:'open',paused:false,endsAt:Date.now()+a.duration*1000,remaining:a.duration});toast(a.name+' started!');tab='active';}
+function setAutoBid(id){
+  const a=auctions[id];if(!a||a.status!=='open')return;
+  const cur=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.amount||a.currentBid||0;
+  const min=cur+(a.minIncrement||250);
+  const val=prompt(`Set auto-bid limit for ${a.name}\nCurrent: ${cur.toLocaleString()}g\nMin to set: ${min.toLocaleString()}g`);
+  if(!val)return;
+  const max=parseInt(val);
+  if(isNaN(max)||max<min){toast('Must be at least '+min.toLocaleString()+'g');return;}
+  autoBids[id]=max;
+  toast(`Auto-bid set: up to ${max.toLocaleString()}g`);
+  render();
+}
+function clearAutoBid(id){
+  delete autoBids[id];
+  toast('Auto-bid cleared');
+  render();
+}
+function startOne(id){
+  if(_startOneCooldown[id])return;
+  _startOneCooldown[id]=true;
+  setTimeout(()=>delete _startOneCooldown[id],1500);
+  const a=auctions[id];if(!a||a.status!=='queued')return;
+  update(runRef(`/auctions/${id}`),{status:'open',paused:false,endsAt:Date.now()+a.duration*1000,remaining:a.duration});
+  toast(a.name+' started!');tab='active';
+}
 function startAll(){const now=Date.now();auctionList().filter(a=>a.status==='queued').forEach(a=>{update(runRef(`/auctions/${a.id}`),{status:'open',paused:false,endsAt:now+a.duration*1000,remaining:a.duration});});toast('All auctions started!');tab='active';}
 function togglePause(id){const a=auctions[id];if(!a||a.status!=='open')return;if(a.paused){update(runRef(`/auctions/${id}`),{paused:false,endsAt:Date.now()+(a.remaining||0)*1000});toast(a.name+' resumed');}else{update(runRef(`/auctions/${id}`),{paused:true,remaining:Math.max(0,Math.floor((a.endsAt-Date.now())/1000))});toast(a.name+' paused');}}
 function extendTimer(id){const a=auctions[id];if(!a||a.status!=='open')return;if(a.paused){update(runRef(`/auctions/${id}`),{remaining:(a.remaining||0)+30});}else{update(runRef(`/auctions/${id}`),{endsAt:(a.endsAt||Date.now())+30000});}toast('+30s added to '+a.name);}
@@ -1723,12 +1817,14 @@ function duplicateItem(id){
 }
 function markAllPaid(ids){
   const updates={};
-  ids.forEach(id=>{updates[`auctions/${id}/paid`]=true;});
-  update(runRef(),updates);
+  ids.forEach(id=>{
+    if(auctions[id]) updates[`auctions/${id}/paid`]=true;
+  });
+  if(Object.keys(updates).length) update(runRef(),updates).then(()=>{if(panelOpen)renderPanel();});
 }
 function togglePaid(id){
   const a=auctions[id];if(!a)return;
-  update(runRef(`/auctions/${id}`),{paid:!a.paid});
+  update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>{if(panelOpen)renderPanel();});
 }
 
 // ── Presence & Members ────────────────────────────────────────────────────
@@ -2432,7 +2528,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

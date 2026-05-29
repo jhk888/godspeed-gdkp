@@ -673,19 +673,22 @@ function subscribeToRun(){
       if(!cardRects[id]){const c=document.getElementById('card-'+id);if(c)cardRects[id]=c.getBoundingClientRect();}
     });
 
-    if(bidOnlyUpdate && tab==='active' && pendingGlows.length>0){
-      // Just update the affected cards in-place — no full render
-      pendingGlows.forEach(({id})=>{
-        const a=auctions[id];if(!a)return;
-        const wrap=document.getElementById('wrap-'+id);
-        if(wrap){
-          const t=document.createElement('div');
-          t.innerHTML=renderCard(a,'open');
-          wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
-        }
-      });
-      // Still update pot bar etc
-      renderHdr();
+    if(bidOnlyUpdate && tab==='active'){
+      if(pendingGlows.length>0){
+        // Update affected cards in-place
+        pendingGlows.forEach(({id})=>{
+          const a=auctions[id];if(!a)return;
+          const wrap=document.getElementById('wrap-'+id);
+          if(wrap){
+            const t=document.createElement('div');
+            t.innerHTML=renderCard(a,'open');
+            wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
+          }
+        });
+        renderHdr();
+      }
+      // If pendingGlows is empty and bidOnlyUpdate=true, it's just a currentBid
+      // echo update — skip re-render entirely so any active glow animation survives
     } else {
       render();
       if(panelOpen&&panelTab==='raiders')renderPanel();

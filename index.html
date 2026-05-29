@@ -2333,14 +2333,14 @@ function renderCategoryFilterBar(list){
   const counts={all:list.length};
   raidCategories.forEach(cat=>{counts[cat]=list.filter(a=>a.category===cat||(!a.category&&cat==='Other')).length;});
   const catColors={
-    'Tier':    {on:'border-color:#ffcc44;background:#ffcc44;color:#1a1208;font-weight:600;',     off:'border-color:rgba(255,180,0,0.4);background:rgba(255,180,0,0.12);color:#ffcc44;'},
-    'Physical':{on:'border-color:#ff8080;background:#ff8080;color:#1a1208;font-weight:600;',     off:'border-color:rgba(226,96,96,0.4);background:rgba(226,96,96,0.12);color:#ff8080;'},
-    'Caster/Healer':{on:'border-color:#80c0ff;background:#80c0ff;color:#1a1208;font-weight:600;',off:'border-color:rgba(50,150,255,0.4);background:rgba(50,150,255,0.12);color:#80c0ff;'},
-    'Other':   {on:'border-color:#ccc;background:#ccc;color:#1a1208;font-weight:600;',           off:'border-color:rgba(180,180,180,0.4);background:rgba(180,180,180,0.1);color:#bbb;'},
+    'Tier':    {on:'border-color:#ffcc44;background:#ffcc44;color:#1a1208;font-weight:600;',     off:'border-color:rgba(255,180,0,0.6);background:rgba(255,180,0,0.28);color:#ffcc44;'},
+    'Physical':{on:'border-color:#ff8080;background:#ff8080;color:#1a1208;font-weight:600;',     off:'border-color:rgba(226,96,96,0.6);background:rgba(226,96,96,0.28);color:#ff8080;'},
+    'Caster/Healer':{on:'border-color:#80c0ff;background:#80c0ff;color:#1a1208;font-weight:600;',off:'border-color:rgba(50,150,255,0.6);background:rgba(50,150,255,0.28);color:#80c0ff;'},
+    'Other':   {on:'border-color:#ccc;background:#ccc;color:#1a1208;font-weight:600;',           off:'border-color:rgba(180,180,180,0.5);background:rgba(180,180,180,0.2);color:#bbb;'},
   };
   const allActive=activeCategory==='all';
   const buttons=[
-    `<button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:var(--gold);color:#1a1208;font-weight:600;':'border-color:rgba(201,168,76,0.4);background:rgba(212,169,60,0.12);color:var(--gold);'}" onclick="setCategoryFilter('all')">
+    `<button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:var(--gold);color:#1a1208;font-weight:600;':'border-color:rgba(201,168,76,0.6);background:rgba(212,169,60,0.25);color:var(--gold);'}" onclick="setCategoryFilter('all')">
       All ${counts.all?`<span style="opacity:.7;font-size:.6em;">(${counts.all})</span>`:''}
     </button>`,
     ...raidCategories.map(cat=>{

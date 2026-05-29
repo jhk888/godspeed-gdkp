@@ -478,7 +478,7 @@ const db = getDatabase(fbApp);
 
 let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab='active';
 let modal=false,editId=null,modalQuality='epic';
-let raidSettings={defaultTimer:120,defaultIncrement:100};
+let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
 let panelOpen=false,panelTab='raiders';
@@ -733,7 +733,7 @@ function qRowHTML(selected){
 
 function buildModal(title,a,fn){
   const isEdit=!!a;
-  const bidBtns=a?a.bidButtons||[5,10,25]:[5,10,25];
+  const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:raidSettings.defaultBidButtons||[250,500,1000];
   return`<div class="modal-overlay" id="modal-overlay" onmousedown="modalOverlayMousedown(event)" onmouseup="modalOverlayMouseup(event)"><div class="modal" onmousedown="event.stopPropagation()" onmouseup="event.stopPropagation()" onclick="event.stopPropagation()">
     <div class="modal-title">${title}</div>
     <div class="fg"><div class="lbl">Search item</div>
@@ -753,12 +753,12 @@ function buildModal(title,a,fn){
       <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a?a.currentBid:1000}" min="1" step="100" /></div>
       <div class="fg"><div class="lbl">Timer (s)</div><input type="number" id="m-timer" value="${a?a.duration:raidSettings.defaultTimer}" min="10" max="600" step="10" /></div>
     </div>
-    <div class="fg"><div class="lbl">Bid buttons (% of current bid)</div>
+    <div class="fg"><div class="lbl">Bid buttons (g increments)</div>
       <div style="display:flex;gap:.5rem;align-items:center;">
-        <input type="number" id="m-btn1" value="${bidBtns[0]}" min="1" max="100" step="1" style="width:70px;" />
-        <input type="number" id="m-btn2" value="${bidBtns[1]}" min="1" max="100" step="1" style="width:70px;" />
-        <input type="number" id="m-btn3" value="${bidBtns[2]}" min="1" max="100" step="1" style="width:70px;" />
-        <span style="font-size:.8rem;color:var(--text-muted);">% each</span>
+        <input type="number" id="m-btn1" value="${bidBtns[0]}" min="1" max="999999" step="50" style="width:80px;" />
+        <input type="number" id="m-btn2" value="${bidBtns[1]}" min="1" max="999999" step="50" style="width:80px;" />
+        <input type="number" id="m-btn3" value="${bidBtns[2]}" min="1" max="999999" step="50" style="width:80px;" />
+        <span style="font-size:.8rem;color:var(--text-muted);">g each</span>
       </div>
     </div>
     <div class="fg"><div class="lbl">Category</div><select id="m-cat" style="width:100%;background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);padding:.5rem .65rem;font-family:'Inter',sans-serif;font-size:.9rem;border-radius:3px;outline:none;">${getCategoryOptions(a?a.category:'Tier')}</select></div>
@@ -1055,12 +1055,12 @@ function renderCard(a,mode){
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';
   if(mode==='open'&&!a.paused){
-    const btns=a.bidButtons||[5,10,25];
+    const btns=a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000];
     const cur=a.currentBid||0;
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const qbtns=hasBids
-      ? btns.map(pct=>{const amt=Math.ceil(cur*(1+pct/100)/100)*100;return`<button class="qb" onclick="quickBid('${a.id}',${amt},event)">+${pct}% <span style="font-size:.65em;opacity:.75;">${amt.toLocaleString()}g</span></button>`;}).join('')
+      ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">${amt.toLocaleString()}g</span></button>`;}).join('')
       : `<button class="qb" style="flex:1;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">starting bid</span></button>`;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Custom':'Custom'}</button>`;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||100}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
@@ -1106,9 +1106,9 @@ function addToQueue(){
   if(!selectedItem){toast('Please search and select an item first');return;}
   const nr=push(runRef('/auctions'));
   const dur=Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer);
-  const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||5);
-  const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||10);
-  const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||25);
+  const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
+  const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
+  const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
   set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:document.getElementById('m-cat')?.value||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
@@ -1133,9 +1133,9 @@ function saveEdit(){
   const raw=document.getElementById('item-search-input')?.value?.trim();
   const name=selectedItem?selectedItem.name:raw;
   if(!name){toast('Search and select an item');return;}
-  const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||5);
-  const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||10);
-  const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||25);
+  const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
+  const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
+  const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
   updates.category=document.getElementById('m-cat')?.value||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
@@ -1198,20 +1198,34 @@ function placeBid(id,_evt){const inp=document.getElementById('bid-'+id);const va
 function playCoinSound(){
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
-    // Two quick coin pings
-    [0, 120].forEach(delayMs=>{
-      setTimeout(()=>{
-        const o=ctx.createOscillator();
-        const g=ctx.createGain();
-        o.connect(g);g.connect(ctx.destination);
-        o.type='sine';
-        o.frequency.setValueAtTime(1200,ctx.currentTime);
-        o.frequency.exponentialRampToValueAtTime(900,ctx.currentTime+0.08);
-        g.gain.setValueAtTime(0.18,ctx.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.18);
-        o.start(ctx.currentTime);o.stop(ctx.currentTime+0.18);
-      },delayMs);
+    const now=ctx.currentTime;
+    // Metallic coin: high fundamental with harmonics + quick decay
+    const freqs=[2200,3100,4400];
+    freqs.forEach((f,i)=>{
+      const o=ctx.createOscillator();
+      const g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.type='triangle';
+      o.frequency.setValueAtTime(f,now);
+      o.frequency.exponentialRampToValueAtTime(f*0.85,now+0.12);
+      const vol=0.12/(i+1);
+      g.gain.setValueAtTime(vol,now);
+      g.gain.exponentialRampToValueAtTime(0.001,now+0.22);
+      o.start(now);o.stop(now+0.22);
     });
+    // Second lighter ping after 90ms
+    setTimeout(()=>{
+      const now2=ctx.currentTime;
+      const o2=ctx.createOscillator();
+      const g2=ctx.createGain();
+      o2.connect(g2);g2.connect(ctx.destination);
+      o2.type='triangle';
+      o2.frequency.setValueAtTime(3400,now2);
+      o2.frequency.exponentialRampToValueAtTime(2800,now2+0.1);
+      g2.gain.setValueAtTime(0.07,now2);
+      g2.gain.exponentialRampToValueAtTime(0.001,now2+0.18);
+      o2.start(now2);o2.stop(now2+0.18);
+    },90);
   }catch(e){}
 }
 function spawnCoin(e){
@@ -1249,7 +1263,7 @@ function retractBid(id){
   const topBidKey=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount)[0]?.[0];
   if(!topBidKey)return;
   remove(runRef(`/auctions/${id}/bids/${topBidKey}`));
-  const prevBid=bids[1]?.amount||a.currentBid-((a.bidButtons||[5])[0]/100*a.currentBid);
+  const prevBid=bids[1]?.amount||0;
   update(runRef(`/auctions/${id}`),{currentBid:bids[1]?.amount||0});
   toast('Bid retracted');
 }
@@ -1267,7 +1281,7 @@ function duplicateItem(id){
     currentBid:a.currentBid||1000,
     minIncrement:a.minIncrement||50,
     duration:a.duration||raidSettings.defaultTimer,
-    bidButtons:a.bidButtons||[5,10,25],
+    bidButtons:a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000],
     note:a.note||'',
     bids:{},
     status:'queued',

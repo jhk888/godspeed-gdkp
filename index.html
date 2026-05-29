@@ -753,13 +753,15 @@ function logout(){
   localStorage.removeItem('gdkp_isRL');
   localStorage.removeItem('gdkp_discord');
   if(unsubRun)unsubRun();if(tickInterval)clearInterval(tickInterval);
-  clearPresence();panelOpen=false;render();
+  clearPresence();panelOpen=false;loginRendered=false;render();
 }
+let loginRendered=false;
 function render(){
   if(!user){
-    if(!document.getElementById('main').innerHTML.includes('login-wrap')) renderLogin();
+    if(!loginRendered){loginRendered=true;renderLogin();}
     return;
   }
+  loginRendered=false;
   renderHdr();renderMain();
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';

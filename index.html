@@ -379,7 +379,7 @@
     <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
       <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
-        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip()"></span>
       </div>
     </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
@@ -702,6 +702,25 @@ function renderHdr(){
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
   if(logoWrap){logoWrap.style.position='absolute';logoWrap.style.left='50%';logoWrap.style.transform='translateX(-50%)';}
+}
+
+function showOnlineTooltip(e){
+  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
+  const members=getActiveMembers(presenceData);
+  if(!members.length)return;
+  const tip=document.createElement('div');
+  tip.className='online-tooltip member-tooltip';
+  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.4rem;">ONLINE NOW</div>`
+    +members.map(m=>`<div style="display:flex;align-items:center;gap:.4rem;padding:.15rem 0;">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+      <span style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-bright);">${m.user||'?'}</span>
+    </div>`).join('');
+  tip.style.left=(e.clientX-10)+'px';
+  tip.style.top=(e.clientY+16)+'px';
+  document.body.appendChild(tip);
+}
+function hideOnlineTooltip(){
+  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
 }
 
 function showMemberTooltipFromHeader(event){
@@ -2011,7 +2030,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

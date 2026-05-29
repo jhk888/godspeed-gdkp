@@ -629,10 +629,9 @@ function subscribeToRun(){
     // Detect new bids on open auctions — collect pending glows first
     const pendingGlows=[];
     const pendingExplosions=[];
-    let bidOnlyUpdate=true; // track if this snapshot has ONLY bid changes on open items
+    let bidOnlyUpdate=true;
     if(user){
       Object.entries(auctions).forEach(([id,a])=>{
-        // Glow on new bid
         if(a.status==='open'){
           const prev=prevAuctions[id];
           const prevBidCount=Object.keys(prev?.bids||{}).length;
@@ -643,21 +642,19 @@ function subscribeToRun(){
             const isMine=bids[0]?.bidder===user;
             if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
           }
-          // Check if anything besides bids changed on this open item
-          if(prev&&(a.currentBid!==prev.currentBid||a.paused!==prev.paused||a.endsAt!==prev.endsAt||a.remaining!==prev.remaining||a.status!==prev.status)){}
-          // non-bid fields changed — need full render
+          // If non-bid fields changed (timer, pause, etc) need full render
+          if(prev&&(a.paused!==prev.paused||a.status!==prev.status)){
+            bidOnlyUpdate=false;
+          }
         }
-        // Explosion when item transitions open→sold
         if(a.status==='sold'&&prevAuctions[id]?.status==='open'){
           const card=document.getElementById('card-'+id);
           const rect=card?card.getBoundingClientRect():null;
           pendingExplosions.push({id,amount:a.currentBid||0,rect});
           bidOnlyUpdate=false;
         }
-        // Any status change other than open means full render needed
         if(prevAuctions[id]&&a.status!==prevAuctions[id].status) bidOnlyUpdate=false;
       });
-      // New items added or removed also need full render
       if(Object.keys(auctions).length!==Object.keys(prevAuctions).length) bidOnlyUpdate=false;
     } else {
       bidOnlyUpdate=false;
@@ -706,7 +703,9 @@ function subscribeToRun(){
       } else if(cardRects[id]){
         const r=cardRects[id];
         const el=document.createElement('div');
-        el.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9998;border-radius:5px;animation:bidGlow .9s ease-out forwards;`;
+        el.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;`
+          +`pointer-events:none;z-index:9998;border-radius:5px;border:1px solid var(--border-gold);`
+          +`animation:bidGlow .9s ease-out forwards;`;
         document.body.appendChild(el);
         setTimeout(()=>el.remove(),950);
       }

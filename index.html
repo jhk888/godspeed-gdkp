@@ -1339,9 +1339,9 @@ function renderCard(a,mode){
   if(isRL){
     if(mode==='open'){
       // Top-right cluster (replaces just the badge)
-      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
+      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
         <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
-        <div style="display:flex;gap:.25rem;">
+        <div style="display:flex;gap:.25rem;margin-top:.3rem;">
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
         </div>

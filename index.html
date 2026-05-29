@@ -822,6 +822,7 @@ function subscribeToRun(){
     });
 
     if(modal){
+      if(!user) return;
       // Update live cards in-place behind the modal — timers/bids/glows still work
       const bgRects={};
       pendingExplosions.forEach(({id})=>{const c=document.getElementById('card-'+id);if(c)bgRects[id]=c.getBoundingClientRect();});
@@ -1040,10 +1041,11 @@ function saveRaidTitle(){
 }
 
 function renderLogin(){
-  
-  
-  document.getElementById('hdr-user').innerHTML='';
-  document.getElementById('main').innerHTML=`
+  const hdrUser=document.getElementById('hdr-user');
+  if(hdrUser)hdrUser.innerHTML='';
+  const main=document.getElementById('main');
+  if(!main)return;
+  main.innerHTML=`
     <div class="login-wrap">
       <div class="login-brand"><div class="wordmark">Godspeed GDKP</div><div class="wordmark-sub">Gold DKP Run</div></div>
       <div class="login-box">

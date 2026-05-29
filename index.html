@@ -1429,10 +1429,6 @@ function renderCard(a,mode){
       <button class="btn btn-danger btn-sm" style="padding:.2rem .55rem;font-size:.65rem;margin-top:.15rem;" onclick="cancelAuction('${a.id}')">Cancel</button>
     </div>`:'' ;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
-    const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;margin-top:.5rem;">
-      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Dupe</button>
-      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
-    </div>`:'' ;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const autoBidSet=autoBids[a.id];
     const autoBidBtn=!isRL?`<div style="margin-top:.3rem;display:flex;align-items:center;gap:.4rem;">

@@ -901,13 +901,13 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count (left side)
+  // Online count (left side) — show all presence entries
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const n=getActiveMembers(presenceData).length;
+    const n=Object.keys(presenceData||{}).length;
     onlineCount.textContent=`${n} Online`;
-    onlineEl.style.display='flex';
+    onlineEl.style.display=n>0?'flex':'none';
   }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
@@ -920,21 +920,25 @@ function renderHdr(){
   if(logoWrap){logoWrap.style.position='absolute';logoWrap.style.left='50%';logoWrap.style.transform='translateX(-50%)';}
 }
 
+let _onlineTooltipHideT=null;
 function showOnlineTooltip(e){
+  clearTimeout(_onlineTooltipHideT);
   document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
-  const members=getActiveMembers(presenceData);
+  const members=Object.values(presenceData||{});
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
+  tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
+  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),150);};
   tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.5rem;">ONLINE NOW</div>`
     +members.map(m=>{
       const spend=getMemberSpend(m.name);
       const items=auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name).length;
-      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0;border-bottom:1px solid rgba(201,168,76,0.08);">
+      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem .3rem;border-radius:3px;cursor:default;" onmouseenter="this.style.background='rgba(212,169,60,0.08)'" onmouseleave="this.style.background=''">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
         <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.6rem;">★</span>':''}</span>
         ${spend>0?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${spend.toLocaleString()}g</span>`:''}
-        ${items>0?`<span style="font-size:.68rem;color:var(--text-muted);">${items} item${items>1?'s':''}</span>`:''}
+        ${items>0?`<span style="font-size:.68rem;color:var(--text-muted);">${items}★</span>`:''}
       </div>`;
     }).join('');
   tip.style.left=(e.clientX-10)+'px';
@@ -942,7 +946,7 @@ function showOnlineTooltip(e){
   document.body.appendChild(tip);
 }
 function hideOnlineTooltip(){
-  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),150);
 }
 
 function showMemberTooltipFromHeader(event){

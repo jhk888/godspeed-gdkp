@@ -672,7 +672,7 @@ function subscribeToRun(){
       if(!cardRects[id]){const c=document.getElementById('card-'+id);if(c)cardRects[id]=c.getBoundingClientRect();}
     });
 
-    if(bidOnlyUpdate && tab==='active'){
+    if(bidOnlyUpdate && tab==='active' && user){
       if(pendingGlows.length>0){
         // Update affected cards in-place
         pendingGlows.forEach(({id})=>{
@@ -688,7 +688,7 @@ function subscribeToRun(){
       }
       // If pendingGlows is empty and bidOnlyUpdate=true, it's just a currentBid
       // echo update — skip re-render entirely so any active glow animation survives
-    } else {
+    } else if(user) {
       render();
       if(panelOpen&&panelTab==='raiders')renderPanel();
       if(panelOpen&&panelTab==='audit')renderAuditPanel();
@@ -757,12 +757,12 @@ function logout(){
   localStorage.removeItem('gdkp_isRL');
   localStorage.removeItem('gdkp_discord');
   if(unsubRun)unsubRun();if(tickInterval)clearInterval(tickInterval);
-  clearPresence();panelOpen=false;loginRendered=false;render();
+  clearPresence();panelOpen=false;render();
 }
-let loginRendered=false;
+
 function render(){
   if(!user){renderLogin();return;}
-  loginRendered=false;
+  
   renderHdr();renderMain();
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';
@@ -839,8 +839,8 @@ function saveRaidTitle(){
 }
 
 function renderLogin(){
-  if(loginRendered) return;
-  loginRendered=true;
+  
+  
   document.getElementById('hdr-user').innerHTML='';
   document.getElementById('main').innerHTML=`
     <div class="login-wrap">

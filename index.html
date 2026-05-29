@@ -251,7 +251,7 @@
   .item-name.poor{color:var(--poor);}
   .item-name.legendary{color:#ff8000;}
   .item-slot{font-size:.9rem;color:var(--text-muted);}
-  .bid-section{border-top:1px solid rgba(212,169,60,0.15);padding-top:.8rem;display:flex;flex-direction:column;gap:.75rem;}
+  .bid-section{border-top:1px solid rgba(212,169,60,0.15);padding-top:.8rem;display:flex;flex-direction:column;gap:.6rem;}
   .bid-amt{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);font-weight:500;}
   .bid-ldr{font-size:.88rem;color:var(--text-muted);}
   .bid-ldr.you{color:var(--green);}
@@ -273,7 +273,7 @@
   .timer{font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);letter-spacing:.05em;}
   .timer-bar{flex:1;height:4px;background:rgba(212,169,60,0.18);border-radius:2px;overflow:hidden;}
   .timer-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .9s linear;}
-  .hist{font-size:.9rem;color:var(--text-muted);max-height:110px;overflow-y:auto;border-top:1px solid rgba(212,169,60,0.12);padding-top:.5rem;display:flex;flex-direction:column;gap:.22rem;}
+  .hist{font-size:.9rem;color:var(--text-muted);max-height:110px;overflow-y:auto;border-top:1px solid rgba(212,169,60,0.12);padding-top:.25rem;display:flex;flex-direction:column;gap:.22rem;}
   .hist-row{display:flex;justify-content:space-between;}
   .you-bid{color:var(--green);}
   .empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);border:1px dashed var(--border-gold);border-radius:4px;background:rgba(30,26,16,0.75);font-size:1rem;}
@@ -284,8 +284,32 @@
   .q-btn-base{flex:1;padding:.55rem .4rem;border:2px solid #444;background:#1a1a1a;color:#888;cursor:pointer;border-radius:4px;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:500;}
   .modal-divider{height:1px;background:var(--border-gold);margin:.25rem 0;}
   .modal-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:.35rem;}
-  .toast{position:fixed;bottom:1.25rem;right:1.25rem;background:rgba(30,26,20,0.97);border:1px solid var(--border-gold-strong);color:var(--text-bright);padding:.6rem 1.1rem;border-radius:4px;font-size:.88rem;z-index:200;opacity:0;transform:translateY(6px);transition:all .2s;pointer-events:none;}
-  .toast.show{opacity:1;transform:translateY(0);}
+  /* WoW-style toast banner */
+  @keyframes toastIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.85);}100%{opacity:1;transform:translate(-50%,-50%) scale(1);}}
+  @keyframes toastOut{0%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(.85);}}
+  .toast{
+    position:fixed;left:50%;top:42%;transform:translate(-50%,-50%);
+    background:linear-gradient(160deg,#1c1508 0%,#120e05 100%);
+    border:2px solid #8a6318;
+    padding:.7rem 2.2rem .7rem 1.6rem;
+    font-family:'Cinzel',serif;font-size:.88rem;letter-spacing:.06em;
+    color:#f0d878;text-align:center;white-space:nowrap;
+    z-index:9999;pointer-events:none;
+    box-shadow:0 0 0 1px #3a2a08,0 0 30px rgba(180,120,0,0.3),inset 0 1px 0 rgba(255,210,80,0.1);
+    opacity:0;
+    text-shadow:0 0 10px rgba(240,200,80,0.4);
+    min-width:200px;
+  }
+  .toast::before,.toast::after{
+    content:'';position:absolute;top:50%;transform:translateY(-50%);
+    width:8px;height:8px;border-radius:50%;
+    background:radial-gradient(circle,#f0c030,#8a6318);
+    box-shadow:0 0 6px #f0c030;
+  }
+  .toast::before{left:10px;}
+  .toast::after{right:10px;}
+  .toast.show{animation:toastIn .18s ease-out forwards;}
+  .toast.hide{animation:toastOut .18s ease-in forwards;}
   .three-col{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
   .rl-controls{margin-top:.2rem;}
   .search-wrap{position:relative;}
@@ -545,7 +569,18 @@ let panelOpen=false,panelTab='raiders';
 let splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
 let splitsLoaded=false;
 
-function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove('show'),2800);}
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.classList.remove('hide');
+  el.classList.add('show');
+  clearTimeout(toastT);
+  toastT=setTimeout(()=>{
+    el.classList.remove('show');
+    el.classList.add('hide');
+    setTimeout(()=>el.classList.remove('hide'),200);
+  },1400);
+}
 
 function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,onConfirm}){
   const existing=document.getElementById('wow-dialog-overlay');
@@ -1341,7 +1376,7 @@ function renderCard(a,mode){
       // Top-right cluster (replaces just the badge)
       const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
         <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
-        <div style="display:flex;gap:.25rem;margin-top:.7rem;">
+        <div style="display:flex;gap:.25rem;margin-top:1.4rem;">
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
         </div>

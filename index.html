@@ -616,7 +616,6 @@ let presenceData = {};
 function subscribeToRun(){
   if(unsubRun)unsubRun();
   unsubRun=onValue(runRef(),snap=>{
-    if(!user) return; // not logged in yet, ignore Firebase updates
     const data=snap.val()||{};
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
@@ -836,6 +835,8 @@ function saveRaidTitle(){
 }
 
 function renderLogin(){
+  if(loginRendered) return;
+  loginRendered=true;
   document.getElementById('hdr-user').innerHTML='';
   document.getElementById('main').innerHTML=`
     <div class="login-wrap">

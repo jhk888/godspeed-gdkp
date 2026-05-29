@@ -375,10 +375,10 @@
   @keyframes bidGlowRed    {0%{box-shadow:0 0 0 0 rgba(226,96,96,0);border-color:var(--border-gold);}30%{box-shadow:0 0 18px 6px rgba(226,96,96,0.55);border-color:#ff8080;}100%{box-shadow:0 0 0 0 rgba(226,96,96,0);border-color:var(--border-gold);}}
   @keyframes bidGlowBlue   {0%{box-shadow:0 0 0 0 rgba(50,150,255,0);border-color:var(--border-gold);}30%{box-shadow:0 0 18px 6px rgba(50,150,255,0.55);border-color:#80c0ff;}100%{box-shadow:0 0 0 0 rgba(50,150,255,0);border-color:var(--border-gold);}}
   @keyframes bidGlowGrey   {0%{box-shadow:0 0 0 0 rgba(200,200,200,0);border-color:var(--border-gold);}30%{box-shadow:0 0 18px 6px rgba(200,200,200,0.45);border-color:#ccc;}100%{box-shadow:0 0 0 0 rgba(200,200,200,0);border-color:var(--border-gold);}}
-  .bid-glow-tier    {animation:bidGlowGold .55s ease-out;}
-  .bid-glow-physical{animation:bidGlowRed  .55s ease-out;}
-  .bid-glow-caster  {animation:bidGlowBlue .55s ease-out;}
-  .bid-glow-other   {animation:bidGlowGrey .55s ease-out;}
+  .bid-glow-tier    {animation:bidGlowGold .9s ease-out;}
+  .bid-glow-physical{animation:bidGlowRed  .9s ease-out;}
+  .bid-glow-caster  {animation:bidGlowBlue .9s ease-out;}
+  .bid-glow-other   {animation:bidGlowGrey .9s ease-out;}
 </style>
 </head>
 <body>
@@ -627,27 +627,18 @@ function subscribeToRun(){
     }
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
 
-    // Detect new bids on open auctions
+    // Detect new bids on open auctions — collect pending glows first
+    const pendingGlows=[];
     if(user){
       Object.entries(auctions).forEach(([id,a])=>{
         if(a.status!=='open')return;
         const prevBidCount=Object.keys(prevAuctions[id]?.bids||{}).length;
         const newBidCount=Object.keys(a.bids||{}).length;
         if(newBidCount<=prevBidCount)return;
-        // Find the new top bid
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         const topBidder=bids[0]?.bidder;
         const isMine=topBidder===user;
-        // Glow the card regardless of who bid
-        const card=document.getElementById('card-'+id);
-        if(card){
-          const glowClass='bid-glow-'+({'Tier':'tier','Physical':'physical','Caster/Healer':'caster'}[a.category]||'other');
-          card.classList.remove('bid-glow-tier','bid-glow-physical','bid-glow-caster','bid-glow-other');
-          void card.offsetWidth; // force reflow to restart animation
-          card.classList.add(glowClass);
-          setTimeout(()=>card.classList.remove(glowClass),600);
-        }
-        // Play rival coin only if: not my bid, and I've previously bid on this item
+        pendingGlows.push({id,category:a.category});
         if(!isMine){
           const iHaveBid=bids.some(b=>b.bidder===user);
           if(iHaveBid) playCoinSound();
@@ -660,6 +651,17 @@ function subscribeToRun(){
     if(panelOpen&&panelTab==='raiders')renderPanel();
     if(panelOpen&&panelTab==='audit')renderAuditPanel();
     if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+
+    // Apply glows after render so cards exist in DOM
+    pendingGlows.forEach(({id,category})=>{
+      const card=document.getElementById('card-'+id);
+      if(!card)return;
+      const glowClass='bid-glow-'+({'Tier':'tier','Physical':'physical','Caster/Healer':'caster'}[category]||'other');
+      card.classList.remove('bid-glow-tier','bid-glow-physical','bid-glow-caster','bid-glow-other');
+      void card.offsetWidth;
+      card.classList.add(glowClass);
+      setTimeout(()=>card.classList.remove(glowClass),950);
+    });
   });
 }
 
@@ -1300,7 +1302,7 @@ const _coinSrc='data:audio/mp3;base64,//vQZAAAByN5wIUF4AJxLKiToBgAGo4fN/gHgAMpQ+
 function playCoinSound(){
   try{
     const a=new Audio(_coinSrc);
-    a.volume=0.15;
+    a.volume=0.07;
     a.play().catch(()=>{});
   }catch(e){}
 }

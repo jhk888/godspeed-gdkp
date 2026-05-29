@@ -835,6 +835,17 @@ function subscribeToRun(){
           if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
         }
       });
+      // If item count changed (new item queued), re-render the grid area only
+      if(Object.keys(auctions).length!==Object.keys(prevAuctions).length){
+        const all=auctionList();
+        const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
+        const active=all.filter(a=>a.status==='open');
+        const grid=document.getElementById('auction-grid-bg');
+        if(grid){
+          if(tab==='queued') grid.innerHTML=renderCategoryFilterBar(queued)+renderGrid(queued,'queued');
+          else if(tab==='active') grid.innerHTML=renderCategoryRows(active,'open');
+        }
+      }
       // Apply glows
       pendingGlows.forEach(({id})=>{
         const card=document.getElementById('card-'+id);
@@ -1196,7 +1207,7 @@ function renderMain(){
   document.getElementById('main').innerHTML=`
     ${membersBar}${potBar}${myLootHTML}${settingsBar}${tabs}
     ${tab!=='splits'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
-    ${content}${mHTML}`;
+    <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }
@@ -1604,11 +1615,12 @@ function clearAutoBid(id){
   toast('Auto-bid cleared');
   render();
 }
+const _startOneCooldown={};
 function startOne(id){
   if(_startOneCooldown[id])return;
-  _startOneCooldown[id]=true;
-  setTimeout(()=>delete _startOneCooldown[id],1500);
   const a=auctions[id];if(!a||a.status!=='queued')return;
+  _startOneCooldown[id]=true;
+  setTimeout(()=>delete _startOneCooldown[id],2000);
   update(runRef(`/auctions/${id}`),{status:'open',paused:false,endsAt:Date.now()+a.duration*1000,remaining:a.duration});
   toast(a.name+' started!');tab='active';
 }

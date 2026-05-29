@@ -228,7 +228,7 @@
   .cat-tier{background:rgba(255,180,0,0.15);color:#ffcc44;border:1px solid rgba(255,180,0,0.4);}
   .cat-physical{background:rgba(226,96,96,0.15);color:#ff8080;border:1px solid rgba(226,96,96,0.35);}
   .cat-caster{background:rgba(50,150,255,0.15);color:#80c0ff;border:1px solid rgba(50,150,255,0.35);}
-  .cat-other{background:rgba(201,168,76,0.1);color:var(--text-muted);border:1px solid var(--border-gold);}
+  .cat-other{background:rgba(200,200,200,0.08);color:#aaa;border:1px solid rgba(180,180,180,0.3);}
   .cat-filter-bar{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;}
   .cat-filter-btn{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.07em;text-transform:uppercase;padding:.3rem .75rem;border-radius:3px;cursor:pointer;transition:all .15s;}
   .cat-filter-btn.active{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);}
@@ -740,7 +740,7 @@ function catRowHTML(selected){
       'cat-tier':  isActive?'border-color:#ffcc44;background:rgba(255,180,0,0.22);color:#ffcc44;':'border-color:rgba(255,180,0,0.25);background:#1a1a1a;color:#888;',
       'cat-physical': isActive?'border-color:#ff8080;background:rgba(226,96,96,0.22);color:#ff8080;':'border-color:rgba(226,96,96,0.2);background:#1a1a1a;color:#888;',
       'cat-caster':isActive?'border-color:#80c0ff;background:rgba(50,150,255,0.22);color:#80c0ff;':'border-color:rgba(50,150,255,0.2);background:#1a1a1a;color:#888;',
-      'cat-other': isActive?'border-color:var(--gold);background:rgba(212,169,60,0.18);color:var(--gold);':'border-color:#444;background:#1a1a1a;color:#888;',
+      'cat-other': isActive?'border-color:#ccc;background:rgba(200,200,200,0.15);color:#ccc;':'border-color:rgba(180,180,180,0.2);background:#1a1a1a;color:#888;',
     };
     const style=(colorMap[cc]||colorMap['cat-other'])+(isActive?'font-weight:600;':'font-weight:400;');
     return`<button class="q-btn-base" id="mcat-${cat.replace(/\//g,'-')}" style="${style}font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;" onclick="setModalCat('${cat}')">${cat}</button>`;
@@ -1263,7 +1263,7 @@ function setModalCat(cat){
     'cat-tier':  {on:'border-color:#ffcc44;background:rgba(255,180,0,0.22);color:#ffcc44;font-weight:600;',off:'border-color:rgba(255,180,0,0.25);background:#1a1a1a;color:#888;font-weight:400;'},
     'cat-physical':{on:'border-color:#ff8080;background:rgba(226,96,96,0.22);color:#ff8080;font-weight:600;',off:'border-color:rgba(226,96,96,0.2);background:#1a1a1a;color:#888;font-weight:400;'},
     'cat-caster':{on:'border-color:#80c0ff;background:rgba(50,150,255,0.22);color:#80c0ff;font-weight:600;',off:'border-color:rgba(50,150,255,0.2);background:#1a1a1a;color:#888;font-weight:400;'},
-    'cat-other': {on:'border-color:var(--gold);background:rgba(212,169,60,0.18);color:var(--gold);font-weight:600;',off:'border-color:#444;background:#1a1a1a;color:#888;font-weight:400;'},
+    'cat-other': {on:'border-color:#ccc;background:rgba(200,200,200,0.15);color:#ccc;font-weight:600;',off:'border-color:rgba(180,180,180,0.2);background:#1a1a1a;color:#888;font-weight:400;'},
   };
   raidCategories.forEach(c=>{
     const b=document.getElementById('mcat-'+c.replace(/\//g,'-'));if(!b)return;

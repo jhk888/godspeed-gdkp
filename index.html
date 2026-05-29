@@ -477,7 +477,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 
 let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab='active';
-let modal=false,editId=null,modalQuality='epic';
+let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
@@ -731,9 +731,20 @@ function qRowHTML(selected){
   }).join('');
 }
 
+function catRowHTML(selected){
+  return raidCategories.map(cat=>{
+    const isActive=cat===selected;
+    const style=isActive
+      ?'border-color:var(--gold);background:rgba(212,169,60,0.18);color:var(--gold);font-weight:600;'
+      :'border-color:#444;background:#1a1a1a;color:#888;font-weight:400;';
+    return`<button class="q-btn-base" id="mcat-${cat.replace(/\//g,'-')}" style="${style}font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;" onclick="setModalCat('${cat}')">${cat}</button>`;
+  }).join('');
+}
+
 function buildModal(title,a,fn){
   const isEdit=!!a;
   const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:raidSettings.defaultBidButtons||[250,500,1000];
+  modalCategory=a?a.category||'Tier':'Tier';
   return`<div class="modal-overlay" id="modal-overlay" onmousedown="modalOverlayMousedown(event)" onmouseup="modalOverlayMouseup(event)"><div class="modal" onmousedown="event.stopPropagation()" onmouseup="event.stopPropagation()" onclick="event.stopPropagation()">
     <div class="modal-title">${title}</div>
     <div class="fg"><div class="lbl">Search item</div>
@@ -761,7 +772,7 @@ function buildModal(title,a,fn){
         <span style="font-size:.8rem;color:var(--text-muted);">g each</span>
       </div>
     </div>
-    <div class="fg"><div class="lbl">Category</div><select id="m-cat" style="width:100%;background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);padding:.5rem .65rem;font-family:'Inter',sans-serif;font-size:.9rem;border-radius:3px;outline:none;">${getCategoryOptions(a?a.category:'Tier')}</select></div>
+    <div class="fg"><div class="lbl">Category</div><div class="q-row" id="cat-row">${catRowHTML(modalCategory)}</div></div>
     <div class="fg"><div class="lbl">Note <span style="color:var(--text-muted);font-size:.7rem;">(RL only)</span></div><input type="text" id="m-note" value="${a?a.note||'':''}" placeholder="e.g. reserved, officer only..." /></div>
     <div class="modal-actions">
       <button class="btn btn-outline btn-sm" onclick="closeModal()">Cancel</button>
@@ -1112,7 +1123,7 @@ function addToQueue(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:document.getElementById('m-cat')?.value||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
+  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
   // Keep modal open for adding more items — just reset the search fields
   selectedItem=null;searchQuery='';
   const inp=document.getElementById('item-search-input');
@@ -1122,7 +1133,7 @@ function addToQueue(){
   const dd=document.getElementById('item-dropdown');
   if(dd)dd.style.display='none';
   // Reset quality to epic
-  modalQuality='epic';
+  modalQuality='epic';modalCategory='Tier';
   ['legendary','epic','rare','uncommon'].forEach(x=>{
     const b=document.getElementById('q-'+x);if(!b)return;
     const s=x==='epic'?Q_STYLES[x].on:Q_STYLES[x].off;
@@ -1139,7 +1150,7 @@ function addToQueueAndStart(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:document.getElementById('m-cat')?.value||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',order:0,remaining:dur,paused:false,endsAt:Date.now()+dur*1000});
+  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,minIncrement:50,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',order:0,remaining:dur,paused:false,endsAt:Date.now()+dur*1000});
   modal=false;editId=null;selectedItem=null;searchQuery='';
   tab='active';
   toast(name+' started!');
@@ -1152,7 +1163,7 @@ function saveEdit(){
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:50,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
-  updates.category=document.getElementById('m-cat')?.value||'Other';
+  updates.category=modalCategory||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
   update(runRef(`/auctions/${editId}`),updates);
@@ -1240,7 +1251,8 @@ function submitBid(id,val,_evt){const a=auctions[id];if(!a)return;playCoinSound(
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}searchTimer=setTimeout(()=>searchWowhead(val),350);}
 function setQ(q){modalQuality=q;['legendary','epic','rare','uncommon'].forEach(x=>{const b=document.getElementById('q-'+x);if(!b)return;const s=x===q?Q_STYLES[x].on:Q_STYLES[x].off;b.setAttribute('style',s+"font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;font-weight:"+(x===q?'600':'400')+';');});}
-function openModal(){modal=true;editId=null;modalQuality='epic';selectedItem=null;searchQuery='';render();}
+function setModalCat(cat){modalCategory=cat;raidCategories.forEach(c=>{const b=document.getElementById('mcat-'+c.replace(/\//g,'-'));if(!b)return;const isActive=c===cat;b.setAttribute('style',(isActive?'border-color:var(--gold);background:rgba(212,169,60,0.18);color:var(--gold);font-weight:600;':'border-color:#444;background:#1a1a1a;color:#888;font-weight:400;')+"font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;");});}
+function openModal(){modal=true;editId=null;modalQuality='epic';modalCategory='Tier';selectedItem=null;searchQuery='';render();}
 function openEdit(id){const a=auctions[id];if(!a)return;modal=true;editId=id;modalQuality=a.quality||'epic';selectedItem=null;searchQuery='';render();}
 let _modalMousedownOnOverlay=false;
 function modalOverlayMousedown(e){_modalMousedownOnOverlay=e.target===e.currentTarget;}
@@ -1967,7 +1979,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

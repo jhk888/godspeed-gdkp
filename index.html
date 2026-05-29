@@ -420,51 +420,54 @@
   .coin-burst{position:fixed;pointer-events:none;z-index:9999;animation:coinBurst var(--cd) ease-out forwards;}
   @keyframes bidGlow {0%{box-shadow:0 0 0 0 rgba(212,169,60,0);border-color:var(--border-gold);}35%{box-shadow:0 0 22px 8px rgba(212,169,60,0.6);border-color:var(--gold-light);}100%{box-shadow:0 0 0 0 rgba(212,169,60,0);border-color:var(--border-gold);}}
   .bid-glow{animation:bidGlow .9s ease-out;}
+  @keyframes wowDialogIn{0%{opacity:0;transform:scale(.9);}100%{opacity:1;transform:scale(1);}}
   /* WoW-style confirm dialog */
-  .wow-dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px);}
+  .wow-dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
   .wow-dialog{
     position:relative;
-    background:linear-gradient(160deg,#1a1208 0%,#110d06 60%,#0e0a04 100%);
-    border:2px solid #6b4f1a;
-    min-width:300px;max-width:420px;width:90%;
-    padding:1.75rem 1.75rem 1.5rem;
+    background:linear-gradient(175deg,#1e1608 0%,#130e05 50%,#0c0904 100%);
+    border:2px solid #8a6318;
+    min-width:320px;max-width:440px;width:90%;
+    padding:2rem 2rem 1.6rem;
     font-family:'Cinzel',serif;
-    box-shadow:0 0 0 1px #3a2a0a,0 0 40px rgba(180,120,0,0.25),inset 0 0 60px rgba(0,0,0,0.6);
+    box-shadow:0 0 0 1px #2a1e06,0 0 0 3px rgba(100,70,10,0.3),0 20px 60px rgba(0,0,0,0.8),inset 0 1px 0 rgba(255,200,60,0.08);
+    animation:wowDialogIn .18s ease-out;
   }
-  /* Rough corner ornaments */
   .wow-dialog::before,.wow-dialog::after{
-    content:'';position:absolute;width:18px;height:18px;
-    background:radial-gradient(circle,#c8960a 0%,#6b4f1a 60%,transparent 100%);
+    content:'';position:absolute;width:20px;height:20px;
+    background:radial-gradient(circle,#f0c030 0%,#8a6318 55%,transparent 100%);
     border-radius:50%;
   }
-  .wow-dialog::before{top:-6px;left:-6px;box-shadow:0 0 8px #c8960a;}
-  .wow-dialog::after{top:-6px;right:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog::before{top:-7px;left:-7px;box-shadow:0 0 10px rgba(240,180,30,0.7);}
+  .wow-dialog::after{top:-7px;right:-7px;box-shadow:0 0 10px rgba(240,180,30,0.7);}
   .wow-dialog-corners::before,.wow-dialog-corners::after{
-    content:'';position:absolute;width:18px;height:18px;
-    background:radial-gradient(circle,#c8960a 0%,#6b4f1a 60%,transparent 100%);
+    content:'';position:absolute;width:20px;height:20px;
+    background:radial-gradient(circle,#f0c030 0%,#8a6318 55%,transparent 100%);
     border-radius:50%;
   }
-  .wow-dialog-corners::before{bottom:-6px;left:-6px;box-shadow:0 0 8px #c8960a;}
-  .wow-dialog-corners::after{bottom:-6px;right:-6px;box-shadow:0 0 8px #c8960a;}
+  .wow-dialog-corners::before{bottom:-7px;left:-7px;box-shadow:0 0 10px rgba(240,180,30,0.7);}
+  .wow-dialog-corners::after{bottom:-7px;right:-7px;box-shadow:0 0 10px rgba(240,180,30,0.7);}
   .wow-dialog-title{
-    font-size:1rem;letter-spacing:.12em;text-transform:uppercase;
-    color:#f0cc6a;text-align:center;margin-bottom:1rem;
-    text-shadow:0 0 12px rgba(240,180,50,0.6);
-    border-bottom:1px solid rgba(180,130,20,0.3);padding-bottom:.75rem;
+    font-size:1.05rem;letter-spacing:.14em;text-transform:uppercase;
+    color:#f5d060;text-align:center;margin-bottom:.9rem;
+    text-shadow:0 0 16px rgba(240,190,50,0.5),0 1px 2px rgba(0,0,0,0.8);
+    border-bottom:1px solid rgba(180,130,20,0.25);padding-bottom:.8rem;
   }
-  .wow-dialog-msg{font-family:'Inter',sans-serif;font-size:.88rem;color:#d4c090;text-align:center;line-height:1.5;margin-bottom:1.4rem;}
-  .wow-dialog-btns{display:flex;gap:.6rem;justify-content:center;}
+  .wow-dialog-msg{font-family:'Inter',sans-serif;font-size:.88rem;color:#c8b070;text-align:center;line-height:1.6;margin-bottom:1.4rem;}
+  .wow-dialog-input{width:100%;background:rgba(0,0,0,0.5);border:1px solid #6b4f1a;border-radius:3px;color:#f0d878;font-family:'Cinzel',serif;font-size:.95rem;padding:.6rem .8rem;margin-bottom:1.2rem;outline:none;text-align:center;box-sizing:border-box;}
+  .wow-dialog-input:focus{border-color:#c8a030;box-shadow:0 0 0 2px rgba(200,160,48,0.2);}
+  .wow-dialog-btns{display:flex;gap:.7rem;justify-content:center;}
   .wow-dialog-btn{
     font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
-    padding:.55rem 1.4rem;cursor:pointer;border-radius:2px;
-    transition:all .15s;
+    padding:.6rem 1.6rem;cursor:pointer;border-radius:2px;
+    transition:all .12s;min-width:100px;
   }
-  .wow-dialog-btn-confirm{background:linear-gradient(180deg,#c8860a,#7a4e06);color:#fff8e0;border:1px solid #e8a020;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
-  .wow-dialog-btn-confirm:hover{background:linear-gradient(180deg,#e09818,#9a6010);border-color:#f0c040;}
-  .wow-dialog-btn-danger{background:linear-gradient(180deg,#8a1a1a,#5a0e0e);color:#ffd0d0;border:1px solid #cc3030;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
-  .wow-dialog-btn-danger:hover{background:linear-gradient(180deg,#aa2222,#721212);border-color:#ff4040;}
-  .wow-dialog-btn-cancel{background:linear-gradient(180deg,#2a2318,#1a160e);color:#a08040;border:1px solid #4a3a18;box-shadow:0 2px 6px rgba(0,0,0,0.5);}
-  .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e,#221a10);border-color:#6a5228;}
+  .wow-dialog-btn-confirm{background:linear-gradient(180deg,#c8860a 0%,#7a4e06 100%);color:#fff8e0;border:1px solid #e8a020;box-shadow:0 2px 8px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,200,80,0.2);}
+  .wow-dialog-btn-confirm:hover{background:linear-gradient(180deg,#e09818 0%,#9a6010 100%);}
+  .wow-dialog-btn-danger{background:linear-gradient(180deg,#8a1a1a 0%,#5a0e0e 100%);color:#ffd0d0;border:1px solid #cc3030;box-shadow:0 2px 8px rgba(0,0,0,0.6),inset 0 1px 0 rgba(255,120,120,0.15);}
+  .wow-dialog-btn-danger:hover{background:linear-gradient(180deg,#aa2222 0%,#721212 100%);}
+  .wow-dialog-btn-cancel{background:linear-gradient(180deg,#2a2318 0%,#1a160e 100%);color:#a08040;border:1px solid #4a3a18;box-shadow:0 2px 8px rgba(0,0,0,0.6);}
+  .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
 </style>
 </head>
 <body>
@@ -598,7 +601,7 @@ function toast(msg){
   },1400);
 }
 
-function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,onConfirm}){
+function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,onConfirm}){
   const existing=document.getElementById('wow-dialog-overlay');
   if(existing)existing.remove();
   const overlay=document.createElement('div');
@@ -609,15 +612,25 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-corners"></div>
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
+      ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="number" placeholder="${input.placeholder||''}" min="${input.min||0}" step="${input.step||1}" />`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
         <button class="wow-dialog-btn ${danger?'wow-dialog-btn-danger':'wow-dialog-btn-confirm'}" id="wow-confirm">${confirmLabel}</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  const inp=document.getElementById('wow-dialog-input');
+  if(inp)setTimeout(()=>inp.focus(),50);
   const close=()=>overlay.remove();
   document.getElementById('wow-cancel').onclick=close;
-  document.getElementById('wow-confirm').onclick=()=>{close();onConfirm();};
+  document.getElementById('wow-confirm').onclick=()=>{
+    if(input&&inp){
+      const val=parseInt(inp.value);
+      if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
+      close();onConfirm(val);
+    }else{close();onConfirm();}
+  };
+  if(inp)inp.onkeydown=e=>{if(e.key==='Enter')document.getElementById('wow-confirm').click();};
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
 }
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
@@ -1435,7 +1448,7 @@ function renderCard(a,mode){
       ${autoBidSet
         ?`<span style="font-size:.7rem;color:var(--amber);font-family:'Cinzel',serif;">Auto: up to ${autoBidSet.toLocaleString()}g</span>
            <button onclick="clearAutoBid('${a.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0;">✕</button>`
-        :`<button onclick="setAutoBid('${a.id}')" style="background:none;border:1px solid rgba(201,168,76,0.3);color:var(--text-muted);cursor:pointer;font-size:.68rem;font-family:'Cinzel',serif;letter-spacing:.05em;padding:.2rem .5rem;border-radius:3px;">Set Limit Bid</button>`
+        :`<button onclick="setAutoBid('${a.id}')" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);color:var(--gold);cursor:pointer;font-size:.7rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.3rem .7rem;border-radius:3px;">&#9654; Set Limit Bid</button>`
       }
     </div>`:'' ;
     bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
@@ -1551,13 +1564,18 @@ function setAutoBid(id){
   const a=auctions[id];if(!a||a.status!=='open')return;
   const cur=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.amount||a.currentBid||0;
   const min=cur+(a.minIncrement||250);
-  const val=prompt(`Set auto-bid limit for ${a.name}\nCurrent: ${cur.toLocaleString()}g\nMin to set: ${min.toLocaleString()}g`);
-  if(!val)return;
-  const max=parseInt(val);
-  if(isNaN(max)||max<min){toast('Must be at least '+min.toLocaleString()+'g');return;}
-  autoBids[id]=max;
-  toast(`Auto-bid set: up to ${max.toLocaleString()}g`);
-  render();
+  wowConfirm({
+    title:'Set Limit Bid',
+    msg:`<strong style="color:#f5d060;">${a.name}</strong><br>Current: ${cur.toLocaleString()}g &nbsp;·&nbsp; Min: ${min.toLocaleString()}g`,
+    confirmLabel:'Set Limit',
+    danger:false,
+    input:{placeholder:`e.g. ${(min*4).toLocaleString()}`,min,step:a.minIncrement||250,errorMsg:`Must be at least ${min.toLocaleString()}g`},
+    onConfirm:(max)=>{
+      autoBids[id]=max;
+      toast(`Auto-bid set: up to ${max.toLocaleString()}g`);
+      render();
+    }
+  });
 }
 function clearAutoBid(id){
   delete autoBids[id];

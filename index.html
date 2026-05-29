@@ -629,11 +629,13 @@ function subscribeToRun(){
     // Detect new bids on open auctions — collect pending glows first
     const pendingGlows=[];
     const pendingExplosions=[];
+    let bidOnlyUpdate=true; // track if this snapshot has ONLY bid changes on open items
     if(user){
       Object.entries(auctions).forEach(([id,a])=>{
         // Glow on new bid
         if(a.status==='open'){
-          const prevBidCount=Object.keys(prevAuctions[id]?.bids||{}).length;
+          const prev=prevAuctions[id];
+          const prevBidCount=Object.keys(prev?.bids||{}).length;
           const newBidCount=Object.keys(a.bids||{}).length;
           if(newBidCount>prevBidCount){
             pendingGlows.push({id});
@@ -641,15 +643,24 @@ function subscribeToRun(){
             const isMine=bids[0]?.bidder===user;
             if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
           }
+          // Check if anything besides bids changed on this open item
+          if(prev&&(a.currentBid!==prev.currentBid||a.paused!==prev.paused||a.endsAt!==prev.endsAt||a.remaining!==prev.remaining||a.status!==prev.status)){}
+          // non-bid fields changed — need full render
         }
         // Explosion when item transitions open→sold
         if(a.status==='sold'&&prevAuctions[id]?.status==='open'){
-          // Capture position NOW before render wipes the card
           const card=document.getElementById('card-'+id);
           const rect=card?card.getBoundingClientRect():null;
           pendingExplosions.push({id,amount:a.currentBid||0,rect});
+          bidOnlyUpdate=false;
         }
+        // Any status change other than open means full render needed
+        if(prevAuctions[id]&&a.status!==prevAuctions[id].status) bidOnlyUpdate=false;
       });
+      // New items added or removed also need full render
+      if(Object.keys(auctions).length!==Object.keys(prevAuctions).length) bidOnlyUpdate=false;
+    } else {
+      bidOnlyUpdate=false;
     }
 
     if(modal) return;
@@ -661,18 +672,31 @@ function subscribeToRun(){
       if(c) cardRects[id]=c.getBoundingClientRect();
     });
     pendingExplosions.forEach(({id})=>{
-      const c=document.getElementById('card-'+id);
-      if(c) cardRects[id]=c.getBoundingClientRect();
+      if(!cardRects[id]){const c=document.getElementById('card-'+id);if(c)cardRects[id]=c.getBoundingClientRect();}
     });
 
-    render();
-    if(panelOpen&&panelTab==='raiders')renderPanel();
-    if(panelOpen&&panelTab==='audit')renderAuditPanel();
-    if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+    if(bidOnlyUpdate && tab==='active' && pendingGlows.length>0){
+      // Just update the affected cards in-place — no full render
+      pendingGlows.forEach(({id})=>{
+        const a=auctions[id];if(!a)return;
+        const wrap=document.getElementById('wrap-'+id);
+        if(wrap){
+          const t=document.createElement('div');
+          t.innerHTML=renderCard(a,'open');
+          wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
+        }
+      });
+      // Still update pot bar etc
+      renderHdr();
+    } else {
+      render();
+      if(panelOpen&&panelTab==='raiders')renderPanel();
+      if(panelOpen&&panelTab==='audit')renderAuditPanel();
+      if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+    }
 
-    // Apply glows — use pre-captured rect to create a temporary overlay element
+    // Apply glows AFTER card update
     pendingGlows.forEach(({id})=>{
-      // Card may still exist after render (live tab stays open), try direct first
       const card=document.getElementById('card-'+id);
       if(card){
         card.classList.remove('bid-glow');
@@ -680,7 +704,6 @@ function subscribeToRun(){
         card.classList.add('bid-glow');
         setTimeout(()=>card.classList.remove('bid-glow'),950);
       } else if(cardRects[id]){
-        // Card was removed — flash an overlay at its old position
         const r=cardRects[id];
         const el=document.createElement('div');
         el.style.cssText=`position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;pointer-events:none;z-index:9998;border-radius:5px;animation:bidGlow .9s ease-out forwards;`;
@@ -689,10 +712,10 @@ function subscribeToRun(){
       }
     });
 
-    // Fire coin explosions
+    // Fire coin explosions for newly sold items
     pendingExplosions.forEach(({id,amount,rect})=>{
       const r=rect||cardRects[id];
-      setTimeout(()=>coinExplosionAt(amount, r),50);
+      setTimeout(()=>coinExplosionAt(amount,r),50);
     });
   });
 }

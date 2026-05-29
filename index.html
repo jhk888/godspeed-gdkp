@@ -638,7 +638,6 @@ function subscribeToRun(){
           const newBidCount=Object.keys(a.bids||{}).length;
           if(newBidCount>prevBidCount){
             pendingGlows.push({id});
-            console.log('[GLOW] new bid detected, id='+id+' prev='+prevBidCount+' new='+newBidCount);
             const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
             const isMine=bids[0]?.bidder===user;
             if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
@@ -697,10 +696,8 @@ function subscribeToRun(){
     }
 
     // Apply glows AFTER card update
-    console.log('[GLOW] pendingGlows='+pendingGlows.length+' bidOnlyUpdate='+bidOnlyUpdate+' tab='+tab);
     pendingGlows.forEach(({id})=>{
       const card=document.getElementById('card-'+id);
-      console.log('[GLOW] applying to card-'+id+' found='+!!card+' rect='+!!cardRects[id]);
       if(card){
         card.classList.remove('bid-glow');
         void card.offsetWidth;
@@ -759,7 +756,11 @@ function logout(){
   clearPresence();panelOpen=false;render();
 }
 function render(){
-  if(!user){renderLogin();return;}
+  if(!user){
+    // Only render login if not already showing it (prevents wiping typed input)
+    if(!document.getElementById('li')) renderLogin();
+    return;
+  }
   renderHdr();renderMain();
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';

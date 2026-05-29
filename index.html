@@ -509,7 +509,7 @@
     <div style="display:flex;gap:.35rem;justify-content:space-between;align-items:center;">
       <div style="display:flex;gap:.3rem;">
         <button id="panel-tab-raiders" class="btn btn-gold btn-sm" onclick="setPanelTab('raiders')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Raiders</button>
-        ${isRL?`<button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Audit</button>`:''}
+        <button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;display:none;">Audit</button>
         <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Past Runs</button>
       </div>
       <button class="btn btn-outline btn-sm" onclick="togglePanel()" style="flex-shrink:0;white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;">&#x2715; Close</button>
@@ -961,6 +961,9 @@ function render(){
 }
 
 function renderHdr(){
+  // Show audit tab only to RL
+  const auditBtn=document.getElementById('panel-tab-audit');
+  if(auditBtn) auditBtn.style.display=isRL?'':'none';
   const avatarEl = discordUser?.avatar
     ? `<img src="${discordUser.avatar}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);margin-right:.25rem;" />`
     : '';
@@ -2624,7 +2627,11 @@ if (_savedUser) {
   localStorage.setItem('gdkp_user', user);
   localStorage.setItem('gdkp_isRL', isRL ? '1' : '0');
   getOrCreateRun();
-} else render();
+} else {
+  render();
+  // Fallback in case initial render fails
+  setTimeout(()=>{if(!user&&document.getElementById('main')?.innerHTML.trim()==='')render();},1500);
+}
 </script>
 </body>
 </html>

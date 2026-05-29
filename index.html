@@ -364,6 +364,13 @@
   .sanity-warn{color:var(--red);font-family:'Cinzel',serif;font-size:.72rem;}
 
   @keyframes spin{to{transform:rotate(360deg);}}
+  /* Floating coin animation */
+  @keyframes coinFloat{
+    0%{transform:translateY(0) scale(1) rotate(0deg);opacity:1;}
+    60%{transform:translateY(-80px) scale(1.2) rotate(180deg);opacity:.9;}
+    100%{transform:translateY(-140px) scale(.6) rotate(360deg);opacity:0;}
+  }
+  .coin-particle{position:fixed;pointer-events:none;z-index:9999;font-size:1.5rem;animation:coinFloat .9s ease-out forwards;}
 </style>
 </head>
 <body>
@@ -413,17 +420,17 @@
 <button class="fab" id="fab" onclick="openModal()" title="Add Item">+</button>
 
 <!-- Chat Box -->
-<div class="chat-box" id="chat-box">
+<div class="chat-box collapsed" id="chat-box">
   <div class="chat-hdr" onclick="toggleChat()" style="cursor:pointer;">
     <span class="chat-hdr-title" id="chat-hdr-title">Raid Chat</span>
     <div style="display:flex;align-items:center;gap:.4rem;">
       <span id="chat-unread" class="chat-unread" style="display:none;">0</span>
-      <span id="chat-toggle-icon" style="font-size:.7rem;color:var(--text-muted);">▼</span>
+      <span id="chat-toggle-icon" style="font-size:.7rem;color:var(--text-muted);">▲</span>
     </div>
   </div>
   <div class="chat-tabs" id="chat-tabs" style="display:none;"></div>
   <div class="chat-messages" id="chat-messages"></div>
-  <div class="chat-input-row" id="chat-input-row">
+  <div class="chat-input-row" id="chat-input-row" style="display:none;">
     <input class="chat-input" id="chat-input" placeholder="Message..." maxlength="200"
       onkeydown="if(event.key==='Enter')sendChat()" />
     <button class="chat-send" onclick="sendChat()">Send</button>
@@ -1053,10 +1060,10 @@ function renderCard(a,mode){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const qbtns=hasBids
-      ? btns.map(pct=>{const amt=Math.ceil(cur*(1+pct/100)/100)*100;return`<button class="qb" onclick="quickBid('${a.id}',${amt})">+${pct}% <span style="font-size:.65em;opacity:.75;">${amt.toLocaleString()}g</span></button>`;}).join('')
-      : `<button class="qb" style="flex:1;" onclick="quickBid('${a.id}',${cur})">Bid ${cur.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">starting bid</span></button>`;
+      ? btns.map(pct=>{const amt=Math.ceil(cur*(1+pct/100)/100)*100;return`<button class="qb" onclick="quickBid('${a.id}',${amt},event)">+${pct}% <span style="font-size:.65em;opacity:.75;">${amt.toLocaleString()}g</span></button>`;}).join('')
+      : `<button class="qb" style="flex:1;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g <span style="font-size:.65em;opacity:.75;">starting bid</span></button>`;
     const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Custom':'Custom'}</button>`;
-    const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||100}" onkeydown="if(event.key==='Enter')placeBid('${a.id}')" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}')">Bid</button></div>`:'';
+    const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||100}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const retractBtn=isLeading&&!isRL?`<button class="btn btn-danger btn-sm" onclick="retractBid('${a.id}')" style="margin-top:.3rem;">Retract Bid</button>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}${cbtn}</div>${crow}${retractBtn}</div>`;
   }else if(mode==='open'&&a.paused){
@@ -1186,9 +1193,46 @@ function saveSoldEdit(id){
   document.getElementById('sold-edit-overlay')?.remove();
   toast('Sale updated');
 }
-function quickBid(id,amount){const a=auctions[id];if(!a||a.status!=='open'||a.paused)return;const hasBids=Object.keys(a.bids||{}).length>0;const mn=hasBids?(a.currentBid||0)+(a.minIncrement||50):(a.currentBid||0);if(amount<mn){toast('Below min of '+mn.toLocaleString()+'g');return;}submitBid(id,amount);}
-function placeBid(id){const inp=document.getElementById('bid-'+id);const val=parseInt(inp?.value);const a=auctions[id];if(!a||a.status!=='open'||a.paused)return;const mn=(a.currentBid||0)+(a.minIncrement||100);if(!val||val<mn){toast('Min bid is '+mn.toLocaleString()+'g');return;}customOpen[id]=false;submitBid(id,val);if(inp)inp.value='';}
-function submitBid(id,val){const a=auctions[id];if(!a)return;const br=push(runRef(`/auctions/${id}/bids`));set(br,{bidder:user,amount:val,ts:Date.now()});update(runRef(`/auctions/${id}`),{currentBid:val});if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){update(runRef(`/auctions/${id}`),{endsAt:Date.now()+30000,remaining:30});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}toast('Bid placed: '+val.toLocaleString()+'g');}
+function quickBid(id,amount,_evt){const a=auctions[id];if(!a||a.status!=='open'||a.paused)return;const hasBids=Object.keys(a.bids||{}).length>0;const mn=hasBids?(a.currentBid||0)+(a.minIncrement||50):(a.currentBid||0);if(amount<mn){toast('Below min of '+mn.toLocaleString()+'g');return;}submitBid(id,amount,_evt);}
+function placeBid(id,_evt){const inp=document.getElementById('bid-'+id);const val=parseInt(inp?.value);const a=auctions[id];if(!a||a.status!=='open'||a.paused)return;const mn=(a.currentBid||0)+(a.minIncrement||100);if(!val||val<mn){toast('Min bid is '+mn.toLocaleString()+'g');return;}customOpen[id]=false;submitBid(id,val,_evt);if(inp)inp.value='';}
+function playCoinSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    // Two quick coin pings
+    [0, 120].forEach(delayMs=>{
+      setTimeout(()=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.connect(g);g.connect(ctx.destination);
+        o.type='sine';
+        o.frequency.setValueAtTime(1200,ctx.currentTime);
+        o.frequency.exponentialRampToValueAtTime(900,ctx.currentTime+0.08);
+        g.gain.setValueAtTime(0.18,ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.18);
+        o.start(ctx.currentTime);o.stop(ctx.currentTime+0.18);
+      },delayMs);
+    });
+  }catch(e){}
+}
+function spawnCoin(e){
+  // Spawn from the button/element that triggered the bid if available, else center of screen
+  const x=e?.clientX??window.innerWidth/2;
+  const y=e?.clientY??window.innerHeight*0.7;
+  const coins=['🪙','🪙','💰'];
+  for(let i=0;i<3;i++){
+    setTimeout(()=>{
+      const el=document.createElement('span');
+      el.className='coin-particle';
+      el.textContent=coins[i%coins.length];
+      el.style.left=(x + (Math.random()-0.5)*40)+'px';
+      el.style.top=y+'px';
+      el.style.animationDelay=(i*60)+'ms';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),1100);
+    },i*60);
+  }
+}
+function submitBid(id,val,_evt){const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));set(br,{bidder:user,amount:val,ts:Date.now()});update(runRef(`/auctions/${id}`),{currentBid:val});if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){update(runRef(`/auctions/${id}`),{endsAt:Date.now()+30000,remaining:30});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}searchTimer=setTimeout(()=>searchWowhead(val),350);}
 function setQ(q){modalQuality=q;['legendary','epic','rare','uncommon'].forEach(x=>{const b=document.getElementById('q-'+x);if(!b)return;const s=x===q?Q_STYLES[x].on:Q_STYLES[x].off;b.setAttribute('style',s+"font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;font-weight:"+(x===q?'600':'400')+';');});}
@@ -1302,7 +1346,7 @@ function toggleMembersSidebar(){
 
 
 // ── Chat ──────────────────────────────────────────────────────────────────
-let chatCollapsed=false;
+let chatCollapsed=true;
 let chatUnread=0;
 let unsubChat=null;
 

@@ -509,7 +509,7 @@
     <div style="display:flex;gap:.35rem;justify-content:space-between;align-items:center;">
       <div style="display:flex;gap:.3rem;">
         <button id="panel-tab-raiders" class="btn btn-gold btn-sm" onclick="setPanelTab('raiders')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Raiders</button>
-        <button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Audit</button>
+        ${isRL?`<button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Audit</button>`:''}
         <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Past Runs</button>
       </div>
       <button class="btn btn-outline btn-sm" onclick="togglePanel()" style="flex-shrink:0;white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;">&#x2715; Close</button>
@@ -2280,7 +2280,7 @@ async function renderPastRunsPanel(){
         <div style="padding:.6rem .85rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
           <div style="min-width:0;flex:1;">
             <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);">${title}</div>
-            ${date?`<div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items · ${pot.toLocaleString()}g</div>`:''}
+            ${date?`<div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items${isRL?` · ${pot.toLocaleString()}g`:''}</div>`:''}
           </div>
           ${isRL?`<button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;flex-shrink:0;align-self:center;">Delete</button>`:''}
         </div>

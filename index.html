@@ -1190,7 +1190,8 @@ function renderGrid(list,mode){
 }
 
 function renderCard(a,mode){
-  const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+  const allBids=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
+  const bids=allBids.map(([,b])=>b).filter(b=>!b.retracted);
   const top=bids[0]||null,isLeading=top&&top.bidder===user;
   const now=Date.now();
   const rem=a.status==='open'&&!a.paused&&a.endsAt?Math.max(0,Math.floor((a.endsAt-now)/1000)):(a.remaining||0);
@@ -1198,7 +1199,14 @@ function renderCard(a,mode){
   const urgent=rem<=15&&a.status==='open'&&!a.paused;
   const minNext=(a.currentBid||0)+(a.minIncrement||250);
   const showCustom=!!customOpen[a.id];
-  const histItems=bids.slice(0,5).map(b=>`<div class="hist-row"><span class="${b.bidder===user?'you-bid':''}">${b.bidder===user?'You':b.bidder}</span><span>${b.amount.toLocaleString()}g</span></div>`).join('');
+  const histItems=allBids.slice(0,8).map(([,b])=>{
+    const isRetracted=!!b.retracted;
+    const name=b.bidder===user?'You':b.bidder;
+    return`<div class="hist-row" style="${isRetracted?'opacity:.4;':''}">
+      <span class="${b.bidder===user&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${name}${isRetracted?' ↩':''}</span>
+      <span style="${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${b.amount.toLocaleString()}g</span>
+    </div>`;
+  }).join('');
   const iconHTML=a.itemIcon&&a.itemId
     ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;"><img class="item-icon" src="${iconUrl(a.itemIcon)}" onerror="this.style.display='none'" /></a>`
     :a.itemIcon
@@ -1241,7 +1249,7 @@ function renderCard(a,mode){
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   if(isRL){
-    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
+    if(mode==='open')rlControls=`<div class="rl-controls"><button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'&#9646;&#9646; Pause'}</button><button class="btn btn-outline btn-sm" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button>${bids.length?`<button class="btn btn-danger btn-sm" onclick="rlRetractBid('${a.id}')">Retract</button>`:''}<button class="btn btn-danger btn-sm" onclick="cancelAuction('${a.id}')">Cancel</button><button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button></div>`;
     else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
@@ -1460,15 +1468,39 @@ function modalOverlayMousedown(e){_modalMousedownOnOverlay=e.target===e.currentT
 function modalOverlayMouseup(e){if(_modalMousedownOnOverlay&&e.target===e.currentTarget)closeModal();_modalMousedownOnOverlay=false;}
 function retractBid(id){
   const a=auctions[id];if(!a||a.status!=='open')return;
-  const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
-  if(!bids[0]||bids[0].bidder!==user){toast('You are not the current leader');return;}
-  // Remove top bid and revert to previous bid amount
-  const topBidKey=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount)[0]?.[0];
-  if(!topBidKey)return;
-  remove(runRef(`/auctions/${id}/bids/${topBidKey}`));
-  const prevBid=bids[1]?.amount||0;
-  update(runRef(`/auctions/${id}`),{currentBid:bids[1]?.amount||0});
+  const bidEntries=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
+  const myTopEntry=bidEntries.find(([,b])=>b.bidder===user);
+  if(!myTopEntry){toast('No bid to retract');return;}
+  if(bidEntries[0][1].bidder!==user){toast('You are not the current leader');return;}
+  const [topKey]=myTopEntry;
+  // Mark as retracted rather than delete so history shows it
+  const prevBid=bidEntries[1]?.[1]?.amount||0;
+  const updates={};
+  updates[`auctions/${id}/bids/${topKey}/retracted`]=true;
+  updates[`auctions/${id}/currentBid`]=prevBid;
+  update(runRef(),updates);
   toast('Bid retracted');
+}
+function rlRetractBid(id){
+  const a=auctions[id];if(!a||a.status!=='open'||!isRL)return;
+  const bidEntries=Object.entries(a.bids||{}).filter(([,b])=>!b.retracted).sort((x,y)=>y[1].amount-x[1].amount);
+  if(!bidEntries.length){toast('No bids to retract');return;}
+  const [topKey,topBid]=bidEntries[0];
+  if(!confirm(`Retract ${topBid.bidder}'s bid of ${topBid.amount.toLocaleString()}g?`))return;
+  const prevBid=bidEntries[1]?.[1]?.amount||0;
+  const updates={};
+  updates[`auctions/${id}/bids/${topKey}/retracted`]=true;
+  updates[`auctions/${id}/currentBid`]=prevBid;
+  update(runRef(),updates);
+  writeAudit(`${user} retracted ${topBid.bidder}'s bid of ${topBid.amount.toLocaleString()}g on ${a.name}`);
+  toast(`${topBid.bidder}'s bid retracted`);
+}
+function cancelAuction(id){
+  const a=auctions[id];if(!a||!isRL)return;
+  if(!confirm('Cancel this auction? It will return to the queue.'))return;
+  update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
+  tab='queued';
+  toast(a.name+' cancelled — returned to queue');
 }
 function duplicateItem(id){
   const a=auctions[id];if(!a)return;
@@ -2193,7 +2225,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

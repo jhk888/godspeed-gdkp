@@ -645,10 +645,16 @@ function subscribeToRun(){
             const isMine=bids[0]?.bidder===user;
             if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
           }
-          // If non-bid fields changed (timer, pause, etc) need full render
-          if(prev&&(a.paused!==prev.paused||a.status!==prev.status)){
-            bidOnlyUpdate=false;
+          // If non-bid fields changed (timer, pause, retraction) need full render
+          if(prev&&(a.paused!==prev.paused||a.status!==prev.status)) bidOnlyUpdate=false;
+          // Detect retraction — any bid now has retracted=true that didn't before
+          if(prev?.bids&&a.bids){
+            const prevRetractedCount=Object.values(prev.bids).filter(b=>b.retracted).length;
+            const newRetractedCount=Object.values(a.bids).filter(b=>b.retracted).length;
+            if(newRetractedCount>prevRetractedCount) bidOnlyUpdate=false;
           }
+          // currentBid changed without new bids = retraction updated price
+          if(prev&&a.currentBid!==prev.currentBid&&newBidCount===prevBidCount) bidOnlyUpdate=false;
         }
         if(a.status==='sold'&&prevAuctions[id]?.status==='open'){
           const card=document.getElementById('card-'+id);
@@ -1228,9 +1234,9 @@ function renderCard(a,mode){
     const qbtns=hasBids
       ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
       : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
-    const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-bottom:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
+    const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
     const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
-    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div>${cbtn}<div class="quick-bids">${qbtns}</div>${crow}</div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}</div>`;
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;

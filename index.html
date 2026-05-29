@@ -1205,7 +1205,10 @@ function renderCard(a,mode){
   const urgent=rem<=15&&a.status==='open'&&!a.paused;
   const minNext=(a.currentBid||0)+(a.minIncrement||250);
   const showCustom=!!customOpen[a.id];
-  const histItems=allBids.slice(0,8).map(([key,b])=>{
+  const activeBids=allBids.filter(([,b])=>!b.retracted).slice(0,5);
+  const retractedBids=allBids.filter(([,b])=>b.retracted);
+  const histEntries=[...activeBids,...retractedBids];
+  const histItems=histEntries.map(([key,b])=>{
     const isRetracted=!!b.retracted;
     const name=b.bidder===user?'You':b.bidder;
     const rlX=isRL&&!isRetracted?`<button onclick="rlRetractBid('${a.id}','${key}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.65rem;padding:0 .2rem;opacity:.5;flex-shrink:0;" title="Retract this bid">✕</button>`:'';

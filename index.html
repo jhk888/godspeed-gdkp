@@ -729,6 +729,7 @@ async function getOrCreateRun(){
   else{const nr=push(ref(db,'runs'));runId=nr.key;await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{}});}
   splitsLoaded=false;
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
+  render();
   // Write audit entry
   const loginType = discordUser ? ` (Discord: ${discordUser.username})` : ' (character name)';
   writeAudit(`${user} joined${loginType}`);
@@ -739,16 +740,12 @@ function joinDiscord(){
 }
 
 function join(){
-  const name=document.getElementById('li')?.value?.trim();
-  console.log('[JOIN] name="'+name+'"');
-  if(!name)return;
+  const name=document.getElementById('li')?.value?.trim();if(!name)return;
   user=name;isRL=document.getElementById('rlcode')?.value===RAID_LEADER_CODE;
-  console.log('[JOIN] banned='+isBanned({name:user}));
   // Check ban before joining
   if(isBanned({name:user})){handleBanned();return;}
   localStorage.setItem('gdkp_user',user);
   localStorage.setItem('gdkp_isRL',isRL?'1':'0');
-  console.log('[JOIN] calling getOrCreateRun');
   getOrCreateRun();renderHdr();
 }
 function logout(){

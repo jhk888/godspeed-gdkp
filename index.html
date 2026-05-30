@@ -2047,6 +2047,7 @@ function toggleMembersSidebar(){
   const sb=document.getElementById('members-sidebar');
   const tab=document.getElementById('sidebar-toggle-tab');
   if(sb) sb.classList.toggle('collapsed', sidebarCollapsed);
+  if(tab){
     tab.textContent=sidebarCollapsed?'▶':'◀';
     tab.classList.toggle('collapsed', sidebarCollapsed);
   }

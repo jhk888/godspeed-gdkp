@@ -862,8 +862,7 @@ function subscribeToRun(){
       lootDisplayMode=newLootDisplay;
       if(lootDisplayMode) renderLootDisplay();
       else {
-        const el=document.getElementById('loot-display-overlay');
-        if(el){if(el._escHandler)document.removeEventListener('keydown',el._escHandler);el.remove();}
+        document.getElementById('loot-display-overlay')?.remove();
       }
     } else if(lootDisplayMode){
       renderLootDisplay();
@@ -1047,6 +1046,17 @@ async function getOrCreateRun(){
   splitsLoaded=false;
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
   render();
+  // Single global handler for loot display dismiss (set once, never re-added)
+  if(!window._lootDisplayHandlerSet){
+    window._lootDisplayHandlerSet=true;
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&lootDisplayMode&&isRL) toggleLootDisplay();
+    });
+    document.addEventListener('click',e=>{
+      const overlay=document.getElementById('loot-display-overlay');
+      if(overlay&&e.target===overlay&&isRL) toggleLootDisplay();
+    });
+  }
   // Write audit entry
   const loginType = discordUser ? ` (Discord: ${discordUser.username})` : ' (character name)';
   writeAudit(`${user} joined${loginType}`);
@@ -1563,9 +1573,6 @@ function renderLootDisplay(){
     <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
     <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;">${cards}</div>`;
   document.body.appendChild(overlay);
-  // Escape key to end display (RL only)
-  overlay._escHandler=(e)=>{if(e.key==='Escape'&&isRL)toggleLootDisplay();};
-  document.addEventListener('keydown',overlay._escHandler);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }
 function confirmReset(){

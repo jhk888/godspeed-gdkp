@@ -497,6 +497,19 @@
   .wow-dialog-btn-danger:hover{background:linear-gradient(180deg,#aa2222 0%,#721212 100%);}
   .wow-dialog-btn-cancel{background:linear-gradient(180deg,#2a2318 0%,#1a160e 100%);color:#a08040;border:1px solid #4a3a18;box-shadow:0 2px 8px rgba(0,0,0,0.6);}
   .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
+  /* Loot display overlay */
+  @keyframes lootIn{0%{opacity:0;transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
+  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);}
+  .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
+  .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
+  .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
+  .loot-card{background:rgba(20,15,5,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:5px;padding:.6rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer;transition:border-color .15s,background .15s;animation:lootIn .3s ease-out both;}
+  .loot-card:hover{border-color:var(--gold);background:rgba(40,30,10,0.98);}
+  .loot-card-icon{width:40px;height:40px;border-radius:3px;border:1px solid rgba(201,168,76,0.2);}
+  .loot-card-name{font-family:'Cinzel',serif;font-size:.58rem;color:#c590ff;text-align:center;line-height:1.35;letter-spacing:.02em;}
+  .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
+  .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
+  .loot-display-close{position:fixed;top:1rem;right:1rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;padding:.4rem .9rem;border-radius:3px;cursor:pointer;z-index:201;}
 </style>
 </head>
 <body>
@@ -613,6 +626,7 @@ let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
 let soundMuted=localStorage.getItem('gdkp_muted')==='1';
+let lootDisplayMode=false;
 let autoBids={}; // {auctionId: maxAmount} — raider's auto-bid limits
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
 let panelOpen=false,panelTab='raiders';
@@ -1251,9 +1265,12 @@ function renderMain(){
       <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${Math.floor(p/raiderCount()).toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
     </div>
-    <div style="display:flex;align-items:center;">
-      <button class="btn btn-danger btn-sm" onclick="confirmReset()">&#x21BA; Reset Run</button>
+    <div style="display:flex;align-items:center;gap:.5rem;">
+      <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
+      <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">&#10022; Show Loot</button>
     </div>
+  </div>`:sold.length?`<div class="pot-bar" style="justify-content:center;padding:.75rem 1.5rem;">
+    <div style="font-size:.8rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${sold.length} item${sold.length!==1?'s':''} sold this run</div>
   </div>`:'';
 
   const settingsBar='';
@@ -1474,6 +1491,38 @@ function renderPanel(){
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────
+function toggleLootDisplay(){
+  lootDisplayMode=!lootDisplayMode;
+  if(lootDisplayMode) renderLootDisplay();
+  else document.getElementById('loot-display-overlay')?.remove();
+}
+function renderLootDisplay(){
+  document.getElementById('loot-display-overlay')?.remove();
+  const sold=auctionList().filter(a=>a.status==='sold').sort((a,b)=>b.currentBid-a.currentBid);
+  if(!sold.length){toast('No items sold yet');lootDisplayMode=false;return;}
+  const title=raidSettings.raidTitle||'Gold DKP Run';
+  const cards=sold.map((a,i)=>{
+    const winner=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'?';
+    const icon=a.itemIcon?`<img class="loot-card-icon" src="${iconUrl(a.itemIcon)}" />`:`<div class="loot-card-icon" style="background:rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🪙</div>`;
+    const wowLink=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'';
+    return`<a class="loot-card" ${wowLink} style="animation-delay:${i*30}ms;text-decoration:none;">
+      ${icon}
+      <div class="loot-card-name ${a.quality||''}">${a.name}</div>
+      <div class="loot-card-winner">${winner}</div>
+      <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+    </a>`;
+  }).join('');
+  const overlay=document.createElement('div');
+  overlay.id='loot-display-overlay';
+  overlay.className='loot-display-overlay';
+  overlay.innerHTML=`
+    <button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; Close</button>
+    <div class="loot-display-title">${title}</div>
+    <div class="loot-display-sub">${sold.length} items sold</div>
+    <div class="loot-display-grid">${cards}</div>`;
+  document.body.appendChild(overlay);
+  if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+}
 function confirmReset(){
   wowConfirm({
     title:'Start New Run?',
@@ -2701,7 +2750,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

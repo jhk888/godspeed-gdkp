@@ -1571,11 +1571,11 @@ function renderCard(a,mode){
   let badge='';
   if(isRL){
     if(mode==='open'){
-      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
+      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
         <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
-        <div style="display:flex;gap:.25rem;margin-top:1.4rem;">
-          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
+        <div style="display:flex;flex-direction:column;gap:.25rem;margin-top:1.4rem;align-items:flex-end;">
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
+          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
         </div>
       </div>`;
       const bottomBtns=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;">

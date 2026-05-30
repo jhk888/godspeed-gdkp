@@ -1053,8 +1053,13 @@ async function getOrCreateRun(){
       if(e.key==='Escape'&&lootDisplayMode&&isRL) toggleLootDisplay();
     });
     document.addEventListener('click',e=>{
-      const overlay=document.getElementById('loot-display-overlay');
-      if(overlay&&e.target===overlay&&isRL) toggleLootDisplay();
+      if(lootDisplayMode&&isRL){
+        const overlay=document.getElementById('loot-display-overlay');
+        if(overlay&&overlay.contains(e.target)){
+          // Only close if clicking the overlay itself, not a card or button inside
+          if(e.target===overlay||e.target.classList.contains('loot-display-overlay'))toggleLootDisplay();
+        }
+      }
     });
   }
   // Write audit entry
@@ -1568,12 +1573,14 @@ function renderLootDisplay(){
   overlay.id='loot-display-overlay';
   overlay.className='loot-display-overlay';
   overlay.innerHTML=`
-    ${isRL?`<button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; End Display</button>`:''}
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;width:100%;max-width:1000px;padding:1rem 0;">
+    ${isRL?`<button class="loot-display-close" onclick="event.stopPropagation();toggleLootDisplay()">&#x2715; End Display</button>`:''}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;width:100%;pointer-events:none;">
       <div class="loot-display-title">${title}</div>
       <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-      <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;width:100%;">${cards}</div>
-    </div>`;
+      <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;pointer-events:auto;" onclick="event.stopPropagation();">${cards}</div>
+    </div>
+    ${isRL?`<div style="position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:.62rem;color:rgba(201,168,76,0.3);letter-spacing:.12em;white-space:nowrap;pointer-events:none;">CLICK ANYWHERE TO CLOSE</div>`:''}`;
+  overlay.style.cursor='pointer';
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }

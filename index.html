@@ -384,7 +384,8 @@
   .dropdown-status{padding:.6rem .65rem;font-size:.82rem;color:var(--text-muted);}
 
   /* Side panel */
-  .side-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .3s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
+  .panel-hover-zone{position:fixed;top:0;right:0;width:18px;height:100vh;z-index:99;cursor:pointer;}
+  .side-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .25s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
   .side-panel.open{right:0;}
   .side-panel-hdr{padding:.6rem .75rem;border-bottom:1px solid var(--border-gold);display:flex;flex-direction:column;gap:.5rem;flex-shrink:0;}
   .side-panel-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);letter-spacing:.1em;}
@@ -532,6 +533,7 @@
 <button class="sidebar-toggle-tab" id="sidebar-toggle-tab" onclick="toggleMembersSidebar()" title="Members"><span id="sidebar-tab-count" style="font-family:'Cinzel',serif;font-size:.6rem;color:var(--text-muted);">0</span></button>
 
 <!-- Side Panel -->
+<div class="panel-hover-zone" id="panel-hover-zone"></div>
 <div class="side-panel" id="side-panel">
   <div class="side-panel-hdr">
     <div style="display:flex;gap:.35rem;justify-content:space-between;align-items:center;">
@@ -540,7 +542,7 @@
         <button id="panel-tab-audit" class="btn btn-outline btn-sm" onclick="setPanelTab('audit')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;display:none;">Audit</button>
         <button id="panel-tab-runs" class="btn btn-outline btn-sm" onclick="setPanelTab('runs')" style="font-size:.58rem;padding:.25rem .5rem;white-space:nowrap;">Archive</button>
       </div>
-      <button class="btn btn-outline btn-sm" onclick="togglePanel()" style="flex-shrink:0;white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;">&#x2715; Close</button>
+      <button class="btn btn-outline btn-sm" onclick="closePanel()" style="flex-shrink:0;white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;">&#x2715; Close</button>
     </div>
   </div>
   <div class="side-panel-body" id="side-panel-body"></div>
@@ -1000,6 +1002,7 @@ async function getOrCreateRun(){
   splitsLoaded=false;
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
   render();
+  initPanelHover();
   // Write audit entry
   const loginType = discordUser ? ` (Discord: ${discordUser.username})` : ' (character name)';
   writeAudit(`${user} joined${loginType}`);
@@ -1069,7 +1072,7 @@ function renderHdr(){
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
     ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
-    ${isRL?`<button class="btn btn-outline btn-sm" onclick="togglePanel()">&#9776; Raiders</button>`:`<button class="btn btn-outline btn-sm" onclick="togglePanel();setPanelTab('runs')">Archive</button>`}
+    ${isRL?`<button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
     <button id="mute-btn" class="btn btn-outline btn-sm" onclick="toggleMute()" title="Toggle sound">${soundMuted?'🔇':'🔊'}</button>
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
@@ -1400,14 +1403,32 @@ function setPanelTab(t){
   else if(t==='runs')renderPastRunsPanel();
 }
 
-function togglePanel(){
-  panelOpen=!panelOpen;
+let _panelHoverT=null;
+function openPanel(){
+  if(panelOpen)return;
+  panelOpen=true;
   const panel=document.getElementById('side-panel');
-  if(panelOpen){
-    panel.classList.add('open');
-    if(panelTab==='raiders')renderPanel();
-    else renderAuditPanel();
-  } else panel.classList.remove('open');
+  if(panel)panel.classList.add('open');
+  if(panelTab==='raiders')renderPanel();
+  else if(panelTab==='audit')renderAuditPanel();
+  else renderPastRunsPanel();
+}
+function closePanel(){
+  panelOpen=false;
+  const panel=document.getElementById('side-panel');
+  if(panel)panel.classList.remove('open');
+}
+function togglePanel(){panelOpen?closePanel():openPanel();}
+
+// Set up hover zone after DOM ready
+function initPanelHover(){
+  const zone=document.getElementById('panel-hover-zone');
+  const panel=document.getElementById('side-panel');
+  if(!zone||!panel)return;
+  zone.addEventListener('mouseenter',()=>{clearTimeout(_panelHoverT);_panelHoverT=setTimeout(openPanel,120);});
+  zone.addEventListener('mouseleave',()=>clearTimeout(_panelHoverT));
+  panel.addEventListener('mouseenter',()=>clearTimeout(_panelHoverT));
+  panel.addEventListener('mouseleave',()=>{_panelHoverT=setTimeout(closePanel,400);});
 }
 
 function renderPanel(){
@@ -2679,7 +2700,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,togglePanel,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

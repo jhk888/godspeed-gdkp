@@ -499,7 +499,15 @@
   .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
   /* Loot display overlay */
   @keyframes lootIn{0%{opacity:0;transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
-  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);cursor:default;}
+  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;flex-direction:row;cursor:default;backdrop-filter:blur(6px);}
+  .loot-display-sidebar{width:200px;flex-shrink:0;background:rgba(8,6,3,0.95);border-right:1px solid rgba(201,168,76,0.12);display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+  .loot-display-sidebar-hdr{padding:.6rem .8rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.12em;color:rgba(201,168,76,0.5);text-transform:uppercase;flex-shrink:0;}
+  .loot-sidebar-item{display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,0.025);cursor:default;}
+  .loot-sidebar-item a{display:flex;align-items:center;gap:.4rem;text-decoration:none;width:100%;}
+  .loot-sidebar-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .loot-sidebar-name{font-family:'Cinzel',serif;font-size:.6rem;color:rgba(201,168,76,0.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
+  .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
+  .loot-display-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;overflow-y:auto;position:relative;}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
   .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
@@ -509,7 +517,7 @@
   .loot-card-name{font-family:'Cinzel',serif;font-size:.58rem;color:#c590ff;text-align:center;line-height:1.35;letter-spacing:.02em;}
   .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
   .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
-  .loot-display-close{position:fixed;top:1rem;right:1rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;padding:.4rem .9rem;border-radius:3px;cursor:pointer;z-index:201;}
+  .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
 </style>
 </head>
 <body>
@@ -1060,7 +1068,7 @@ async function getOrCreateRun(){
         const overlay=document.getElementById('loot-display-overlay');
         if(overlay&&overlay.contains(e.target)){
           // Only close if clicking the overlay itself, not a card or button inside
-          if(e.target===overlay||e.target.classList.contains('loot-display-overlay'))toggleLootDisplay();
+          if((e.target===overlay||e.target.classList.contains("loot-display-main"))&&isRL)toggleLootDisplay();
         }
       }
     });
@@ -1572,18 +1580,48 @@ function renderLootDisplay(){
       <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
     </a>`;
   }).join('');
+  // Build sidebar — all auction items sorted by status priority
+  const allItems=auctionList().sort((a,b)=>{
+    const order={open:0,queued:1,sold:2,expired:3};
+    return (order[a.status]??4)-(order[b.status]??4);
+  });
+  const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'#555',expired:'#cc6060'};
+  const statusLabels={open:'Live',queued:'Queue',sold:'Sold',expired:'Exp'};
+  const statusBadgeCss={
+    open:'background:rgba(96,204,128,0.15);color:#60cc80;border:1px solid rgba(96,204,128,0.3);',
+    queued:'background:rgba(201,168,76,0.12);color:#c9a84c;border:1px solid rgba(201,168,76,0.25);',
+    sold:'background:rgba(100,100,100,0.15);color:#555;border:1px solid rgba(100,100,100,0.2);',
+    expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
+  };
+  const sidebarItems=allItems.map(a=>{
+    const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
+    return`<div class="loot-sidebar-item">
+      <a ${wowAttrs} onclick="event.stopPropagation();" style="display:flex;align-items:center;gap:.4rem;text-decoration:none;width:100%;">
+        <div class="loot-sidebar-dot" style="background:${statusColors[a.status]||'#555'};"></div>
+        <span class="loot-sidebar-name">${a.name}</span>
+        <span class="loot-sidebar-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
+      </a>
+    </div>`;
+  }).join('');
+
   const overlay=document.createElement('div');
   overlay.id='loot-display-overlay';
   overlay.className='loot-display-overlay';
   overlay.innerHTML=`
-    ${isRL?`<button class="loot-display-close" onclick="event.stopPropagation();toggleLootDisplay()">&#x2715; End Display</button>`:''}
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.8rem;width:100%;pointer-events:none;">
+    <div class="loot-display-sidebar" onclick="event.stopPropagation();">
+      <div class="loot-display-sidebar-hdr">Run Loot (${allItems.length})</div>
+      ${sidebarItems}
+    </div>
+    <div class="loot-display-main">
+      ${isRL?`<button class="loot-display-close" onclick="event.stopPropagation();toggleLootDisplay()">&#x2715; End Display</button>`:''}
       <div class="loot-display-title">${title}</div>
       <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-      <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;pointer-events:auto;" onclick="event.stopPropagation();">${cards}</div>
-    </div>
-    ${isRL?`<div style="position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:.62rem;color:rgba(201,168,76,0.3);letter-spacing:.12em;white-space:nowrap;pointer-events:none;">CLICK ANYWHERE TO CLOSE</div>`:''}`;
+      <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>
+      ${isRL?`<div style="position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:.6rem;color:rgba(201,168,76,0.25);letter-spacing:.12em;white-space:nowrap;pointer-events:none;">CLICK ANYWHERE TO CLOSE</div>`:''}
+    </div>`;
 
+  // Click on overlay background closes display
+  overlay.addEventListener('click',e=>{if(e.target===overlay&&isRL)toggleLootDisplay();});
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }

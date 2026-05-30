@@ -839,10 +839,11 @@ function subscribeToRun(){
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
     // Sync loot display mode for all clients
     const newLootDisplay=!!data.lootDisplay;
-    if(newLootDisplay!==lootDisplayMode){
-      lootDisplayMode=newLootDisplay;
-      if(lootDisplayMode) renderLootDisplay();
-      else document.getElementById('loot-display-overlay')?.remove();
+    lootDisplayMode=newLootDisplay;
+    if(lootDisplayMode){
+      if(!document.getElementById('loot-display-overlay')) renderLootDisplay();
+    } else {
+      document.getElementById('loot-display-overlay')?.remove();
     }
 
     // Detect new bids on open auctions — collect pending glows first

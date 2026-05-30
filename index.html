@@ -499,7 +499,7 @@
   .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
   /* Loot display overlay */
   @keyframes lootIn{0%{opacity:0;transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
-  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);}
+  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
   .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
@@ -1531,11 +1531,13 @@ function renderLootDisplay(){
   if(!sold.length){toast('No items sold yet');lootDisplayMode=false;update(runRef(),{lootDisplay:false});return;}
   const title=raidSettings.raidTitle||'Gold DKP Run';
   const n=sold.length;
-  const minCard=n<=3?240:n<=6?180:n<=12?140:n<=20?120:100;
-  const iconSize=n<=3?80:n<=6?60:n<=12?44:36;
-  const nameFz=n<=3?'.85rem':n<=6?'.72rem':n<=12?'.62rem':'.55rem';
-  const priceFz=n<=3?'1.1rem':n<=6?'.9rem':n<=12?'.75rem':'.65rem';
-  const winnerFz=n<=3?'.78rem':n<=6?'.68rem':'.62rem';
+  const minCard=n===1?Math.min(340,window.innerWidth*0.7|0):n<=3?220:n<=6?180:n<=12?140:n<=20?120:100;
+  const iconSize=n===1?120:n<=3?80:n<=6?60:n<=12?44:36;
+  const nameFz=n===1?'1.1rem':n<=3?'.85rem':n<=6?'.72rem':n<=12?'.62rem':'.55rem';
+  const priceFz=n===1?'1.6rem':n<=3?'1.1rem':n<=6?'.9rem':n<=12?'.75rem':'.65rem';
+  const winnerFz=n===1?'1rem':n<=3?'.78rem':n<=6?'.68rem':'.62rem';
+  const cardPad=n===1?'2rem 1.5rem':n<=3?'1rem .8rem':'.6rem .5rem';
+  const spotlowGlow=n===1?';box-shadow:0 0 60px rgba(201,168,76,0.2),0 0 120px rgba(201,168,76,0.08);':'';
   const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
   const cards=sold.map((a,i)=>{
     const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
@@ -1545,11 +1547,11 @@ function renderLootDisplay(){
       ?`<img style="width:${iconSize}px;height:${iconSize}px;border-radius:4px;border:1px solid rgba(201,168,76,0.3);" src="${iconUrl(a.itemIcon)}" />`
       :`<div style="width:${iconSize}px;height:${iconSize}px;border-radius:4px;background:rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:center;font-size:${Math.floor(iconSize*.5)}px;">🪙</div>`;
     const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
-    return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${n<=3?'1rem .8rem':'.6rem .5rem'};">
+    return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}${spotlowGlow}">
       ${icon}
-      <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.3rem;">${a.name}</div>
-      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;">${winner}</div>
-      <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${(a.currentBid||0).toLocaleString()}g</div>
+      <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
+      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;">${winner}</div>
+      <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
     </a>`;
   }).join('');
   const overlay=document.createElement('div');

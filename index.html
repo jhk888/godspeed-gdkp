@@ -744,12 +744,31 @@ function refreshDropdown(){
   if(isSearching){dd.innerHTML='<div class="dropdown-status">Searching...</div>';dd.style.display='block';return;}
   if(!searchResults.length&&searchQuery.length>=2){dd.innerHTML='<div class="dropdown-status">No items found</div>';dd.style.display='block';return;}
   if(!searchResults.length){dd.style.display='none';return;}
-  dd.innerHTML=searchResults.map(item=>`
-    <div class="dropdown-item" onclick="selectItem(${item.id})">
+  dd.innerHTML=searchResults.map(item=>{
+    // Count how many times this item appears in each status
+    const all=auctionList().filter(a=>a.itemId===item.id||a.name===item.name);
+    const counts={live:0,queue:0,sold:0,expired:0};
+    all.forEach(a=>{
+      if(a.status==='open')counts.live++;
+      else if(a.status==='queued')counts.queue++;
+      else if(a.status==='sold')counts.sold++;
+      else if(a.status==='expired')counts.expired++;
+    });
+    const badges=[
+      counts.live?`<span style="color:#60cc80;font-size:.6rem;font-family:'Cinzel',serif;">${counts.live} live</span>`:'',
+      counts.queue?`<span style="color:var(--gold);font-size:.6rem;font-family:'Cinzel',serif;">${counts.queue} queue</span>`:'',
+      counts.sold?`<span style="color:var(--text-muted);font-size:.6rem;font-family:'Cinzel',serif;">${counts.sold} sold</span>`:'',
+      counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
+    ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
+    return`<div class="dropdown-item" onclick="selectItem(${item.id})">
       ${item.icon?`<img src="${iconUrl(item.icon)}" onerror="this.style.display='none'" />`:'<div class="dropdown-item-icon-placeholder"></div>'}
-      <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;">${item.name}</a>
-      <span class="dropdown-item-sub">${item.slot||''}</span>
-    </div>`).join('');
+      <div style="flex:1;min-width:0;">
+        <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;">${item.name}</a>
+        <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
+      </div>
+      ${badges?`<span class="dropdown-item-sub" style="display:none;"></span>`:`<span class="dropdown-item-sub">${item.slot||''}</span>`}
+    </div>`;
+  }).join('');
   dd.style.display='block';
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
 }
@@ -842,9 +861,11 @@ function subscribeToRun(){
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
       if(lootDisplayMode) renderLootDisplay();
-      else document.getElementById('loot-display-overlay')?.remove();
+      else {
+        const el=document.getElementById('loot-display-overlay');
+        if(el){if(el._escHandler)document.removeEventListener('keydown',el._escHandler);el.remove();}
+      }
     } else if(lootDisplayMode){
-      // Refresh display if already showing (new item sold etc)
       renderLootDisplay();
     }
 
@@ -1502,8 +1523,7 @@ function renderPanel(){
 
 // ── Reset ─────────────────────────────────────────────────────────────────
 function toggleLootDisplay(){
-  lootDisplayMode=!lootDisplayMode;
-  update(runRef(),{lootDisplay:lootDisplayMode});
+  update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 function renderLootDisplay(){
   document.getElementById('loot-display-overlay')?.remove();
@@ -1539,8 +1559,11 @@ function renderLootDisplay(){
     ${isRL?`<button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; End Display</button>`:''}
     <div class="loot-display-title">${title}</div>
     <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-    <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));">${cards}</div>`;
+    <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;">${cards}</div>`;
   document.body.appendChild(overlay);
+  // Escape key to end display (RL only)
+  overlay._escHandler=(e)=>{if(e.key==='Escape'&&isRL)toggleLootDisplay();};
+  document.addEventListener('keydown',overlay._escHandler);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }
 function confirmReset(){

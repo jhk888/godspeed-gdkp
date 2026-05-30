@@ -696,11 +696,27 @@ async function searchWowhead(query){
   if(!query||query.length<2){searchResults=[];isSearching=false;refreshDropdown();return;}
   isSearching=true;refreshDropdown();
   try{
-    const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}&expansion=tbc`);
-    if(!res.ok)throw new Error('Worker '+res.status);
-    const all=await res.json();
-    // Filter to Classic/TBC items (IDs up to ~35000) and exclude vendor/crafted junk
-    searchResults=all.filter(i=>i.id&&i.id<=35000);
+    // Try worker first, then fall back to wowhead suggest API
+    let results=[];
+    try{
+      const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);
+      if(res.ok) results=await res.json();
+    }catch(e){}
+    // If worker returns no useful results, try wowhead TBC suggest directly
+    if(!results.length){
+      const res=await fetch(`https://www.wowhead.com/tbc/search/suggestions-v2?q=${encodeURIComponent(query)}&returntype=item`);
+      if(res.ok){
+        const data=await res.json();
+        results=(data.results||[]).map(r=>({
+          id:r.id,
+          name:r.name,
+          quality:['poor','common','uncommon','rare','epic','legendary'][r.quality||0]||'common',
+          icon:r.icon||null,
+          slot:r.typeName||''
+        }));
+      }
+    }
+    searchResults=results;
   }catch(e){searchResults=[];}
   isSearching=false;refreshDropdown();
 }

@@ -839,11 +839,13 @@ function subscribeToRun(){
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
     // Sync loot display mode for all clients
     const newLootDisplay=!!data.lootDisplay;
-    lootDisplayMode=newLootDisplay;
-    if(lootDisplayMode){
-      if(!document.getElementById('loot-display-overlay')) renderLootDisplay();
-    } else {
-      document.getElementById('loot-display-overlay')?.remove();
+    if(newLootDisplay!==lootDisplayMode){
+      lootDisplayMode=newLootDisplay;
+      if(lootDisplayMode) renderLootDisplay();
+      else document.getElementById('loot-display-overlay')?.remove();
+    } else if(lootDisplayMode){
+      // Refresh display if already showing (new item sold etc)
+      renderLootDisplay();
     }
 
     // Detect new bids on open auctions — collect pending glows first
@@ -1506,17 +1508,28 @@ function toggleLootDisplay(){
 function renderLootDisplay(){
   document.getElementById('loot-display-overlay')?.remove();
   const sold=auctionList().filter(a=>a.status==='sold').sort((a,b)=>b.currentBid-a.currentBid);
-  if(!sold.length){toast('No items sold yet');lootDisplayMode=false;return;}
+  if(!sold.length){toast('No items sold yet');lootDisplayMode=false;update(runRef(),{lootDisplay:false});return;}
   const title=raidSettings.raidTitle||'Gold DKP Run';
+  const n=sold.length;
+  const minCard=n<=3?240:n<=6?180:n<=12?140:n<=20?120:100;
+  const iconSize=n<=3?80:n<=6?60:n<=12?44:36;
+  const nameFz=n<=3?'.85rem':n<=6?'.72rem':n<=12?'.62rem':'.55rem';
+  const priceFz=n<=3?'1.1rem':n<=6?'.9rem':n<=12?'.75rem':'.65rem';
+  const winnerFz=n<=3?'.78rem':n<=6?'.68rem':'.62rem';
+  const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
   const cards=sold.map((a,i)=>{
-    const winner=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'?';
-    const icon=a.itemIcon?`<img class="loot-card-icon" src="${iconUrl(a.itemIcon)}" />`:`<div class="loot-card-icon" style="background:rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🪙</div>`;
-    const wowLink=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'';
-    return`<a class="loot-card" ${wowLink} style="animation-delay:${i*30}ms;text-decoration:none;">
+    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+    const winner=bids[0]?.bidder||'Unknown';
+    const qColor=qualityColors[a.quality]||'#c590ff';
+    const icon=a.itemIcon
+      ?`<img style="width:${iconSize}px;height:${iconSize}px;border-radius:4px;border:1px solid rgba(201,168,76,0.3);" src="${iconUrl(a.itemIcon)}" />`
+      :`<div style="width:${iconSize}px;height:${iconSize}px;border-radius:4px;background:rgba(201,168,76,0.1);display:flex;align-items:center;justify-content:center;font-size:${Math.floor(iconSize*.5)}px;">🪙</div>`;
+    const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
+    return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${n<=3?'1rem .8rem':'.6rem .5rem'};">
       ${icon}
-      <div class="loot-card-name ${a.quality||''}">${a.name}</div>
-      <div class="loot-card-winner">${winner}</div>
-      <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+      <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.3rem;">${a.name}</div>
+      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;">${winner}</div>
+      <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${(a.currentBid||0).toLocaleString()}g</div>
     </a>`;
   }).join('');
   const overlay=document.createElement('div');
@@ -1525,8 +1538,8 @@ function renderLootDisplay(){
   overlay.innerHTML=`
     ${isRL?`<button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; End Display</button>`:''}
     <div class="loot-display-title">${title}</div>
-    <div class="loot-display-sub">${sold.length} items sold</div>
-    <div class="loot-display-grid">${cards}</div>`;
+    <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
+    <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));">${cards}</div>`;
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }

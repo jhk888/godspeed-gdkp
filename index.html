@@ -837,6 +837,13 @@ function subscribeToRun(){
       if(data.settings.categories) raidCategories=data.settings.categories;
     }
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
+    // Sync loot display mode for all clients
+    const newLootDisplay=!!data.lootDisplay;
+    if(newLootDisplay!==lootDisplayMode){
+      lootDisplayMode=newLootDisplay;
+      if(lootDisplayMode) renderLootDisplay();
+      else document.getElementById('loot-display-overlay')?.remove();
+    }
 
     // Detect new bids on open auctions — collect pending glows first
     const pendingGlows=[];
@@ -1267,7 +1274,7 @@ function renderMain(){
     </div>
     <div style="display:flex;align-items:center;gap:.5rem;">
       <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
-      <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">&#10022; Show Loot</button>
+      <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">${lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot'}</button>
     </div>
   </div>`:sold.length?`<div class="pot-bar" style="justify-content:center;padding:.75rem 1.5rem;">
     <div style="font-size:.8rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${sold.length} item${sold.length!==1?'s':''} sold this run</div>
@@ -1493,8 +1500,7 @@ function renderPanel(){
 // ── Reset ─────────────────────────────────────────────────────────────────
 function toggleLootDisplay(){
   lootDisplayMode=!lootDisplayMode;
-  if(lootDisplayMode) renderLootDisplay();
-  else document.getElementById('loot-display-overlay')?.remove();
+  update(runRef(),{lootDisplay:lootDisplayMode});
 }
 function renderLootDisplay(){
   document.getElementById('loot-display-overlay')?.remove();
@@ -1516,7 +1522,7 @@ function renderLootDisplay(){
   overlay.id='loot-display-overlay';
   overlay.className='loot-display-overlay';
   overlay.innerHTML=`
-    <button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; Close</button>
+    ${isRL?`<button class="loot-display-close" onclick="toggleLootDisplay()">&#x2715; End Display</button>`:''}
     <div class="loot-display-title">${title}</div>
     <div class="loot-display-sub">${sold.length} items sold</div>
     <div class="loot-display-grid">${cards}</div>`;
@@ -1534,8 +1540,9 @@ function confirmReset(){
 }
 
 async function resetRun(){
-  // Archive current run
-  await update(runRef(),{archived:true,archivedAt:Date.now()});
+  lootDisplayMode=false;
+  document.getElementById('loot-display-overlay')?.remove();
+  await update(runRef(),{archived:true,archivedAt:Date.now(),lootDisplay:false});
   // Create new run
   const nr=push(ref(db,'runs'));
   runId=nr.key;

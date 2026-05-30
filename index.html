@@ -384,10 +384,7 @@
   .dropdown-status{padding:.6rem .65rem;font-size:.82rem;color:var(--text-muted);}
 
   /* Side panel */
-  .panel-hover-zone{position:fixed;top:0;right:0;width:18px;height:100vh;z-index:99;cursor:pointer;}
-  .panel-tab-indicator{position:fixed;top:50%;right:0;transform:translateY(-50%);width:18px;padding:.6rem 0;background:linear-gradient(180deg,#1e1608,#130e05);border:1px solid var(--border-gold);border-right:none;border-radius:4px 0 0 4px;z-index:99;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:width .2s,background .2s;box-shadow:-2px 0 8px rgba(0,0,0,0.4);}
-  .panel-tab-indicator:hover{width:24px;background:rgba(212,169,60,0.15);}
-  .panel-tab-indicator span{font-size:.6rem;color:var(--gold);writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.12em;font-family:'Cinzel',serif;text-transform:uppercase;}
+  .panel-hover-zone{position:fixed;top:0;right:0;width:48px;height:100vh;z-index:99;cursor:pointer;}
   .side-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .25s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
   .side-panel.open{right:0;}
   .side-panel-hdr{padding:.6rem .75rem;border-bottom:1px solid var(--border-gold);display:flex;flex-direction:column;gap:.5rem;flex-shrink:0;}
@@ -537,7 +534,6 @@
 
 <!-- Side Panel -->
 <div class="panel-hover-zone" id="panel-hover-zone"></div>
-<div class="panel-tab-indicator" id="panel-tab-indicator" onclick="togglePanel()"><span>◀</span></div>
 <div class="side-panel" id="side-panel">
   <div class="side-panel-hdr">
     <div style="display:flex;gap:.35rem;justify-content:space-between;align-items:center;">
@@ -1411,9 +1407,7 @@ function openPanel(){
   if(panelOpen)return;
   panelOpen=true;
   const panel=document.getElementById('side-panel');
-  const tab=document.getElementById('panel-tab-indicator');
   if(panel)panel.classList.add('open');
-  if(tab)tab.style.display='none';
   if(panelTab==='raiders')renderPanel();
   else if(panelTab==='audit')renderAuditPanel();
   else renderPastRunsPanel();
@@ -1421,9 +1415,7 @@ function openPanel(){
 function closePanel(){
   panelOpen=false;
   const panel=document.getElementById('side-panel');
-  const tab=document.getElementById('panel-tab-indicator');
   if(panel)panel.classList.remove('open');
-  if(tab)tab.style.display='flex';
 }
 function togglePanel(){panelOpen?closePanel():openPanel();}
 
@@ -1431,13 +1423,11 @@ function togglePanel(){panelOpen?closePanel():openPanel();}
 function initPanelHover(){
   const zone=document.getElementById('panel-hover-zone');
   const panel=document.getElementById('side-panel');
-  const tab=document.getElementById('panel-tab-indicator');
   if(!zone||!panel)return;
   const doOpen=()=>{clearTimeout(_panelHoverT);_panelHoverT=setTimeout(openPanel,120);};
   const doClose=()=>{_panelHoverT=setTimeout(closePanel,400);};
   zone.addEventListener('mouseenter',doOpen);
   zone.addEventListener('mouseleave',()=>clearTimeout(_panelHoverT));
-  if(tab){tab.addEventListener('mouseenter',doOpen);tab.addEventListener('mouseleave',()=>clearTimeout(_panelHoverT));}
   panel.addEventListener('mouseenter',()=>clearTimeout(_panelHoverT));
   panel.addEventListener('mouseleave',doClose);
 }
@@ -2057,7 +2047,6 @@ function toggleMembersSidebar(){
   const sb=document.getElementById('members-sidebar');
   const tab=document.getElementById('sidebar-toggle-tab');
   if(sb) sb.classList.toggle('collapsed', sidebarCollapsed);
-  if(tab){
     tab.textContent=sidebarCollapsed?'▶':'◀';
     tab.classList.toggle('collapsed', sidebarCollapsed);
   }

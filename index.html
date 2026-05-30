@@ -282,7 +282,7 @@
   .member-chip{position:relative;}
   .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
   .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
-  .item-header{display:flex;align-items:center;gap:.75rem;padding-right:5rem;}
+  .item-header{display:flex;align-items:center;gap:.75rem;padding-right:7rem;}
   .item-icon{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.35);flex-shrink:0;object-fit:cover;}
   .item-icon-placeholder{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.2);background:var(--bg-input);flex-shrink:0;}
   .item-name{font-family:'Cinzel',serif;font-size:1.05rem;font-weight:500;}
@@ -911,10 +911,26 @@ function subscribeToRun(){
       // If pendingGlows is empty and bidOnlyUpdate=true, it's just a currentBid
       // echo update — skip re-render entirely so any active glow animation survives
     } else if(user) {
-      render();
-      if(panelOpen&&panelTab==='raiders')renderPanel();
-      if(panelOpen&&panelTab==='audit')renderAuditPanel();
-      if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+      // On queue tab, skip re-render if only timer/presence data changed (prevents flickering)
+      if(tab==='queued'&&!bidOnlyUpdate){
+        // Check if anything structural changed in queued items
+        const queuedPrev=Object.values(prevAuctions).filter(a=>a.status==='queued').length;
+        const queuedNow=Object.values(auctions).filter(a=>a.status==='queued').length;
+        const statusChanged=Object.keys(auctions).some(id=>auctions[id]?.status!==prevAuctions[id]?.status);
+        if(!statusChanged&&queuedPrev===queuedNow){
+          renderHdr();
+        } else {
+          render();
+          if(panelOpen&&panelTab==='raiders')renderPanel();
+          if(panelOpen&&panelTab==='audit')renderAuditPanel();
+          if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+        }
+      } else {
+        render();
+        if(panelOpen&&panelTab==='raiders')renderPanel();
+        if(panelOpen&&panelTab==='audit')renderAuditPanel();
+        if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+      }
     }
 
     // Apply glows AFTER card update
@@ -1138,6 +1154,7 @@ function buildModal(title,a,fn){
     <div class="three-col">
       <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a?a.currentBid:1000}" min="1" step="100" /></div>
       <div class="fg"><div class="lbl">Timer (s)</div><input type="number" id="m-timer" value="${a?a.duration:raidSettings.defaultTimer}" min="10" max="600" step="10" /></div>
+      ${!isEdit?`<div class="fg"><div class="lbl">Qty</div><input type="number" id="m-qty" value="1" min="1" max="20" step="1" /></div>`:''}
     </div>
     <div class="fg"><div class="lbl">Bid buttons (g increments)</div>
       <div style="display:flex;gap:.5rem;align-items:center;">
@@ -1572,30 +1589,32 @@ function renderCard(a,mode){
 // ── Actions ───────────────────────────────────────────────────────────────
 function addToQueue(){
   if(!selectedItem){toast('Please search and select an item first');return;}
-  const nr=push(runRef('/auctions'));
+  const qty=Math.max(1,Math.min(20,parseInt(document.getElementById('m-qty')?.value)||1));
   const dur=Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer);
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const name=selectedItem.name;
+  const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
-  set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount,remaining:dur,paused:false,endsAt:null});
-  // Keep modal open for adding more items — just reset the search fields
+  for(let i=0;i<qty;i++){
+    const nr=push(runRef('/auctions'));
+    set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount+i,remaining:dur,paused:false,endsAt:null});
+  }
   selectedItem=null;searchQuery='';
   const inp=document.getElementById('item-search-input');
   if(inp){inp.value='';inp.focus();}
-  const wrap=document.getElementById('search-preview-wrap');
-  if(wrap)wrap.innerHTML='';
-  const dd=document.getElementById('item-dropdown');
-  if(dd)dd.style.display='none';
-  // Reset quality to epic
+  const wrap=document.getElementById('search-preview-wrap');if(wrap)wrap.innerHTML='';
+  const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';
+  const qtyInp=document.getElementById('m-qty');if(qtyInp)qtyInp.value='1';
+  const noteInp=document.getElementById('m-note');if(noteInp)noteInp.value='';
   modalQuality='epic';modalCategory='Tier';
   ['legendary','epic','rare','uncommon'].forEach(x=>{
     const b=document.getElementById('q-'+x);if(!b)return;
     const s=x==='epic'?Q_STYLES[x].on:Q_STYLES[x].off;
     b.setAttribute('style',s+"font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.06em;font-weight:"+(x==='epic'?'600':'400')+';');
   });
-  toast(name+' added — search for next item or close');
+  toast(qty>1?`${qty}x ${name} added — search for next item or close`:`${name} added — search for next item or close`);
 }
 function addToQueueAndStart(){
   if(!selectedItem){toast('Please search and select an item first');return;}
@@ -1809,7 +1828,7 @@ function setModalCat(cat){
   });
 }
 function openModal(){modal=true;editId=null;modalQuality='epic';modalCategory='Tier';selectedItem=null;searchQuery='';render();}
-function openEdit(id){const a=auctions[id];if(!a)return;modal=true;editId=id;modalQuality=a.quality||'epic';selectedItem=null;searchQuery='';render();}
+function openEdit(id){const a=auctions[id];if(!a)return;modal=true;editId=id;modalQuality=a.quality||'epic';modalCategory=a.category||'Tier';selectedItem={name:a.name,id:a.itemId,icon:a.itemIcon,slot:a.slot};searchQuery=a.name||'';render();}
 let _modalMousedownOnOverlay=false;
 function modalOverlayMousedown(e){_modalMousedownOnOverlay=e.target===e.currentTarget;}
 function modalOverlayMouseup(e){if(_modalMousedownOnOverlay&&e.target===e.currentTarget)closeModal();_modalMousedownOnOverlay=false;}

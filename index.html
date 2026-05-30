@@ -499,7 +499,7 @@
   .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
   /* Loot display overlay */
   @keyframes lootIn{0%{opacity:0;transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
-  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);}
+  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem;overflow-y:auto;-webkit-overflow-scrolling:touch;backdrop-filter:blur(6px);cursor:default;}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
   .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
@@ -864,6 +864,9 @@ function subscribeToRun(){
       else {
         document.getElementById('loot-display-overlay')?.remove();
       }
+      // Update the Show Loot / End Display button label immediately
+      const lootBtn=document.querySelector('[onclick="toggleLootDisplay()"]');
+      if(lootBtn)lootBtn.innerHTML=lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot';
     } else if(lootDisplayMode){
       renderLootDisplay();
     }
@@ -1574,13 +1577,13 @@ function renderLootDisplay(){
   overlay.className='loot-display-overlay';
   overlay.innerHTML=`
     ${isRL?`<button class="loot-display-close" onclick="event.stopPropagation();toggleLootDisplay()">&#x2715; End Display</button>`:''}
-    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;width:100%;pointer-events:none;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.8rem;width:100%;pointer-events:none;">
       <div class="loot-display-title">${title}</div>
       <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
       <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;pointer-events:auto;" onclick="event.stopPropagation();">${cards}</div>
     </div>
     ${isRL?`<div style="position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:.62rem;color:rgba(201,168,76,0.3);letter-spacing:.12em;white-space:nowrap;pointer-events:none;">CLICK ANYWHERE TO CLOSE</div>`:''}`;
-  overlay.style.cursor='pointer';
+
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }

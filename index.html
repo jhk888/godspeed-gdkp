@@ -725,11 +725,21 @@ async function fetchIcon(itemId){
   if(!itemId||_iconCache[itemId]!==undefined) return _iconCache[itemId]||null;
   _iconCache[itemId]=null;
   try{
-    // Use Wowhead's media API — CORS-friendly public endpoint
-    const res=await fetch(`https://nether.wowhead.com/tbc/tooltip/item/${itemId}?dataEnv=4&locale=0`);
+    const res=await fetch(`https://nether.wowhead.com/tbc/tooltip/item/${itemId}`);
     if(res.ok){
-      const data=await res.json();
-      if(data.icon){_iconCache[itemId]=data.icon;return data.icon;}
+      const text=await res.text();
+      // Icon name is in the JSON as "icon":"iconname"
+      const m=text.match(/"icon":"([^"]+)"/);
+      if(m){_iconCache[itemId]=m[1];return m[1];}
+    }
+  }catch(e){}
+  // Fallback: try classic endpoint
+  try{
+    const res=await fetch(`https://nether.wowhead.com/tooltip/item/${itemId}`);
+    if(res.ok){
+      const text=await res.text();
+      const m=text.match(/"icon":"([^"]+)"/);
+      if(m){_iconCache[itemId]=m[1];return m[1];}
     }
   }catch(e){}
   return null;
@@ -799,7 +809,7 @@ var SSC_TK_ITEMS=[
   {id:30100,n:"Cord of Screaming Terrors",q:"epic",s:"Waist"},
   {id:30101,n:"Band of the Ranger-General",q:"epic",s:"Finger"},
   {id:30102,n:"Blind-Seers Icon",q:"epic",s:"Off Hand"},
-  {id:30103,n:"Fang of Vashj",q:"epic",s:"Main Hand"},
+  {id:30103,n:"Fang of Vashj",q:"epic",s:"One-Hand"},
   {id:30104,n:"Cataclysm's Edge",q:"epic",s:"Two-Hand"},
   {id:30105,n:"Leggings of Murderous Intent",q:"epic",s:"Legs"},
   {id:30106,n:"Belt of One-Hundred Deaths",q:"epic",s:"Waist"},
@@ -830,7 +840,7 @@ var SSC_TK_ITEMS=[
   {id:30140,n:"Coilfang Hammer of Renewal",q:"epic",s:"Main Hand"},
   {id:30141,n:"Tempest of Chaos",q:"epic",s:"Two-Hand"},
   {id:30142,n:"Serpent Spine Longbow",q:"epic",s:"Ranged"},
-  {id:30143,n:"Fang of the Leviathan",q:"epic",s:"Main Hand"},
+  {id:30143,n:"Fang of the Leviathan",q:"epic",s:"One-Hand"},
   {id:29985,n:"Void Reaver Greaves",q:"epic",s:"Legs"},
   {id:30248,n:"Pauldrons of the Vanquished Champion",q:"epic",s:"Shoulder"},
   {id:30249,n:"Pauldrons of the Vanquished Defender",q:"epic",s:"Shoulder"},
@@ -849,8 +859,8 @@ var SSC_TK_ITEMS=[
   {id:30031,n:"Astromancer's Crystal",q:"epic",s:"Off Hand"},
   {id:30032,n:"Band of the Astral Path",q:"epic",s:"Finger"},
   {id:32458,n:"Ashes of Al'ar",q:"epic",s:"Mount"},
-  {id:29996,n:"Rod of the Sun King",q:"epic",s:"Main Hand"},
-  {id:29994,n:"Claw of Al'ar",q:"epic",s:"Main Hand"},
+  {id:29996,n:"Rod of the Sun King",q:"epic",s:"One-Hand"},
+  {id:29994,n:"Claw of Al'ar",q:"epic",s:"One-Hand"},
   {id:29993,n:"Twinblade of the Phoenix",q:"epic",s:"Two-Hand"},
   {id:29992,n:"Phoenix-Wing Cloak",q:"epic",s:"Back"},
   {id:29988,n:"Trousers of the Astromancer",q:"epic",s:"Legs"},

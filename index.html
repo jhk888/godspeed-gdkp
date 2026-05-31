@@ -14,7 +14,6 @@
 <title>Godspeed GDKP</title>
 <link rel="icon" type="image/x-icon" href="./favicon.ico" />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
-<script>var whTooltips={colorLinks:true,iconizeLinks:false,renameLinks:false,tooltipPos:'cursor'};</script>
 <script src="https://wow.zamimg.com/widgets/power.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -113,9 +112,7 @@
   .login-brand .wordmark{font-family:'Cinzel',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;text-shadow:0 0 40px rgba(212,169,60,0.5);}
   .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.3rem;text-align:center;}
   .login-box{background:rgba(22,19,12,0.96);border:1px solid var(--border-gold);padding:2.25rem 2.5rem;border-radius:4px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:1rem;backdrop-filter:blur(10px);}
-  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:.75rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
-  .pot-bar-stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;min-width:120px;}
-  .pot-bar-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
+  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
   .pot-val{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);font-weight:600;}
   .pot-lbl{font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;}
   .settings-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:.9rem 1.5rem;display:flex;align-items:center;gap:1.75rem;margin-bottom:1.5rem;flex-wrap:wrap;backdrop-filter:blur(4px);}
@@ -126,19 +123,6 @@
   .tab.active{color:#1a1208;background:var(--gold);border-color:var(--gold);font-weight:600;}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
   .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
-  /* Narrow desktop / vertical monitor (601px–1100px) */
-  @media(min-width:601px) and (max-width:1100px){
-    /* Push main content right to clear the fixed tracker */
-    .main{padding-left:260px;}
-    /* Pot bar: stack stats on top, actions below */
-    .pot-bar{flex-direction:column;padding:.85rem 1.25rem;gap:.5rem;}
-    .pot-bar-actions{width:100%;justify-content:center;}
-    .pot-val{font-size:1.75rem;}
-    /* Header: hide less-critical buttons to stop crowding the logo */
-    #mute-btn{display:none !important;}
-    .rl-badge{display:none;}
-  }
-
   @media(max-width:600px){
     html{font-size:14px;}
 
@@ -149,117 +133,95 @@
     .logo{font-size:.9rem;white-space:nowrap;}
     .logo-sub{display:none;}
     .rl-badge{display:none;}
-    #hdr-user{display:flex;align-items:center;gap:.25rem;justify-content:flex-end;grid-column:3;}
-    .usr-chip{font-size:.58rem;padding:.2rem .35rem;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-    #mute-btn{display:none !important;}
+    #hdr-user{display:flex;align-items:center;gap:.3rem;justify-content:flex-end;grid-column:3;}
+    .usr-chip{font-size:.58rem;padding:.2rem .3rem;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
     .conn-dot{display:none;}
 
     /* Layout */
-    .main{padding:.5rem .4rem 130px .4rem;}
+    .main{padding:.6rem .5rem 120px .5rem;}
     .grid{grid-template-columns:1fr;}
-    .three-col{grid-template-columns:1fr 1fr;}
-
-    /* Pot bar */
-    .pot-bar{flex-direction:column;text-align:center;gap:.4rem;padding:.65rem .75rem;margin-bottom:1rem;}
-    .pot-val{font-size:1.6rem;}
-    .pot-lbl{font-size:.65rem;}
-
-    /* Tabs */
-    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:.15rem;margin-bottom:1rem;}
-    .tabs::-webkit-scrollbar{display:none;}
-    .tab{padding:.45rem .65rem;font-size:.6rem;white-space:nowrap;}
-
-    /* Section header */
-    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.97);z-index:10;padding:.35rem 0;backdrop-filter:blur(6px);flex-direction:column;align-items:stretch;gap:.35rem;}
-    .sec-hdr>div:first-child{display:none;}
-    .sec-hdr>div:last-child{justify-content:flex-end;}
-    .sec-title{font-size:.9rem;}
+    .three-col{grid-template-columns:1fr;}
 
     /* Buttons */
-    .btn{font-size:.72rem;padding:.48rem .7rem;}
-    .btn-sm{padding:.35rem .55rem;font-size:.64rem;min-height:38px;}
-    .rl-controls{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:flex-end;}
+    .btn{font-size:.72rem;padding:.45rem .7rem;}
+    .btn-sm{padding:.3rem .5rem;font-size:.62rem;min-height:36px;}
+    .rl-controls{flex-wrap:wrap;gap:.3rem;}
 
-    /* Cards */
-    .card{padding:.7rem .75rem;min-height:unset;}
-    .cat-row-scroll>div{width:calc(100vw - 1.2rem);}
-    .cat-row-scroll{gap:.7rem;padding-bottom:.4rem;}
-    .cat-row{margin-bottom:.9rem;}
-    .cat-row-label{font-size:.6rem;}
-    .item-header{padding-right:5.5rem;}
-    .item-icon{width:36px;height:36px;}
-    .item-name{font-size:.95rem;}
-    .item-slot{font-size:.78rem;}
-    .badge{font-size:.6rem;padding:.18rem .42rem;top:.65rem;right:.65rem;}
-    .timer-row{gap:.35rem;}
-    .timer{font-size:.78rem;}
-    .bid-amt{font-size:1.25rem;}
-    .bid-ldr{font-size:.78rem;}
-    .min-bid-note{font-size:.75rem;}
-    .quick-bids{gap:.3rem;flex-wrap:nowrap;}
-    .qb{padding:.55rem .3rem;font-size:.68rem;min-height:42px;flex:1;text-align:center;}
-    .custom-bid-row input{font-size:.9rem;}
-    .hist{max-height:72px;font-size:.8rem;}
+    /* Pot bar */
+    .pot-bar{flex-direction:column;text-align:center;gap:.5rem;padding:.75rem 1rem;}
 
-    /* Category filter bar */
-    .cat-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:.25rem;gap:.3rem;}
-    .cat-filter-bar::-webkit-scrollbar{display:none;}
-    .cat-filter-btn{white-space:nowrap;font-size:.6rem;padding:.3rem .6rem;}
+    /* Tabs — scrollable, no wrap */
+    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:.2rem;}
+    .tabs::-webkit-scrollbar{display:none;}
+    .tab{padding:.4rem .6rem;font-size:.58rem;white-space:nowrap;}
 
-    /* Modal — sheet from bottom */
-    .modal-overlay{align-items:flex-end;padding:0;}
-    .modal{width:100vw;max-width:100%;border-radius:8px 8px 0 0;border-bottom:none;padding:.85rem .85rem 1.5rem;max-height:92vh;overflow-y:auto;}
-    .modal-title{font-size:.88rem;}
+    /* Section header */
+    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.95);z-index:10;padding:.4rem 0;backdrop-filter:blur(4px);}
+    .sec-title{font-size:.95rem;}
+
+    /* Modal — full width, good padding */
+    .modal{width:calc(100vw - .75rem);max-width:100%;padding:.75rem;max-height:92vh;overflow-y:auto;}
+    .modal-title{font-size:.9rem;}
     .modal-actions{flex-wrap:wrap;gap:.4rem;}
-    .modal-actions .btn{flex:1;min-width:80px;}
     .q-row{flex-wrap:wrap;gap:.3rem;}
 
-    /* WoW dialog */
-    .wow-dialog{width:calc(100vw - 2rem);min-width:unset;padding:1.4rem 1.1rem 1.2rem;}
-    .wow-dialog-title{font-size:.88rem;}
-    .wow-dialog-msg{font-size:.82rem;}
-    .wow-dialog-btns{flex-wrap:wrap;gap:.5rem;}
-    .wow-dialog-btn{flex:1;padding:.55rem .7rem;font-size:.7rem;min-width:90px;}
+    /* WoW dialog — full width on mobile */
+    .wow-dialog{width:calc(100vw - 2rem);min-width:unset;padding:1.5rem 1.25rem 1.2rem;}
+    .wow-dialog-title{font-size:.9rem;}
+    .wow-dialog-btns{flex-wrap:wrap;}
+    .wow-dialog-btn{flex:1;padding:.5rem .8rem;font-size:.72rem;}
 
-    /* Toast */
-    .toast{width:calc(100vw - 2rem);white-space:normal;text-align:center;font-size:.78rem;padding:.55rem .9rem;}
+    /* Toast — center, wider */
+    .toast{width:calc(100vw - 2rem);white-space:normal;text-align:center;font-size:.8rem;padding:.6rem 1rem;}
 
-    /* Side panel */
+    /* Side panel — full width */
     .side-panel{width:100vw;right:-100vw;}
     .side-panel.open{right:0;}
-    .side-panel-hdr{padding:.6rem .75rem;}
-    .raider-row{padding:.55rem .7rem;}
-    .raider-name{font-size:.8rem;}
-    .raider-item{gap:.4rem;}
-    .raider-item-name{font-size:.75rem !important;}
 
-    /* Chat */
+    /* Category rows — cards narrower on mobile */
+    .cat-row-scroll > div{width:calc(100vw - 3rem);}
+    .cat-row{margin-bottom:1rem;}
+    .cat-row-label{font-size:.6rem;}
+
+    /* Category filter bar */
+    .cat-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:.2rem;}
+    .cat-filter-bar::-webkit-scrollbar{display:none;}
+    .cat-filter-btn{white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;}
+
+    /* Chat — full width */
     .chat-box{right:0;left:0;width:100%;border-radius:0;border-left:none;border-right:none;bottom:0;}
-    .chat-hdr{padding:.4rem .65rem;}
-    .chat-hdr-title{font-size:.62rem;}
-    .chat-input{font-size:.82rem;}
 
-    /* Tooltips */
+    /* Tooltip — full width on mobile */
     .member-tooltip{position:fixed !important;left:8px !important;right:8px !important;width:auto !important;max-width:none !important;}
     .online-tooltip{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;bottom:80px !important;width:auto !important;max-width:none !important;}
 
     /* FAB */
-    .fab{display:flex;bottom:60px;}
+    .fab{display:flex;bottom:56px;}
 
-    /* My loot */
-    .my-loot{padding:.6rem .75rem;margin-bottom:.75rem;}
-    .my-loot-title{font-size:.65rem;}
+    /* Cards — tighter padding, full width */
+    .card{padding:.75rem .8rem;}
+    .item-icon{width:38px;height:38px;}
+    .bid-amt{font-size:1.3rem;}
+    .quick-bids{gap:.3rem;}
+    .qb{padding:.45rem .4rem;font-size:.7rem;min-height:40px;flex:1;}
+
+    /* Bid history */
+    .hist{max-height:80px;}
+
+    /* RL controls grid on mobile */
+    .rl-controls{display:flex;flex-direction:column;gap:.3rem;}
+
+    /* My loot section */
     .my-loot-item{gap:.35rem;}
-    .my-loot-items{max-height:110px;}
+    .my-loot-items{max-height:120px;}
+
+    /* Raider row in panel */
+    .raider-row{padding:.6rem .75rem;}
+    .raider-name{font-size:.8rem;}
 
     /* Splits */
-    .splits-wrap{overflow-x:auto;}
-    .splits-table{font-size:.72rem;}
-    .splits-table td,.splits-table th{padding:.3rem .4rem;}
-    .admin-cut-bar{flex-wrap:wrap;gap:.4rem;padding:.6rem .75rem;}
-
-    /* Loot tracker — hidden on mobile */
-    .loot-tracker{display:none !important;}
+    .splits-table{font-size:.75rem;}
+    .splits-table td,.splits-table th{padding:.35rem .5rem;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
@@ -560,16 +522,10 @@
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   .loot-display-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;position:relative;width:100%;height:100%;}
   /* Permanent loot tracker - always visible */
-  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;user-select:none;}
+  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
   .loot-tracker.visible{display:flex;}
-  .loot-tracker.collapsed .loot-tracker-body{display:none;}
-  .loot-tracker.collapsed .loot-tracker-resize{display:none;}
-  .loot-tracker-body{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;flex:1;}
   .loot-tracker-hdr{padding:.6rem .9rem;border-bottom:1px solid rgba(201,168,76,0.12);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:rgba(201,168,76,0.55);text-transform:uppercase;flex-shrink:0;cursor:grab;}
-  .loot-tracker.collapsed .loot-tracker-hdr{border-bottom:none;}
   .loot-tracker-hdr:active{cursor:grabbing;}
-  .loot-tracker-collapse{background:none;border:none;color:rgba(201,168,76,0.5);cursor:pointer;padding:0 0 0 .3rem;font-size:.7rem;line-height:1;flex-shrink:0;transition:color .15s;}
-  .loot-tracker-collapse:hover{color:rgba(201,168,76,0.9);}
   .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2;}
   .loot-tracker-item{display:flex;align-items:center;gap:.35rem;padding:.4rem .9rem;border-bottom:1px solid rgba(255,255,255,0.03);}
   .loot-tracker-item a{display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;}
@@ -588,25 +544,15 @@
   .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
   .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
   .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
-
-  /* Tracker category custom dropdown */
-  .tracker-cat-wrap{position:relative;flex-shrink:0;margin-right:6px;}
-  .tracker-cat-btn{display:flex;align-items:center;gap:.3rem;background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .5rem .15rem .35rem;border-radius:2px;cursor:pointer;max-width:100px;white-space:nowrap;transition:border-color .15s;}
-  .tracker-cat-btn:hover{border-color:rgba(201,168,76,0.6);}
-  .tracker-cat-btn svg{flex-shrink:0;opacity:.7;}
-  .tracker-cat-list{position:absolute;top:calc(100% + 3px);right:0;min-width:110px;background:rgba(18,13,4,0.98);border:1px solid rgba(201,168,76,0.45);border-radius:3px;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,0.75);overflow:hidden;}
-  .tracker-cat-opt{font-family:'Cinzel',serif;font-size:.62rem;color:rgba(201,168,76,0.75);padding:.38rem .65rem;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;}
-  .tracker-cat-opt:hover{background:rgba(201,168,76,0.12);color:rgba(201,168,76,1);}
-  .tracker-cat-opt.selected{background:rgba(201,168,76,0.18);color:var(--gold-light);font-weight:600;}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="hdr">
     <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
-      <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;padding:.65rem .75rem .65rem 0;margin:-.65rem 0 -.65rem -.25rem;cursor:default;align-self:stretch;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)">
+      <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
-        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip()"></span>
       </div>
     </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
@@ -735,13 +681,7 @@ function toast(msg){
   },1400);
 }
 
-// Suppressed dialog keys — persisted in localStorage
-const _suppressedDialogs = JSON.parse(localStorage.getItem('gdkp_suppressed')||'{}');
-function _saveSuppress(){localStorage.setItem('gdkp_suppressed',JSON.stringify(_suppressedDialogs));}
-
-function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,suppressKey=null,onConfirm}){
-  // If suppressed, fire immediately
-  if(suppressKey&&_suppressedDialogs[suppressKey]){onConfirm();return;}
+function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,onConfirm}){
   const existing=document.getElementById('wow-dialog-overlay');
   if(existing)existing.remove();
   const overlay=document.createElement('div');
@@ -753,10 +693,6 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
       ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="number" placeholder="${input.placeholder||''}" min="${input.min||0}" step="${input.step||1}" />`:''}
-      ${suppressKey?`<label style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;cursor:pointer;">
-        <input type="checkbox" id="wow-suppress" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;" />
-        <span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.06em;">Don't show this again</span>
-      </label>`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
         <button class="wow-dialog-btn ${danger?'wow-dialog-btn-danger':'wow-dialog-btn-confirm'}" id="wow-confirm">${confirmLabel}</button>
@@ -768,9 +704,6 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
   const close=()=>overlay.remove();
   document.getElementById('wow-cancel').onclick=close;
   document.getElementById('wow-confirm').onclick=()=>{
-    if(suppressKey&&document.getElementById('wow-suppress')?.checked){
-      _suppressedDialogs[suppressKey]=true;_saveSuppress();
-    }
     if(input&&inp){
       const val=parseInt(inp.value);
       if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
@@ -812,46 +745,138 @@ function getAllRaiderLoot(){
 }
 
 // ── Search ────────────────────────────────────────────────────────────────
+const SSC_TK_ITEMS=[
+  {id:30038,n:"Girdle of the Invulnerable",q:"epic",s:"Waist"},
+  {id:30039,n:"Girdle of Thunderous Assault",q:"epic",s:"Waist"},
+  {id:30040,n:"Mantle of the Sea Witch",q:"epic",s:"Shoulder"},
+  {id:30041,n:"Pendant of the Perilous",q:"epic",s:"Neck"},
+  {id:30042,n:"Ring of Lethality",q:"epic",s:"Finger"},
+  {id:30043,n:"Earring of Soulful Meditation",q:"epic",s:"Neck"},
+  {id:30044,n:"Gauntlets of the Vanquisher",q:"epic",s:"Hands"},
+  {id:30045,n:"Gauntlets of the Defender",q:"epic",s:"Hands"},
+  {id:30046,n:"Gauntlets of the Conqueror",q:"epic",s:"Hands"},
+  {id:30060,n:"Serpent-Coil Braid",q:"epic",s:"Neck"},
+  {id:30061,n:"Mallet of the Tides",q:"epic",s:"Main Hand"},
+  {id:30062,n:"Fathomstone",q:"epic",s:"Off Hand"},
+  {id:30063,n:"Tsunami Talisman",q:"epic",s:"Trinket"},
+  {id:30064,n:"Gloves of the Souleater",q:"epic",s:"Hands"},
+  {id:30065,n:"Slippers of the Seacaller",q:"epic",s:"Feet"},
+  {id:30066,n:"Deep Lunker's Belt",q:"epic",s:"Waist"},
+  {id:30067,n:"Ranger's Net",q:"epic",s:"Ranged"},
+  {id:30080,n:"Belt of One-Hundred Deaths",q:"epic",s:"Waist"},
+  {id:30081,n:"Leggings of the Vanquished Champion",q:"epic",s:"Legs"},
+  {id:30082,n:"Leggings of the Vanquished Defender",q:"epic",s:"Legs"},
+  {id:30083,n:"Leggings of the Vanquished Hero",q:"epic",s:"Legs"},
+  {id:30084,n:"Cord of Screaming Terrors",q:"epic",s:"Waist"},
+  {id:30085,n:"Band of the Ranger-General",q:"epic",s:"Finger"},
+  {id:30086,n:"Blind-Seers Icon",q:"epic",s:"Off Hand"},
+  {id:30087,n:"Wand of the Forgotten Star",q:"epic",s:"Ranged"},
+  {id:30100,n:"Cataclysm's Edge",q:"epic",s:"Two-Hand"},
+  {id:30101,n:"Leggings of Murderous Intent",q:"epic",s:"Legs"},
+  {id:30102,n:"Ranger-General's Chestguard",q:"epic",s:"Chest"},
+  {id:30103,n:"Coral-barbed Shoulderpads",q:"epic",s:"Shoulder"},
+  {id:30104,n:"Soul-strider Boots",q:"epic",s:"Feet"},
+  {id:30105,n:"Skar'this' Hammer of Presumption",q:"epic",s:"Main Hand"},
+  {id:30106,n:"Pauldrons of the Wardancer",q:"epic",s:"Shoulder"},
+  {id:30107,n:"Gloves of the Living Touch",q:"epic",s:"Hands"},
+  {id:30108,n:"Shuriken of Negation",q:"epic",s:"Thrown"},
+  {id:30120,n:"Boots of the Shifting Nightmare",q:"epic",s:"Feet"},
+  {id:30121,n:"Chestguard of the Vanquished Defender",q:"epic",s:"Chest"},
+  {id:30122,n:"Chestguard of the Vanquished Champion",q:"epic",s:"Chest"},
+  {id:30123,n:"Chestguard of the Vanquished Hero",q:"epic",s:"Chest"},
+  {id:30126,n:"Pauldrons of the Argent Sentinel",q:"epic",s:"Shoulder"},
+  {id:30127,n:"Gloves of the Searing Grip",q:"epic",s:"Hands"},
+  {id:30128,n:"Waistguard of the Great Beast",q:"epic",s:"Waist"},
+  {id:30140,n:"Fang of Vashj",q:"epic",s:"Main Hand"},
+  {id:30141,n:"Gloves of the Vanquished Champion",q:"epic",s:"Hands"},
+  {id:30142,n:"Gloves of the Vanquished Defender",q:"epic",s:"Hands"},
+  {id:30143,n:"Gloves of the Vanquished Hero",q:"epic",s:"Hands"},
+  {id:30144,n:"Necklace of Endless Hate",q:"epic",s:"Neck"},
+  {id:30145,n:"Ring of Endless Coils",q:"epic",s:"Finger"},
+  {id:30146,n:"Helm of the Vanquished Champion",q:"epic",s:"Head"},
+  {id:30147,n:"Helm of the Vanquished Defender",q:"epic",s:"Head"},
+  {id:30148,n:"Helm of the Vanquished Hero",q:"epic",s:"Head"},
+  {id:30149,n:"Boots of Utter Darkness",q:"epic",s:"Feet"},
+  {id:30150,n:"Coilfang Hammer of Renewal",q:"epic",s:"Main Hand"},
+  {id:30151,n:"Tempest of Chaos",q:"epic",s:"Two-Hand"},
+  {id:30025,n:"Serpentshrine Shuriken",q:"epic",s:"Thrown"},
+  {id:30026,n:"Deathstrike Pendant",q:"epic",s:"Neck"},
+  {id:30027,n:"Girdle of the Tidal Call",q:"epic",s:"Waist"},
+  {id:30028,n:"Gloves of the Swarming Riptide",q:"epic",s:"Hands"},
+  {id:30029,n:"Leggings of the Writhing Tide",q:"epic",s:"Legs"},
+  {id:30215,n:"Pauldrons of the Vanquished Champion",q:"epic",s:"Shoulder"},
+  {id:30216,n:"Pauldrons of the Vanquished Defender",q:"epic",s:"Shoulder"},
+  {id:30217,n:"Pauldrons of the Vanquished Hero",q:"epic",s:"Shoulder"},
+  {id:30218,n:"Void Reaver Greaves",q:"epic",s:"Feet"},
+  {id:30220,n:"Void Reaver Orb",q:"epic",s:"Off Hand"},
+  {id:30221,n:"Studded Girdle of Virtue",q:"epic",s:"Waist"},
+  {id:30222,n:"Ring of Captured Storms",q:"epic",s:"Finger"},
+  {id:30238,n:"Solarian's Sapphire",q:"epic",s:"Trinket"},
+  {id:30239,n:"Spellfire Longsword",q:"epic",s:"Main Hand"},
+  {id:30240,n:"Light's Guidance",q:"epic",s:"Main Hand"},
+  {id:30241,n:"Helm of the Vanquished Champion",q:"epic",s:"Head"},
+  {id:30242,n:"Helm of the Vanquished Defender",q:"epic",s:"Head"},
+  {id:30243,n:"Helm of the Vanquished Hero",q:"epic",s:"Head"},
+  {id:30244,n:"Girdle of Ruination",q:"epic",s:"Waist"},
+  {id:30245,n:"Astromancer's Crystal",q:"epic",s:"Off Hand"},
+  {id:30246,n:"Band of the Astral Path",q:"epic",s:"Finger"},
+  {id:30258,n:"Ashes of Al'ar",q:"epic",s:"Mount"},
+  {id:30259,n:"Claw of Al'ar",q:"epic",s:"Main Hand"},
+  {id:30260,n:"Talon of Al'ar",q:"epic",s:"Main Hand"},
+  {id:30261,n:"Cursed Vision of Sargeras",q:"epic",s:"Head"},
+  {id:30262,n:"Phoenix-Wing Cloak",q:"epic",s:"Back"},
+  {id:30263,n:"Trousers of the Astromancer",q:"epic",s:"Legs"},
+  {id:30264,n:"Boots of the Crimson Hawk",q:"epic",s:"Feet"},
+  {id:30265,n:"Leggings of the Crimson Stalker",q:"epic",s:"Legs"},
+  {id:30281,n:"Twinblade of the Phoenix",q:"epic",s:"Two-Hand"},
+  {id:30282,n:"Rod of the Sun King",q:"epic",s:"Main Hand"},
+  {id:30283,n:"Syphon of the Nathrezim",q:"epic",s:"Trinket"},
+  {id:30284,n:"Boots of the Resilient",q:"epic",s:"Feet"},
+  {id:30285,n:"Chestguard of the Vanquished Champion",q:"epic",s:"Chest"},
+  {id:30286,n:"Chestguard of the Vanquished Defender",q:"epic",s:"Chest"},
+  {id:30287,n:"Chestguard of the Vanquished Hero",q:"epic",s:"Chest"},
+  {id:30288,n:"Mantle of the Elven Kings",q:"epic",s:"Shoulder"},
+  {id:30289,n:"Vestments of the Sea-Witch",q:"epic",s:"Chest"},
+  {id:30290,n:"Kael's Dark Sinstone",q:"epic",s:"Neck"},
+  {id:30291,n:"Shield of the Wayward Footman",q:"epic",s:"Off Hand"},
+  {id:30292,n:"Staff of Disintegration",q:"epic",s:"Two-Hand"},
+  {id:30293,n:"Sunhawk Leggings",q:"epic",s:"Legs"},
+  {id:30300,n:"Collar of Cho'gall",q:"epic",s:"Neck"},
+  {id:30301,n:"Nathrezim Mindblade",q:"epic",s:"Main Hand"},
+  {id:30302,n:"Lightfathom Scepter",q:"epic",s:"Main Hand"},
+  {id:30303,n:"Greaves of the Bloodwarder",q:"epic",s:"Feet"},
+  {id:30304,n:"Gloves of the Bloodwarder",q:"epic",s:"Hands"},
+  {id:18563,n:"Bindings of the Windseeker",q:"epic",s:"Quest"},
+  {id:18564,n:"Bindings of the Windseeker",q:"epic",s:"Quest"},
+  {id:30720,n:"Fire Opal Necklace",q:"epic",s:"Neck"},
+  {id:29383,n:"Fathom-Brooch of the Tidewalker",q:"epic",s:"Trinket"},
+  {id:30458,n:"Pauldrons of the Crimson Flight",q:"epic",s:"Shoulder"},
+  {id:30724,n:"Cobra-Lash Boots",q:"epic",s:"Feet"},
+  {id:30725,n:"Wildfury Greatstaff",q:"epic",s:"Two-Hand"}
+];
+function searchLocal(q){const ql=q.toLowerCase();return SSC_TK_ITEMS.filter(i=>i.n.toLowerCase().includes(ql)).sort((a,b)=>{const an=a.n.toLowerCase(),bn=b.n.toLowerCase();if(an===ql)return -1;if(bn===ql)return 1;if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return an.localeCompare(bn);}).map(i=>({id:i.id,name:i.n,quality:i.q,icon:null,slot:i.s}));}
+
 async function searchWowhead(query){
   if(!query||query.length<2){searchResults=[];isSearching=false;refreshDropdown();return;}
-  isSearching=true;refreshDropdown();
+  // Instant local results first
+  const local=searchLocal(query);
+  searchResults=local;
+  isSearching=false;
+  refreshDropdown();
+  // Then fetch network results in background and merge extras
   try{
-    // Run worker and Wowhead suggest in parallel, merge and deduplicate
-    let workerResults=[], whResults=[];
-    try{
-      const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);
-      if(res.ok) workerResults=await res.json();
-    }catch(e){}
+    let whResults=[];
     try{
       const res=await fetch(`https://www.wowhead.com/tbc/search/suggestions-v2?q=${encodeURIComponent(query)}&returntype=item`);
-      if(res.ok){
-        const data=await res.json();
-        whResults=(data.results||[]).map(r=>({
-          id:r.id,
-          name:r.name,
-          quality:['poor','common','uncommon','rare','epic','legendary'][r.quality||0]||'common',
-          icon:r.icon||null,
-          slot:r.typeName||''
-        }));
-      }
+      if(res.ok){const data=await res.json();whResults=(data.results||[]).map(r=>({id:r.id,name:r.name,quality:['poor','common','uncommon','rare','epic','legendary'][r.quality||0]||'common',icon:r.icon||null,slot:r.typeName||''}));}
     }catch(e){}
-    // Merge: Wowhead results first (more accurate for exact names), then worker extras
-    const seen=new Set(whResults.map(r=>r.id));
-    const extras=workerResults.filter(r=>!seen.has(r.id));
-    const merged=[...whResults,...extras];
-    // Sort: exact/prefix matches first
-    const q=query.toLowerCase();
-    merged.sort((a,b)=>{
-      const an=a.name.toLowerCase(), bn=b.name.toLowerCase();
-      const aExact=an===q, bExact=bn===q;
-      const aPrefix=an.startsWith(q), bPrefix=bn.startsWith(q);
-      if(aExact!==bExact) return aExact?-1:1;
-      if(aPrefix!==bPrefix) return aPrefix?-1:1;
-      return 0;
-    });
-    searchResults=merged;
-  }catch(e){searchResults=[];}
-  isSearching=false;refreshDropdown();
+    let workerResults=[];
+    try{const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);if(res.ok)workerResults=await res.json();}catch(e){}
+    const localIds=new Set(local.map(r=>r.id));
+    const seenNet=new Set();
+    const extras=[...whResults,...workerResults].filter(r=>{if(localIds.has(r.id)||seenNet.has(r.id))return false;seenNet.add(r.id);return true;});
+    if(extras.length){const ql=query.toLowerCase();extras.sort((a,b)=>{const an=a.name.toLowerCase(),bn=b.name.toLowerCase();if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return 0;});searchResults=[...local,...extras];refreshDropdown();}
+  }catch(e){}
 }
 
 function refreshDropdown(){
@@ -976,17 +1001,6 @@ function subscribeToRun(){
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
     presenceData=data.presence||{};
-    // Update online counter immediately whenever presence changes
-    (function(){
-      const onlineEl=document.getElementById('hdr-online');
-      const onlineCount=document.getElementById('hdr-online-count');
-      if(onlineEl&&onlineCount&&user){
-        const seen={};
-        Object.values(presenceData).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
-        onlineCount.textContent=Object.keys(seen).length+' Online';
-        onlineEl.style.display='flex';
-      }
-    })();
     if(data.settings){
       raidSettings={...raidSettings,...data.settings};
       if(data.settings.categories) raidCategories=data.settings.categories;
@@ -1257,16 +1271,13 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count — raw key count from presenceData, always show when logged in
+  // Online count (left side) — show all presence entries
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const entries=Object.values(presenceData||{});
-    const seen={};
-    entries.forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
-    const n=Object.keys(seen).length;
+    const n=Object.keys(presenceData||{}).length;
     onlineCount.textContent=`${n} Online`;
-    onlineEl.style.display='flex';
+    onlineEl.style.display=n>0?'flex':'none';
   }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
@@ -1283,118 +1294,30 @@ function renderHdr(){
 let _onlineTooltipHideT=null;
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
-  // Don't reposition if already visible — prevents teleporting
-  const existing=document.querySelector('.online-tooltip');
-  if(existing){clearTimeout(_onlineTooltipHideT);return;}
-  const byName={};
-  Object.values(presenceData||{}).forEach(m=>{
-    if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen) byName[m.name]=m;
-  });
-  // Dedup case-insensitively, keep most recent
-  const dedupMap={};
-  Object.values(byName).forEach(m=>{
-    const key=(m.name||'').toLowerCase();
-    if(!dedupMap[key]||m.lastSeen>dedupMap[key].lastSeen) dedupMap[key]=m;
-  });
-  const members=Object.values(dedupMap).sort((a,b)=>a.name.localeCompare(b.name));
+  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
+  const members=Object.values(presenceData||{});
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
-  tip.addEventListener('mouseenter',()=>clearTimeout(_onlineTooltipHideT),true);
-  tip.addEventListener('mouseleave',(ev)=>{
-    // Only hide if leaving the tooltip entirely (not into a child, bridge, or anchor)
-    if(!tip.contains(ev.relatedTarget)&&!ev.relatedTarget?.closest('#hdr-online')){
-      _onlineTooltipHideT=setTimeout(()=>tip.remove(),200);
-    }
-  },true);
-  // Anchor to the counter element, not the mouse
-  const anchor=document.getElementById('hdr-online');
-  const rect=anchor?anchor.getBoundingClientRect():{left:10,bottom:30};
-  const GAP=6;
-  tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+GAP}px;`;
-  // Transparent bridge fills the gap — sized to match tooltip width after render
-  const bridge=document.createElement('div');
-  bridge.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom}px;width:${tip.offsetWidth||290}px;height:${GAP+4}px;z-index:999;`;
-  bridge.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
-  bridge.onmouseleave=(ev)=>{if(!tip.contains(ev.relatedTarget)&&!anchor.contains(ev.relatedTarget)){_onlineTooltipHideT=setTimeout(()=>{tip.remove();bridge.remove();},200);}};
-  tip._bridge=bridge;
-  document.body.appendChild(bridge);
-  // Resize bridge and counter hit area to match tooltip width
-  requestAnimationFrame(()=>{
-    const w=tip.offsetWidth+'px';
-    bridge.style.width=w;
-    const hdrOnline=document.getElementById('hdr-online');
-    if(hdrOnline) hdrOnline.style.width=w;
-  });
-  // Remove bridge when tip is removed
-  const origRemove=tip.remove.bind(tip);
-  tip.remove=()=>{bridge.remove();origRemove();};
-
-  const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#0070dd',epic:'#a335ee',legendary:'#ff8000'};
-  function itemLink(a){
-    const c=qualityColor[a.quality||'common']||'#ffffff';
-    const href=a.itemId?`https://www.wowhead.com/item=${a.itemId}`:'#';
-    const price=(a.currentBid||a.price||0).toLocaleString();
-    return`<span style="display:flex;align-items:baseline;gap:.35rem;"><a href="${href}" target="_blank" rel="noopener" data-wh-icon-size="small" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;white-space:nowrap;flex-shrink:0;">${price}g</span></span>`;
-  }
-  function renderTip(hist){
-    const sold=auctionList().filter(a=>a.status==='sold');
-    tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.6rem;">ONLINE NOW</div>`
-      +members.map(m=>{
-        const curItems=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name)
-                          .sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
-        const curSpend=curItems.reduce((s,a)=>s+(a.currentBid||0),0);
-        const h=hist?.[m.name];
-        const histSpend=h?.totalSpent||0;
-        const histItems=h?.itemsWon||0;
-        const histRuns=h?.runCount||0;
-        const allTimeItems=(h?.items||[]).sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5);
-        return`<div style="padding:.45rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
-            <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
-          </div>
-          <div style="padding-left:1rem;display:flex;flex-direction:column;gap:.22rem;">
-            <div style="font-size:.7rem;">
-              <span style="color:var(--gold-light);">This run</span>
-              ${curSpend>0
-                ?`<span style="color:var(--gold);font-weight:600;"> ${curSpend.toLocaleString()}g</span><span style="color:var(--text-muted);"> · ${curItems.length} item${curItems.length!==1?'s':''}</span>`
-                :`<span style="color:var(--text-muted);"> — nothing yet</span>`}
-            </div>
-            ${curItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.2);">
-              ${curItems.map(a=>`<div>${itemLink(a)}</div>`).join('')}
-            </div>`:''}
-            ${histItems>0?`<div style="font-size:.7rem;margin-top:.1rem;">
-              <span style="color:var(--gold-light);">All time</span>
-              <span style="color:var(--gold);font-weight:600;"> ${histSpend.toLocaleString()}g</span>
-              <span style="color:var(--text-muted);"> · ${histItems} item${histItems!==1?'s':''} · ${histRuns} run${histRuns!==1?'s':''}</span>
-            </div>
-            ${allTimeItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.12);">
-              ${allTimeItems.map(a=>`<div>${itemLink(a)}</div>`).join('')}
-            </div>`:''}
-            `:''}
-          </div>
-        </div>`;
-      }).join('');
-    if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
-  }
-
-  renderTip(crossRunCache);
+  tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
+  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),150);};
+  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.5rem;">ONLINE NOW</div>`
+    +members.map(m=>{
+      const spend=getMemberSpend(m.name);
+      const items=auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name).length;
+      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem .3rem;border-radius:3px;cursor:default;" onmouseenter="this.style.background='rgba(212,169,60,0.08)'" onmouseleave="this.style.background=''">
+        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
+        <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.6rem;">★</span>':''}</span>
+        ${spend>0?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${spend.toLocaleString()}g</span>`:''}
+        ${items>0?`<span style="font-size:.68rem;color:var(--text-muted);">${items}★</span>`:''}
+      </div>`;
+    }).join('');
+  tip.style.left=(e.clientX-10)+'px';
+  tip.style.top=(e.clientY+16)+'px';
   document.body.appendChild(tip);
-
-  // Load historical data async and re-render
-  if(!crossRunCache){
-    fetchCrossRunStats().then(hist=>{ if(document.body.contains(tip)) renderTip(hist); });
-  }
 }
-function hideOnlineTooltip(e){
-  // Don't hide if mouse moved into the tooltip
-  const tip=document.querySelector('.online-tooltip');
-  if(tip&&e&&tip.contains(e.relatedTarget)) return;
-  _onlineTooltipHideT=setTimeout(()=>{
-    const t=document.querySelector('.online-tooltip');
-    if(t&&!t.matches(':hover')) t.remove();
-  },200);
+function hideOnlineTooltip(){
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),150);
 }
 
 function showMemberTooltipFromHeader(event){
@@ -1492,8 +1415,8 @@ function buildModal(title,a,fn){
     <div class="fg"><div class="lbl">Note</div><input type="text" id="m-note" value="${a?a.note||'':''}" placeholder="e.g. reserved, officer only..." /></div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold btn-sm" onclick="${fn}()">${isEdit?'Save':'Queue'}</button>
-      ${!isEdit?`<button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="addToQueueAndStart()">&#9654; Start</button>`:''}
+      <button class="btn btn-gold btn-sm" onclick="${fn}()">${isEdit?'Save Changes':'Add to Queue'}</button>
+      ${!isEdit?`<button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="addToQueueAndStart()">&#9654; Add &amp; Start</button>`:''}
     </div>
   </div></div>`;
 }
@@ -1529,18 +1452,18 @@ function renderMain(){
   </div>`:'';
 
   const membersBar = renderMembersBar(presenceData);
-  const potBar=isRL?`<div class="pot-bar">
-    <div class="pot-bar-stat">
+  const potBar=isRL?`<div class="pot-bar" style="justify-content:space-between;padding:1.25rem 1.75rem;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
       <div class="pot-lbl">Total Pot</div>
       <div class="pot-val">${p.toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${sold.length} item${sold.length!==1?'s':''} sold</div>
     </div>
-    <div class="pot-bar-stat">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
       <div class="pot-lbl">Est. Raider Cut</div>
       <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${Math.floor(p/raiderCount()).toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
     </div>
-    <div class="pot-bar-actions">
+    <div style="display:flex;align-items:center;gap:.5rem;">
       <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
       <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">${lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot'}</button>
     </div>
@@ -1764,37 +1687,14 @@ function renderPanel(){
       ${itemRows}
     </div>`;
   }).join('');
-  if(isRL){
-    const suppressed=Object.keys(_suppressedDialogs);
-    if(suppressed.length){
-      body.innerHTML+=`<div style="margin-top:1.25rem;text-align:center;">
-        <button onclick="window._resetSuppressed()" style="background:none;border:none;color:var(--text-muted);font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.07em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Reset suppressed confirmations (${suppressed.length})</button>
-      </div>`;
-    }
-  }
 }
-
-window._resetSuppressed=function(){
-  Object.keys(_suppressedDialogs).forEach(k=>delete _suppressedDialogs[k]);
-  _saveSuppress();
-  toast('Confirmations restored');
-  renderPanel();
-};
 
 // ── Reset ─────────────────────────────────────────────────────────────────
 function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 window._trackerCatFilter='All';
-window._trackerCollapsed=false;
 window._setTrackerCat=function(val){window._trackerCatFilter=val;renderLootTracker();};
-window._toggleTrackerCollapse=function(){
-  window._trackerCollapsed=!window._trackerCollapsed;
-  const t=document.getElementById('loot-tracker');
-  if(t)t.classList.toggle('collapsed',window._trackerCollapsed);
-  const btn=document.getElementById('tracker-collapse-btn');
-  if(btn)btn.textContent=window._trackerCollapsed?'▲':'▼';
-};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
@@ -1814,6 +1714,7 @@ function renderLootTracker(){
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
   {
+    const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
     const items=sorted.map(a=>{
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
       const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
@@ -1835,26 +1736,13 @@ function renderLootTracker(){
         ${bidBtns}
       </div>`;
     }).join('');
-    const catOptHtml=cats.map(c=>`<div class="tracker-cat-opt${c===sel?' selected':''}" onclick="window._setTrackerCat('${c}');document.getElementById('tracker-cat-list').style.display='none';">${c}</div>`).join('');
-    const collapsed=window._trackerCollapsed;
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
       <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
         <span style="flex:1;">Run (${all.length})</span>
-        ${!collapsed?`<div class="tracker-cat-wrap">
-          <div class="tracker-cat-btn" id="tracker-cat-btn" onclick="(function(){var l=document.getElementById('tracker-cat-list');l.style.display=l.style.display==='block'?'none':'block';})()">
-            <span id="tracker-cat-label">${sel}</span>
-            <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          </div>
-          <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
-        </div>`:''}
-        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
+        <select id="tracker-cat-select" onchange="window._setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
       </div>
-      <div class="loot-tracker-body">
-        ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}
-      </div>`;
-    if(collapsed)tracker.classList.add('collapsed');
-    else tracker.classList.remove('collapsed');
+      ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   }
   // Update timers in-place without rebuilding HTML
@@ -2282,9 +2170,9 @@ function removeSold(id){
     msg:`Remove ${a?.name||'this item'} from sold? This will reduce the pot total.`,
     confirmLabel:'Remove',
     danger:true,
-    suppressKey:'remove_sold',
-    onConfirm:()=>{remove(runRef(`/auctions/${id}`));toast('Item removed');}
+    onConfirm:()=>remove(runRef(`/auctions/${id}`))
   });
+  toast('Item removed');
 }
 
 function openEditSold(id){
@@ -2418,7 +2306,6 @@ function resetAuction(id){
     msg:'All bids will be cleared and the price reset to the starting bid.',
     confirmLabel:'Reset',
     danger:true,
-    suppressKey:'reset_bids',
     onConfirm:()=>{
       const sb=a.startBid||a.currentBid||1000;
       update(runRef(`/auctions/${id}`),{bids:{},currentBid:sb});
@@ -2433,7 +2320,6 @@ function cancelAuction(id){
     msg:`${a.name||'This item'} will be returned to the queue with all bids cleared.`,
     confirmLabel:'Cancel Auction',
     danger:true,
-    suppressKey:'cancel_auction',
     onConfirm:()=>{
       update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
       tab='queued';
@@ -2934,7 +2820,6 @@ async function removePastItem(runKey, auctionId){
     msg:'This will affect cross-run totals and cannot be undone.',
     confirmLabel:'Remove',
     danger:true,
-    suppressKey:'remove_history',
     onConfirm:async()=>{
       await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
       crossRunCache=null;
@@ -3149,9 +3034,6 @@ function setTab(t){tab=t;render();}
 document.addEventListener('click',e=>{
   const dd=document.getElementById('item-dropdown');
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
-  const tl=document.getElementById('tracker-cat-list');
-  const tb=document.getElementById('tracker-cat-btn');
-  if(tl&&!tl.contains(e.target)&&tb&&!tb.contains(e.target))tl.style.display='none';
 });
 
 // ── Swipe gestures ────────────────────────────────────────────────────────
@@ -3243,7 +3125,7 @@ if(!window._trackerDragSet){
       e.preventDefault();return;
     }
     const hdr=e.target.closest('.loot-tracker-hdr');
-    if(!hdr||e.target.tagName==='SELECT'||e.target.tagName==='OPTION'||e.target.closest('.tracker-cat-wrap')||e.target.closest('#tracker-collapse-btn'))return;
+    if(!hdr||e.target.tagName==='SELECT'||e.target.tagName==='OPTION')return;
     const t=document.getElementById('loot-tracker');if(!t)return;
     const r=t.getBoundingClientRect();
     t.style.transform='none';

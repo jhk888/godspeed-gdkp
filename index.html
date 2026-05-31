@@ -816,18 +816,17 @@ async function searchWowhead(query){
   if(!query||query.length<2){searchResults=[];isSearching=false;refreshDropdown();return;}
   isSearching=true;refreshDropdown();
   try{
-    // Try worker first, then fall back to wowhead suggest API
-    let results=[];
+    // Run worker and Wowhead suggest in parallel, merge and deduplicate
+    let workerResults=[], whResults=[];
     try{
       const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);
-      if(res.ok) results=await res.json();
+      if(res.ok) workerResults=await res.json();
     }catch(e){}
-    // If worker returns no useful results, try wowhead TBC suggest directly
-    if(!results.length){
+    try{
       const res=await fetch(`https://www.wowhead.com/tbc/search/suggestions-v2?q=${encodeURIComponent(query)}&returntype=item`);
       if(res.ok){
         const data=await res.json();
-        results=(data.results||[]).map(r=>({
+        whResults=(data.results||[]).map(r=>({
           id:r.id,
           name:r.name,
           quality:['poor','common','uncommon','rare','epic','legendary'][r.quality||0]||'common',
@@ -835,8 +834,22 @@ async function searchWowhead(query){
           slot:r.typeName||''
         }));
       }
-    }
-    searchResults=results;
+    }catch(e){}
+    // Merge: Wowhead results first (more accurate for exact names), then worker extras
+    const seen=new Set(whResults.map(r=>r.id));
+    const extras=workerResults.filter(r=>!seen.has(r.id));
+    const merged=[...whResults,...extras];
+    // Sort: exact/prefix matches first
+    const q=query.toLowerCase();
+    merged.sort((a,b)=>{
+      const an=a.name.toLowerCase(), bn=b.name.toLowerCase();
+      const aExact=an===q, bExact=bn===q;
+      const aPrefix=an.startsWith(q), bPrefix=bn.startsWith(q);
+      if(aExact!==bExact) return aExact?-1:1;
+      if(aPrefix!==bPrefix) return aPrefix?-1:1;
+      return 0;
+    });
+    searchResults=merged;
   }catch(e){searchResults=[];}
   isSearching=false;refreshDropdown();
 }

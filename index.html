@@ -552,7 +552,7 @@
     <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
       <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
-        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip()"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)"></span>
       </div>
     </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
@@ -718,7 +718,34 @@ function auctionList(){return Object.values(auctions||{});}
 function pot(){return auctionList().filter(a=>a.status==='sold').reduce((s,a)=>s+(a.currentBid||0),0);}
 function raiderCount(){const n=new Set(auctionList().flatMap(a=>Object.values(a.bids||{}).map(b=>b.bidder)));if(user)n.add(user);return Math.max(n.size,1);}
 function runRef(p=''){return ref(db,`runs/${runId}${p}`);}
-function iconUrl(icon){return icon?`https://wow.zamimg.com/images/wow/icons/medium/${icon}.jpg`:'';}
+function iconUrl(icon){return icon?`https://wow.zamimg.com/images/wow/icons/medium/${icon}.jpg`:''}
+// Icon cache — fetched from Wowhead media API
+const _iconCache={};
+async function fetchIcon(itemId){
+  if(!itemId||_iconCache[itemId]!==undefined) return _iconCache[itemId]||null;
+  _iconCache[itemId]=null; // mark as fetching
+  try{
+    const res=await fetch(`https://www.wowhead.com/tbc/tooltip/item/${itemId}?lvl=70`);
+    if(res.ok){
+      const data=await res.json();
+      if(data.icon){_iconCache[itemId]=data.icon;return data.icon;}
+    }
+  }catch(e){}
+  return null;
+}
+function getIconImg(itemId,icon,size=24){
+  if(icon) return `<img src="${iconUrl(icon)}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" onerror="this.style.display='none'" />`;
+  if(!itemId) return `<div style="width:${size}px;height:${size}px;border-radius:2px;background:var(--bg-input);flex-shrink:0;"></div>`;
+  // Render placeholder, then load async
+  const uid='ic'+itemId;
+  if(_iconCache[itemId]) return `<img src="${iconUrl(_iconCache[itemId])}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" />`;
+  fetchIcon(itemId).then(ic=>{
+    document.querySelectorAll(`.icon-${uid}`).forEach(el=>{
+      if(ic){el.outerHTML=`<img src="${iconUrl(ic)}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" />`;}
+    });
+  });
+  return `<div class="icon-${uid}" style="width:${size}px;height:${size}px;border-radius:2px;background:var(--bg-input);flex-shrink:0;"></div>`;
+}
 
 // Raider loot summary
 function getRaiderLoot(name){
@@ -887,7 +914,7 @@ function refreshDropdown(){
       counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
     ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
     return`<div class="dropdown-item" onclick="selectItem(${item.id})">
-      ${item.icon?`<img src="${iconUrl(item.icon)}" onerror="this.style.display='none'" />`:'<div class="dropdown-item-icon-placeholder"></div>'}
+      ${getIconImg(item.id, item.icon)}
       <div style="flex:1;min-width:0;">
         <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;">${item.name}</a>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
@@ -918,7 +945,7 @@ function renderSearchPreview(){
   const wrap=document.getElementById('search-preview-wrap');if(!wrap)return;
   if(!selectedItem){wrap.innerHTML='';return;}
   wrap.innerHTML=`<div class="search-preview">
-    ${selectedItem.icon?`<img src="${iconUrl(selectedItem.icon)}" onerror="this.style.display='none'" />`:''}
+    ${getIconImg(selectedItem.id, selectedItem.icon, 28)}
     <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" onclick="return false;">${selectedItem.name}</a>
     <span class="dropdown-item-sub">${selectedItem.slot||''}</span>
     <button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button>
@@ -1257,13 +1284,14 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count (left side) — show all presence entries
+  // Online count — dedup by name (case-insensitive), always show when logged in
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const n=Object.keys(presenceData||{}).length;
-    onlineCount.textContent=`${n} Online`;
-    onlineEl.style.display=n>0?'flex':'none';
+    const seen={};
+    Object.values(presenceData||{}).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
+    onlineCount.textContent=Object.keys(seen).length+' Online';
+    onlineEl.style.display='flex';
   }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
@@ -1278,32 +1306,104 @@ function renderHdr(){
 }
 
 let _onlineTooltipHideT=null;
+const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#0070dd',epic:'#a335ee',legendary:'#ff8000'};
+function _itemLink(a){
+  const c=qualityColor[a.quality||'common']||'#ffffff';
+  const href=a.itemId?`https://www.wowhead.com/tbc/item=${a.itemId}`:'#';
+  const price=(a.currentBid||a.price||0).toLocaleString();
+  return`<span style="display:flex;align-items:baseline;gap:.35rem;"><a href="${href}" target="_blank" rel="noopener" data-wowhead="item=${a.itemId}&domain=tbc" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;white-space:nowrap;flex-shrink:0;">${price}g</span></span>`;
+}
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
-  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
-  const members=Object.values(presenceData||{});
+  if(document.querySelector('.online-tooltip')){clearTimeout(_onlineTooltipHideT);return;}
+  // Dedup case-insensitively
+  const byName={};
+  Object.values(presenceData||{}).forEach(m=>{
+    const k=(m.name||'').toLowerCase();
+    if(!byName[k]||m.lastSeen>byName[k].lastSeen) byName[k]=m;
+  });
+  const members=Object.values(byName).sort((a,b)=>a.name.localeCompare(b.name));
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
-  tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
-  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),150);};
-  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.5rem;">ONLINE NOW</div>`
-    +members.map(m=>{
-      const spend=getMemberSpend(m.name);
-      const items=auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name).length;
-      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem .3rem;border-radius:3px;cursor:default;" onmouseenter="this.style.background='rgba(212,169,60,0.08)'" onmouseleave="this.style.background=''">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
-        <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.6rem;">★</span>':''}</span>
-        ${spend>0?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${spend.toLocaleString()}g</span>`:''}
-        ${items>0?`<span style="font-size:.68rem;color:var(--text-muted);">${items}★</span>`:''}
-      </div>`;
-    }).join('');
-  tip.style.left=(e.clientX-10)+'px';
-  tip.style.top=(e.clientY+16)+'px';
+  // Anchor to counter element position
+  const anchor=document.getElementById('hdr-online');
+  const rect=anchor?anchor.getBoundingClientRect():{left:10,bottom:30};
+  const GAP=6;
+  tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+GAP}px;`;
+  tip.addEventListener('mouseenter',()=>clearTimeout(_onlineTooltipHideT),true);
+  tip.addEventListener('mouseleave',(ev)=>{
+    if(!tip.contains(ev.relatedTarget)&&!ev.relatedTarget?.closest('#hdr-online')){
+      _onlineTooltipHideT=setTimeout(()=>tip.remove(),200);
+    }
+  },true);
+  // Bridge div
+  const bridge=document.createElement('div');
+  bridge.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom}px;width:${tip.offsetWidth||290}px;height:${GAP+4}px;z-index:999;`;
+  bridge.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
+  bridge.onmouseleave=(ev)=>{if(!tip.contains(ev.relatedTarget)&&!anchor.contains(ev.relatedTarget)){_onlineTooltipHideT=setTimeout(()=>{tip.remove();bridge.remove();},200);}};
+  document.body.appendChild(bridge);
+  const origRemove=tip.remove.bind(tip);
+  tip.remove=()=>{bridge.remove();origRemove();};
+
+  function renderTip(hist){
+    const sold=auctionList().filter(a=>a.status==='sold');
+    tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.6rem;">ONLINE NOW</div>`
+      +members.map(m=>{
+        const curItems=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name)
+                          .sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
+        const curSpend=curItems.reduce((s,a)=>s+(a.currentBid||0),0);
+        const h=hist?.[m.name];
+        const histSpend=h?.totalSpent||0;
+        const histItems=h?.itemsWon||0;
+        const histRuns=h?.runCount||0;
+        const allTimeItems=(h?.items||[]).sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5);
+        return`<div style="padding:.45rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+            <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
+          </div>
+          <div style="padding-left:1rem;display:flex;flex-direction:column;gap:.22rem;">
+            <div style="font-size:.7rem;">
+              <span style="color:var(--gold-light);">This run</span>
+              ${curSpend>0
+                ?`<span style="color:var(--gold);font-weight:600;"> ${curSpend.toLocaleString()}g</span><span style="color:var(--text-muted);"> · ${curItems.length} item${curItems.length!==1?'s':''}</span>`
+                :`<span style="color:var(--text-muted);"> — nothing yet</span>`}
+            </div>
+            ${curItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.2);">
+              ${curItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
+            </div>`:''}
+            ${histItems>0?`<div style="font-size:.7rem;margin-top:.1rem;">
+              <span style="color:var(--gold-light);">All time</span>
+              <span style="color:var(--gold);font-weight:600;"> ${histSpend.toLocaleString()}g</span>
+              <span style="color:var(--text-muted);"> · ${histItems} item${histItems!==1?'s':''} · ${histRuns} run${histRuns!==1?'s':''}</span>
+            </div>
+            ${allTimeItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.12);">
+              ${allTimeItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
+            </div>`:''}
+            `:''}
+          </div>
+        </div>`;
+      }).join('');
+    if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+  }
+
+  renderTip(crossRunCache);
   document.body.appendChild(tip);
+  requestAnimationFrame(()=>{
+    const w=tip.offsetWidth+'px';
+    bridge.style.width=w;
+    const hdrOnline=document.getElementById('hdr-online');
+    if(hdrOnline) hdrOnline.style.width=w;
+  });
+  if(!crossRunCache){
+    fetchCrossRunStats().then(hist=>{if(document.body.contains(tip))renderTip(hist);});
+  }
 }
-function hideOnlineTooltip(){
-  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),150);
+function hideOnlineTooltip(ev){
+  const tip=document.querySelector('.online-tooltip');
+  if(tip&&ev&&tip.contains(ev.relatedTarget)) return;
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),200);
 }
 
 function showMemberTooltipFromHeader(event){

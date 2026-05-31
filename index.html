@@ -1290,7 +1290,7 @@ function showOnlineTooltip(e){
   tip.addEventListener('mouseleave',(ev)=>{
     // Only hide if leaving the tooltip entirely, not moving into a child
     if(!tip.contains(ev.relatedTarget)){
-      _onlineTooltipHideT=setTimeout(()=>tip.remove(),300);
+      _onlineTooltipHideT=setTimeout(()=>tip.remove(),200);
     }
   },true);
   // Pin position at first show
@@ -1355,7 +1355,7 @@ function showOnlineTooltip(e){
   }
 }
 function hideOnlineTooltip(){
-  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll(".online-tooltip").forEach(t=>t.remove()),300);
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll(".online-tooltip").forEach(t=>t.remove()),200);
 }
 
 function showMemberTooltipFromHeader(event){

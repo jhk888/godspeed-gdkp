@@ -1569,21 +1569,17 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 let _trackerCatFilter='All';
-window._trackerCatFilter='All';
-function setTrackerCat(val){_trackerCatFilter=val;window._trackerCatFilter=val;renderLootTracker();}
+let _trackerDataHash='';
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
   const all=auctionList();
-  if(!all.length){tracker.classList.remove('visible');return;}
+  if(!all.length){tracker.classList.remove('visible');_trackerDataHash='';return;}
   tracker.classList.add('visible');
   const cats=['All',...new Set(all.map(a=>a.category||'Other'))];
   const sel=_trackerCatFilter;
   const filtered=sel==='All'?all:all.filter(a=>(a.category||'Other')===sel);
-  const sorted=filtered.slice().sort((a,b)=>{
-    const o={open:0,queued:1,sold:2,expired:3};
-    return(o[a.status]??4)-(o[b.status]??4);
-  });
+  const sorted=filtered.slice().sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
   const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'#555',expired:'#cc6060'};
   const statusLabels={open:'Live',queued:'Queue',sold:'Sold',expired:'Exp'};
   const statusBadgeCss={
@@ -1592,50 +1588,51 @@ function renderLootTracker(){
     sold:'background:rgba(80,80,80,0.15);color:#666;border:1px solid rgba(80,80,80,0.2);',
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
+  // Only rebuild HTML when structural data changes — keeps select stable
+  const hash=all.map(a=>`${a.id}:${a.status}:${a.currentBid}:${a.category}`).join('|')+sel;
+  if(hash!==_trackerDataHash){
+    _trackerDataHash=hash;
+    const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
+    const items=sorted.map(a=>{
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
+      const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+      const top=bids[0];const isLeading=top?.bidder===user;const cur=a.currentBid||0;
+      const price=cur?`<span style="font-size:.68rem;color:${isLeading?'#60cc80':'var(--gold)'};font-family:'Cinzel',serif;">${cur.toLocaleString()}g</span>`:'';
+      const bidBtns=a.status==='open'&&!a.paused?`<div style="display:flex;gap:.25rem;margin-top:.3rem;" onclick="event.stopPropagation();">
+        ${(a.bidButtons||[250,500,1000]).map(inc=>`<button onclick="quickBid('${a.id}',${cur+inc})" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-family:'Cinzel',serif;font-size:.58rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer;">+${inc>=1000?(inc/1000)+'k':inc}</button>`).join('')}
+      </div>`:'';
+      return`<div class="loot-tracker-item" style="flex-direction:column;align-items:flex-start;padding:.4rem .9rem;">
+        <a ${wowAttrs} style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">
+          <div class="loot-tracker-dot" style="background:${statusColors[a.status]||'#666'};"></div>
+          <span class="loot-tracker-name">${a.name}</span>
+          <div class="loot-tracker-right">
+            <span class="loot-tracker-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
+            <span id="tracker-timer-${a.id}" class="loot-tracker-timer"></span>
+            ${price}
+          </div>
+        </a>
+        ${bidBtns}
+      </div>`;
+    }).join('');
+    tracker.innerHTML=`
+      <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
+      <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
+        <span style="flex:1;">Run (${all.length})</span>
+        <select id="tracker-cat-select" data-tracker-filter="1" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
+      </div>
+      ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
+    if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  }
+  // Update timers in-place without rebuilding HTML
   const now=Date.now();
-  const items=sorted.map(a=>{
-    const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
-    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
-    const top=bids[0];
-    const isLeading=top?.bidder===user;
-    const cur=a.currentBid||0;
-    const minNext=cur+(a.minIncrement||250);
-    let timer='';
+  sorted.forEach(a=>{
+    const el=document.getElementById('tracker-timer-'+a.id);if(!el)return;
     if(a.status==='open'&&!a.paused&&a.endsAt){
       const rem=Math.max(0,Math.ceil((a.endsAt-now)/1000));
-      const urgent=rem<=10;
-      timer=`<span class="loot-tracker-timer" style="color:${urgent?'#e26060':'rgba(201,168,76,0.45)'};">${fmtTime(rem)}</span>`;
-    }else if(a.status==='open'&&a.paused){
-      timer=`<span class="loot-tracker-timer" style="color:#c87818;">Paused</span>`;
-    }
-    const price=cur?`<span style="font-size:.68rem;color:${isLeading?'#60cc80':'var(--gold)'};font-family:'Cinzel',serif;">${cur.toLocaleString()}g</span>`:'';
-    const bidBtns=a.status==='open'&&!a.paused?`<div style="display:flex;gap:.25rem;margin-top:.3rem;" onclick="event.stopPropagation();">
-      ${(a.bidButtons||[250,500,1000]).map(inc=>`<button onclick="quickBid('${a.id}',${(cur||0)+inc})" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-family:'Cinzel',serif;font-size:.58rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer;">+${inc>=1000?(inc/1000)+'k':inc}</button>`).join('')}
-    </div>`:'';
-    return`<div class="loot-tracker-item" style="flex-direction:column;align-items:flex-start;padding:.35rem .7rem;">
-      <a ${wowAttrs} style="display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;">
-        <div class="loot-tracker-dot" style="background:${statusColors[a.status]||'#666'};"></div>
-        <span class="loot-tracker-name">${a.name}</span>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;flex-shrink:0;">
-          <span class="loot-tracker-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
-          ${timer}
-          ${price}
-        </div>
-      </a>
-      ${bidBtns}
-    </div>`;
-  }).join('');
-  const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
-  tracker.innerHTML=`
-    <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
-    <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
-      <span style="flex:1;">Run (${all.length})</span>
-      <select id="tracker-cat-select" data-tracker-filter="1" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">
-        ${catOptions}
-      </select>
-    </div>
-    ${items||'<div style="padding:.5rem .7rem;font-size:.56rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
-  if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+      el.textContent=fmtTime(rem);el.style.color=rem<=10?'#e26060':'rgba(201,168,76,0.5)';
+    }else if(a.status==='open'&&a.paused){el.textContent='Paused';el.style.color='#c87818';}
+    else{el.textContent='';}
+  });
 }
 
 function renderLootDisplay(){
@@ -2998,10 +2995,8 @@ initPanelHover();
 document.addEventListener('change',e=>{
   if(e.target&&e.target.dataset.trackerFilter){
     _trackerCatFilter=e.target.value;
+    _trackerDataHash=''; // force rebuild
     renderLootTracker();
-    // Restore selected value after re-render
-    const sel=document.getElementById('tracker-cat-select');
-    if(sel)sel.value=_trackerCatFilter;
   }
 });
 // Draggable + resizable loot tracker — set once at page load

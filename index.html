@@ -133,95 +133,117 @@
     .logo{font-size:.9rem;white-space:nowrap;}
     .logo-sub{display:none;}
     .rl-badge{display:none;}
-    #hdr-user{display:flex;align-items:center;gap:.3rem;justify-content:flex-end;grid-column:3;}
-    .usr-chip{font-size:.58rem;padding:.2rem .3rem;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #hdr-user{display:flex;align-items:center;gap:.25rem;justify-content:flex-end;grid-column:3;}
+    .usr-chip{font-size:.58rem;padding:.2rem .35rem;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    #mute-btn{display:none !important;}
     .conn-dot{display:none;}
 
     /* Layout */
-    .main{padding:.6rem .5rem 120px .5rem;}
+    .main{padding:.5rem .4rem 130px .4rem;}
     .grid{grid-template-columns:1fr;}
-    .three-col{grid-template-columns:1fr;}
-
-    /* Buttons */
-    .btn{font-size:.72rem;padding:.45rem .7rem;}
-    .btn-sm{padding:.3rem .5rem;font-size:.62rem;min-height:36px;}
-    .rl-controls{flex-wrap:wrap;gap:.3rem;}
+    .three-col{grid-template-columns:1fr 1fr;}
 
     /* Pot bar */
-    .pot-bar{flex-direction:column;text-align:center;gap:.5rem;padding:.75rem 1rem;}
+    .pot-bar{flex-direction:column;text-align:center;gap:.4rem;padding:.65rem .75rem;margin-bottom:1rem;}
+    .pot-val{font-size:1.6rem;}
+    .pot-lbl{font-size:.65rem;}
 
-    /* Tabs — scrollable, no wrap */
-    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:.2rem;}
+    /* Tabs */
+    .tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:.15rem;margin-bottom:1rem;}
     .tabs::-webkit-scrollbar{display:none;}
-    .tab{padding:.4rem .6rem;font-size:.58rem;white-space:nowrap;}
+    .tab{padding:.45rem .65rem;font-size:.6rem;white-space:nowrap;}
 
     /* Section header */
-    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.95);z-index:10;padding:.4rem 0;backdrop-filter:blur(4px);}
-    .sec-title{font-size:.95rem;}
+    .sec-hdr{position:sticky;top:0;background:rgba(14,12,9,0.97);z-index:10;padding:.35rem 0;backdrop-filter:blur(6px);flex-direction:column;align-items:stretch;gap:.35rem;}
+    .sec-hdr>div:first-child{display:none;}
+    .sec-hdr>div:last-child{justify-content:flex-end;}
+    .sec-title{font-size:.9rem;}
 
-    /* Modal — full width, good padding */
-    .modal{width:calc(100vw - .75rem);max-width:100%;padding:.75rem;max-height:92vh;overflow-y:auto;}
-    .modal-title{font-size:.9rem;}
-    .modal-actions{flex-wrap:wrap;gap:.4rem;}
-    .q-row{flex-wrap:wrap;gap:.3rem;}
+    /* Buttons */
+    .btn{font-size:.72rem;padding:.48rem .7rem;}
+    .btn-sm{padding:.35rem .55rem;font-size:.64rem;min-height:38px;}
+    .rl-controls{display:flex;flex-wrap:wrap;gap:.35rem;justify-content:flex-end;}
 
-    /* WoW dialog — full width on mobile */
-    .wow-dialog{width:calc(100vw - 2rem);min-width:unset;padding:1.5rem 1.25rem 1.2rem;}
-    .wow-dialog-title{font-size:.9rem;}
-    .wow-dialog-btns{flex-wrap:wrap;}
-    .wow-dialog-btn{flex:1;padding:.5rem .8rem;font-size:.72rem;}
-
-    /* Toast — center, wider */
-    .toast{width:calc(100vw - 2rem);white-space:normal;text-align:center;font-size:.8rem;padding:.6rem 1rem;}
-
-    /* Side panel — full width */
-    .side-panel{width:100vw;right:-100vw;}
-    .side-panel.open{right:0;}
-
-    /* Category rows — cards narrower on mobile */
-    .cat-row-scroll > div{width:calc(100vw - 3rem);}
-    .cat-row{margin-bottom:1rem;}
+    /* Cards */
+    .card{padding:.7rem .75rem;min-height:unset;}
+    .cat-row-scroll>div{width:calc(100vw - 1.2rem);}
+    .cat-row-scroll{gap:.7rem;padding-bottom:.4rem;}
+    .cat-row{margin-bottom:.9rem;}
     .cat-row-label{font-size:.6rem;}
+    .item-header{padding-right:5.5rem;}
+    .item-icon{width:36px;height:36px;}
+    .item-name{font-size:.95rem;}
+    .item-slot{font-size:.78rem;}
+    .badge{font-size:.6rem;padding:.18rem .42rem;top:.65rem;right:.65rem;}
+    .timer-row{gap:.35rem;}
+    .timer{font-size:.78rem;}
+    .bid-amt{font-size:1.25rem;}
+    .bid-ldr{font-size:.78rem;}
+    .min-bid-note{font-size:.75rem;}
+    .quick-bids{gap:.3rem;flex-wrap:nowrap;}
+    .qb{padding:.55rem .3rem;font-size:.68rem;min-height:42px;flex:1;text-align:center;}
+    .custom-bid-row input{font-size:.9rem;}
+    .hist{max-height:72px;font-size:.8rem;}
 
     /* Category filter bar */
-    .cat-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:.2rem;}
+    .cat-filter-bar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:.25rem;gap:.3rem;}
     .cat-filter-bar::-webkit-scrollbar{display:none;}
-    .cat-filter-btn{white-space:nowrap;font-size:.58rem;padding:.25rem .5rem;}
+    .cat-filter-btn{white-space:nowrap;font-size:.6rem;padding:.3rem .6rem;}
 
-    /* Chat — full width */
+    /* Modal — sheet from bottom */
+    .modal-overlay{align-items:flex-end;padding:0;}
+    .modal{width:100vw;max-width:100%;border-radius:8px 8px 0 0;border-bottom:none;padding:.85rem .85rem 1.5rem;max-height:92vh;overflow-y:auto;}
+    .modal-title{font-size:.88rem;}
+    .modal-actions{flex-wrap:wrap;gap:.4rem;}
+    .modal-actions .btn{flex:1;min-width:80px;}
+    .q-row{flex-wrap:wrap;gap:.3rem;}
+
+    /* WoW dialog */
+    .wow-dialog{width:calc(100vw - 2rem);min-width:unset;padding:1.4rem 1.1rem 1.2rem;}
+    .wow-dialog-title{font-size:.88rem;}
+    .wow-dialog-msg{font-size:.82rem;}
+    .wow-dialog-btns{flex-wrap:wrap;gap:.5rem;}
+    .wow-dialog-btn{flex:1;padding:.55rem .7rem;font-size:.7rem;min-width:90px;}
+
+    /* Toast */
+    .toast{width:calc(100vw - 2rem);white-space:normal;text-align:center;font-size:.78rem;padding:.55rem .9rem;}
+
+    /* Side panel */
+    .side-panel{width:100vw;right:-100vw;}
+    .side-panel.open{right:0;}
+    .side-panel-hdr{padding:.6rem .75rem;}
+    .raider-row{padding:.55rem .7rem;}
+    .raider-name{font-size:.8rem;}
+    .raider-item{gap:.4rem;}
+    .raider-item-name{font-size:.75rem !important;}
+
+    /* Chat */
     .chat-box{right:0;left:0;width:100%;border-radius:0;border-left:none;border-right:none;bottom:0;}
+    .chat-hdr{padding:.4rem .65rem;}
+    .chat-hdr-title{font-size:.62rem;}
+    .chat-input{font-size:.82rem;}
 
-    /* Tooltip — full width on mobile */
+    /* Tooltips */
     .member-tooltip{position:fixed !important;left:8px !important;right:8px !important;width:auto !important;max-width:none !important;}
     .online-tooltip{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;bottom:80px !important;width:auto !important;max-width:none !important;}
 
     /* FAB */
-    .fab{display:flex;bottom:56px;}
+    .fab{display:flex;bottom:60px;}
 
-    /* Cards — tighter padding, full width */
-    .card{padding:.75rem .8rem;}
-    .item-icon{width:38px;height:38px;}
-    .bid-amt{font-size:1.3rem;}
-    .quick-bids{gap:.3rem;}
-    .qb{padding:.45rem .4rem;font-size:.7rem;min-height:40px;flex:1;}
-
-    /* Bid history */
-    .hist{max-height:80px;}
-
-    /* RL controls grid on mobile */
-    .rl-controls{display:flex;flex-direction:column;gap:.3rem;}
-
-    /* My loot section */
+    /* My loot */
+    .my-loot{padding:.6rem .75rem;margin-bottom:.75rem;}
+    .my-loot-title{font-size:.65rem;}
     .my-loot-item{gap:.35rem;}
-    .my-loot-items{max-height:120px;}
-
-    /* Raider row in panel */
-    .raider-row{padding:.6rem .75rem;}
-    .raider-name{font-size:.8rem;}
+    .my-loot-items{max-height:110px;}
 
     /* Splits */
-    .splits-table{font-size:.75rem;}
-    .splits-table td,.splits-table th{padding:.35rem .5rem;}
+    .splits-wrap{overflow-x:auto;}
+    .splits-table{font-size:.72rem;}
+    .splits-table td,.splits-table th{padding:.3rem .4rem;}
+    .admin-cut-bar{flex-wrap:wrap;gap:.4rem;padding:.6rem .75rem;}
+
+    /* Loot tracker — hidden on mobile */
+    .loot-tracker{display:none !important;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}

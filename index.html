@@ -112,7 +112,9 @@
   .login-brand .wordmark{font-family:'Cinzel',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;text-shadow:0 0 40px rgba(212,169,60,0.5);}
   .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.3rem;text-align:center;}
   .login-box{background:rgba(22,19,12,0.96);border:1px solid var(--border-gold);padding:2.25rem 2.5rem;border-radius:4px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:1rem;backdrop-filter:blur(10px);}
-  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
+  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:.75rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
+  .pot-bar-stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;min-width:120px;}
+  .pot-bar-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
   .pot-val{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);font-weight:600;}
   .pot-lbl{font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;}
   .settings-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:.9rem 1.5rem;display:flex;align-items:center;gap:1.75rem;margin-bottom:1.5rem;flex-wrap:wrap;backdrop-filter:blur(4px);}
@@ -123,6 +125,14 @@
   .tab.active{color:#1a1208;background:var(--gold);border-color:var(--gold);font-weight:600;}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
   .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
+  /* Narrow desktop / vertical monitor (601px–1100px) */
+  @media(min-width:601px) and (max-width:1100px){
+    /* Pot bar: stack stats on top, actions below */
+    .pot-bar{flex-direction:column;padding:.85rem 1.25rem;gap:.5rem;}
+    .pot-bar-actions{width:100%;justify-content:center;}
+    .pot-val{font-size:1.75rem;}
+  }
+
   @media(max-width:600px){
     html{font-size:14px;}
 
@@ -1385,18 +1395,18 @@ function renderMain(){
   </div>`:'';
 
   const membersBar = renderMembersBar(presenceData);
-  const potBar=isRL?`<div class="pot-bar" style="justify-content:space-between;padding:1.25rem 1.75rem;">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
+  const potBar=isRL?`<div class="pot-bar">
+    <div class="pot-bar-stat">
       <div class="pot-lbl">Total Pot</div>
       <div class="pot-val">${p.toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${sold.length} item${sold.length!==1?'s':''} sold</div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
+    <div class="pot-bar-stat">
       <div class="pot-lbl">Est. Raider Cut</div>
       <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${Math.floor(p/raiderCount()).toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
     </div>
-    <div style="display:flex;align-items:center;gap:.5rem;">
+    <div class="pot-bar-actions">
       <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
       <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">${lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot'}</button>
     </div>

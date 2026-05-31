@@ -723,9 +723,10 @@ function iconUrl(icon){return icon?`https://wow.zamimg.com/images/wow/icons/medi
 const _iconCache={};
 async function fetchIcon(itemId){
   if(!itemId||_iconCache[itemId]!==undefined) return _iconCache[itemId]||null;
-  _iconCache[itemId]=null; // mark as fetching
+  _iconCache[itemId]=null;
   try{
-    const res=await fetch(`https://www.wowhead.com/tbc/tooltip/item/${itemId}?lvl=70`);
+    // Use Wowhead's media API — CORS-friendly public endpoint
+    const res=await fetch(`https://nether.wowhead.com/tbc/tooltip/item/${itemId}?dataEnv=4&locale=0`);
     if(res.ok){
       const data=await res.json();
       if(data.icon){_iconCache[itemId]=data.icon;return data.icon;}

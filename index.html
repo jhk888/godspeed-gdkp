@@ -734,7 +734,13 @@ function toast(msg){
   },1400);
 }
 
-function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,onConfirm}){
+// Suppressed dialog keys — persisted in localStorage
+const _suppressedDialogs = JSON.parse(localStorage.getItem('gdkp_suppressed')||'{}');
+function _saveSuppress(){localStorage.setItem('gdkp_suppressed',JSON.stringify(_suppressedDialogs));}
+
+function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,suppressKey=null,onConfirm}){
+  // If suppressed, fire immediately
+  if(suppressKey&&_suppressedDialogs[suppressKey]){onConfirm();return;}
   const existing=document.getElementById('wow-dialog-overlay');
   if(existing)existing.remove();
   const overlay=document.createElement('div');
@@ -746,6 +752,10 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
       ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="number" placeholder="${input.placeholder||''}" min="${input.min||0}" step="${input.step||1}" />`:''}
+      ${suppressKey?`<label style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;cursor:pointer;">
+        <input type="checkbox" id="wow-suppress" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;" />
+        <span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);letter-spacing:.06em;">Don't show this again</span>
+      </label>`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
         <button class="wow-dialog-btn ${danger?'wow-dialog-btn-danger':'wow-dialog-btn-confirm'}" id="wow-confirm">${confirmLabel}</button>
@@ -757,6 +767,9 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
   const close=()=>overlay.remove();
   document.getElementById('wow-cancel').onclick=close;
   document.getElementById('wow-confirm').onclick=()=>{
+    if(suppressKey&&document.getElementById('wow-suppress')?.checked){
+      _suppressedDialogs[suppressKey]=true;_saveSuppress();
+    }
     if(input&&inp){
       const val=parseInt(inp.value);
       if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
@@ -1635,7 +1648,22 @@ function renderPanel(){
       ${itemRows}
     </div>`;
   }).join('');
+  if(isRL){
+    const suppressed=Object.keys(_suppressedDialogs);
+    if(suppressed.length){
+      body.innerHTML+=`<div style="margin-top:1.25rem;text-align:center;">
+        <button onclick="window._resetSuppressed()" style="background:none;border:none;color:var(--text-muted);font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.07em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Reset suppressed confirmations (${suppressed.length})</button>
+      </div>`;
+    }
+  }
 }
+
+window._resetSuppressed=function(){
+  Object.keys(_suppressedDialogs).forEach(k=>delete _suppressedDialogs[k]);
+  _saveSuppress();
+  toast('Confirmations restored');
+  renderPanel();
+};
 
 // ── Reset ─────────────────────────────────────────────────────────────────
 function toggleLootDisplay(){
@@ -2138,9 +2166,9 @@ function removeSold(id){
     msg:`Remove ${a?.name||'this item'} from sold? This will reduce the pot total.`,
     confirmLabel:'Remove',
     danger:true,
-    onConfirm:()=>remove(runRef(`/auctions/${id}`))
+    suppressKey:'remove_sold',
+    onConfirm:()=>{remove(runRef(`/auctions/${id}`));toast('Item removed');}
   });
-  toast('Item removed');
 }
 
 function openEditSold(id){
@@ -2274,6 +2302,7 @@ function resetAuction(id){
     msg:'All bids will be cleared and the price reset to the starting bid.',
     confirmLabel:'Reset',
     danger:true,
+    suppressKey:'reset_bids',
     onConfirm:()=>{
       const sb=a.startBid||a.currentBid||1000;
       update(runRef(`/auctions/${id}`),{bids:{},currentBid:sb});
@@ -2288,6 +2317,7 @@ function cancelAuction(id){
     msg:`${a.name||'This item'} will be returned to the queue with all bids cleared.`,
     confirmLabel:'Cancel Auction',
     danger:true,
+    suppressKey:'cancel_auction',
     onConfirm:()=>{
       update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
       tab='queued';
@@ -2788,6 +2818,7 @@ async function removePastItem(runKey, auctionId){
     msg:'This will affect cross-run totals and cannot be undone.',
     confirmLabel:'Remove',
     danger:true,
+    suppressKey:'remove_history',
     onConfirm:async()=>{
       await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
       crossRunCache=null;

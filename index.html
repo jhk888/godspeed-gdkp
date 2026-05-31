@@ -381,8 +381,8 @@
   .search-preview-clear{margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:.75rem;background:none;border:none;font-family:'Cinzel',serif;letter-spacing:.05em;}
   .search-preview-clear:hover{color:var(--red);}
   .dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:3px;z-index:300;max-height:320px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 16px rgba(0,0,0,0.7);}
-  .dropdown-item{display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;cursor:pointer;transition:background .1s;}
-  .dropdown-item:hover{background:rgba(201,168,76,0.1);}
+  .dropdown-item{display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;cursor:pointer;transition:background .1s;outline:none;}
+  .dropdown-item:hover,.dropdown-item:focus{background:rgba(201,168,76,0.15);outline:none;}
   .dropdown-item img{width:24px;height:24px;border-radius:2px;flex-shrink:0;}
   .dropdown-item-icon-placeholder{width:24px;height:24px;border-radius:2px;background:var(--bg-input);flex-shrink:0;}
   .dropdown-item-name{font-size:.9rem;text-decoration:none !important;}
@@ -924,13 +924,12 @@ function refreshDropdown(){
       counts.sold?`<span style="color:var(--text-muted);font-size:.6rem;font-family:'Cinzel',serif;">${counts.sold} sold</span>`:'',
       counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
     ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
-    return`<div class="dropdown-item" onclick="selectItem(${item.id})">
+    return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});" data-wowhead="item=${item.id}&domain=tbc">
       ${getIconImg(item.id, item.icon)}
       <div style="flex:1;min-width:0;">
-        <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;">${item.name}</a>
+        <span class="dropdown-item-name ${item.quality||'common'}">${item.name}</span>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
       </div>
-      ${badges?`<span class="dropdown-item-sub" style="display:none;"></span>`:`<span class="dropdown-item-sub">${item.slot||''}</span>`}
     </div>`;
   }).join('');
   dd.style.display='block';

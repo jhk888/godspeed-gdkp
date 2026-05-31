@@ -603,9 +603,9 @@
 <div id="app">
   <div class="hdr">
     <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
-      <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
+      <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;padding:.5rem .75rem .5rem 0;margin:-.5rem 0 -.5rem -.25rem;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
-        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;"></span>
       </div>
     </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
@@ -1305,8 +1305,13 @@ function showOnlineTooltip(e){
   bridge.onmouseleave=(ev)=>{if(!tip.contains(ev.relatedTarget)&&!anchor.contains(ev.relatedTarget)){_onlineTooltipHideT=setTimeout(()=>{tip.remove();bridge.remove();},200);}};
   tip._bridge=bridge;
   document.body.appendChild(bridge);
-  // Resize bridge once tip has rendered and has a real width
-  requestAnimationFrame(()=>{bridge.style.width=tip.offsetWidth+'px';});
+  // Resize bridge and counter hit area to match tooltip width
+  requestAnimationFrame(()=>{
+    const w=tip.offsetWidth+'px';
+    bridge.style.width=w;
+    const hdrOnline=document.getElementById('hdr-online');
+    if(hdrOnline) hdrOnline.style.width=w;
+  });
   // Remove bridge when tip is removed
   const origRemove=tip.remove.bind(tip);
   tip.remove=()=>{bridge.remove();origRemove();};

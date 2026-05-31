@@ -1288,15 +1288,26 @@ function showOnlineTooltip(e){
   tip.className='online-tooltip member-tooltip';
   tip.addEventListener('mouseenter',()=>clearTimeout(_onlineTooltipHideT),true);
   tip.addEventListener('mouseleave',(ev)=>{
-    // Only hide if leaving the tooltip entirely, not moving into a child
-    if(!tip.contains(ev.relatedTarget)){
+    // Only hide if leaving the tooltip entirely (not into a child, bridge, or anchor)
+    if(!tip.contains(ev.relatedTarget)&&!ev.relatedTarget?.closest('#hdr-online')){
       _onlineTooltipHideT=setTimeout(()=>tip.remove(),200);
     }
   },true);
   // Anchor to the counter element, not the mouse
   const anchor=document.getElementById('hdr-online');
   const rect=anchor?anchor.getBoundingClientRect():{left:10,bottom:30};
-  tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+6}px;`;
+  const GAP=6;
+  tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+GAP}px;`;
+  // Transparent bridge fills the gap + full-width safe zone above the panel
+  const bridge=document.createElement('div');
+  bridge.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom}px;width:320px;height:${GAP+4}px;z-index:999;`;
+  bridge.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
+  bridge.onmouseleave=(ev)=>{if(!tip.contains(ev.relatedTarget)&&!anchor.contains(ev.relatedTarget)){_onlineTooltipHideT=setTimeout(()=>{tip.remove();bridge.remove();},200);}};
+  tip._bridge=bridge;
+  document.body.appendChild(bridge);
+  // Remove bridge when tip is removed
+  const origRemove=tip.remove.bind(tip);
+  tip.remove=()=>{bridge.remove();origRemove();};
 
   const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#0070dd',epic:'#a335ee',legendary:'#ff8000'};
   function itemLink(a){

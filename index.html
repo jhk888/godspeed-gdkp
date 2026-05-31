@@ -3020,7 +3020,7 @@ if(!window._trackerDragSet){
       e.preventDefault();return;
     }
     const hdr=e.target.closest('.loot-tracker-hdr');
-    if(!hdr)return;
+    if(!hdr||e.target.tagName==='SELECT'||e.target.tagName==='OPTION')return;
     const t=document.getElementById('loot-tracker');if(!t)return;
     const r=t.getBoundingClientRect();
     t.style.transform='none';

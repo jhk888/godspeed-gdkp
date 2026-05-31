@@ -1630,7 +1630,7 @@ function renderLootTracker(){
     <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
     <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
       <span style="flex:1;">Run (${all.length})</span>
-      <select onchange="setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">
+      <select id="tracker-cat-select" data-tracker-filter="1" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">
         ${catOptions}
       </select>
     </div>
@@ -2994,6 +2994,16 @@ if (_savedUser) {
 }
 // Always init hover regardless of login state
 initPanelHover();
+// Delegated listener for tracker category filter
+document.addEventListener('change',e=>{
+  if(e.target&&e.target.dataset.trackerFilter){
+    _trackerCatFilter=e.target.value;
+    renderLootTracker();
+    // Restore selected value after re-render
+    const sel=document.getElementById('tracker-cat-select');
+    if(sel)sel.value=_trackerCatFilter;
+  }
+});
 // Draggable + resizable loot tracker — set once at page load
 if(!window._trackerDragSet){
   window._trackerDragSet=true;

@@ -522,10 +522,16 @@
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   .loot-display-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;position:relative;width:100%;height:100%;}
   /* Permanent loot tracker - always visible */
-  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
+  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;user-select:none;}
   .loot-tracker.visible{display:flex;}
+  .loot-tracker.collapsed .loot-tracker-body{display:none;}
+  .loot-tracker.collapsed .loot-tracker-resize{display:none;}
+  .loot-tracker-body{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;flex:1;}
   .loot-tracker-hdr{padding:.6rem .9rem;border-bottom:1px solid rgba(201,168,76,0.12);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:rgba(201,168,76,0.55);text-transform:uppercase;flex-shrink:0;cursor:grab;}
+  .loot-tracker.collapsed .loot-tracker-hdr{border-bottom:none;}
   .loot-tracker-hdr:active{cursor:grabbing;}
+  .loot-tracker-collapse{background:none;border:none;color:rgba(201,168,76,0.5);cursor:pointer;padding:0 0 0 .3rem;font-size:.7rem;line-height:1;flex-shrink:0;transition:color .15s;}
+  .loot-tracker-collapse:hover{color:rgba(201,168,76,0.9);}
   .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2;}
   .loot-tracker-item{display:flex;align-items:center;gap:.35rem;padding:.4rem .9rem;border-bottom:1px solid rgba(255,255,255,0.03);}
   .loot-tracker-item a{display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;}
@@ -1599,7 +1605,15 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 window._trackerCatFilter='All';
+window._trackerCollapsed=false;
 window._setTrackerCat=function(val){window._trackerCatFilter=val;renderLootTracker();};
+window._toggleTrackerCollapse=function(){
+  window._trackerCollapsed=!window._trackerCollapsed;
+  const t=document.getElementById('loot-tracker');
+  if(t)t.classList.toggle('collapsed',window._trackerCollapsed);
+  const btn=document.getElementById('tracker-collapse-btn');
+  if(btn)btn.textContent=window._trackerCollapsed?'▶':'▼';
+};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
@@ -1641,19 +1655,25 @@ function renderLootTracker(){
       </div>`;
     }).join('');
     const catOptHtml=cats.map(c=>`<div class="tracker-cat-opt${c===sel?' selected':''}" onclick="window._setTrackerCat('${c}');document.getElementById('tracker-cat-list').style.display='none';">${c}</div>`).join('');
+    const collapsed=window._trackerCollapsed;
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
       <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
         <span style="flex:1;">Run (${all.length})</span>
-        <div class="tracker-cat-wrap">
+        ${!collapsed?`<div class="tracker-cat-wrap">
           <div class="tracker-cat-btn" id="tracker-cat-btn" onclick="(function(){var l=document.getElementById('tracker-cat-list');l.style.display=l.style.display==='block'?'none':'block';})()">
             <span id="tracker-cat-label">${sel}</span>
             <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           </div>
           <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
-        </div>
+        </div>`:''}
+        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▶':'▼'}</button>
       </div>
-      ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
+      <div class="loot-tracker-body">
+        ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}
+      </div>`;
+    if(collapsed)tracker.classList.add('collapsed');
+    else tracker.classList.remove('collapsed');
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   }
   // Update timers in-place without rebuilding HTML
@@ -3039,7 +3059,7 @@ if(!window._trackerDragSet){
       e.preventDefault();return;
     }
     const hdr=e.target.closest('.loot-tracker-hdr');
-    if(!hdr||e.target.tagName==='SELECT'||e.target.tagName==='OPTION')return;
+    if(!hdr||e.target.tagName==='SELECT'||e.target.tagName==='OPTION'||e.target.closest('.tracker-cat-wrap')||e.target.closest('#tracker-collapse-btn'))return;
     const t=document.getElementById('loot-tracker');if(!t)return;
     const r=t.getBoundingClientRect();
     t.style.transform='none';

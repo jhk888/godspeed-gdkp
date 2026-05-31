@@ -924,10 +924,10 @@ function refreshDropdown(){
       counts.sold?`<span style="color:var(--text-muted);font-size:.6rem;font-family:'Cinzel',serif;">${counts.sold} sold</span>`:'',
       counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
     ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
-    return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});" data-wowhead="item=${item.id}&domain=tbc">
+    return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});">
       ${getIconImg(item.id, item.icon)}
       <div style="flex:1;min-width:0;">
-        <span class="dropdown-item-name ${item.quality||'common'}">${item.name}</span>
+        <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1" style="pointer-events:none;">${item.name}</a>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
       </div>
     </div>`;
@@ -2818,6 +2818,35 @@ function writeAudit(msg){
 let _pendingDeleteRun=null;
 let _deleteUndoTimer=null;
 
+function startLootDisplayFromArchive(runKey){
+  if(!isRL)return;
+  // Load the archived run's items and show loot display
+  get(ref(db,'runs/'+runKey)).then(snap=>{
+    const data=snap.val()||{};
+    const items=Object.values(data.auctions||{}).filter(a=>a.status==='sold');
+    if(!items.length){toast('No sold items in this run');return;}
+    // Temporarily show loot display overlay with archived items
+    const existing=document.getElementById('loot-display-overlay');
+    if(existing)existing.remove();
+    const overlay=document.createElement('div');
+    overlay.id='loot-display-overlay';
+    overlay.className='loot-display-overlay';
+    const sorted=items.sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
+    overlay.innerHTML=`<div class="loot-display-inner">
+      <button class="loot-display-close" onclick="document.getElementById('loot-display-overlay')?.remove()">✕ Close</button>
+      <div class="loot-display-title">${data.settings?.raidTitle||'Archive'}</div>
+      <div class="loot-display-grid">${sorted.map(a=>`<div class="loot-display-item">
+        ${a.itemIcon?`<img src="https://wow.zamimg.com/images/wow/icons/large/${a.itemIcon}.jpg" class="loot-display-icon" />`:''}
+        <a class="loot-display-name ${a.quality||'epic'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;">${a.name}</a>
+        <div class="loot-display-winner">${Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder||''}</div>
+        <div class="loot-display-price">${(a.currentBid||0).toLocaleString()}g</div>
+      </div>`).join('')}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  });
+}
+
 async function renderPastRunsPanel(){
   const body=document.getElementById('side-panel-body');
   if(!body) return;
@@ -2866,7 +2895,10 @@ async function renderPastRunsPanel(){
             <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);">${title}</div>
             ${date?`<div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items${isRL?` · ${pot.toLocaleString()}g`:''}</div>`:''}
           </div>
-          ${isRL?`<button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;flex-shrink:0;align-self:center;">Delete</button>`:''}
+          ${isRL?`<div style="display:flex;gap:.35rem;align-items:center;flex-shrink:0;">
+            <button onclick="startLootDisplayFromArchive('${runKey}')" style="background:none;border:1px solid rgba(201,168,76,0.35);color:var(--gold);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#10022; Display</button>
+            <button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;">Delete</button>
+          </div>`:''}
         </div>
         <div style="border-top:1px solid var(--border-gold);padding:.35rem 0;max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">${itemRows}</div>
       </div>`;

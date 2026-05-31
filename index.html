@@ -544,6 +544,16 @@
   .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
   .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
   .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
+
+  /* Tracker category custom dropdown */
+  .tracker-cat-wrap{position:relative;flex-shrink:0;margin-right:6px;}
+  .tracker-cat-btn{display:flex;align-items:center;gap:.3rem;background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .5rem .15rem .35rem;border-radius:2px;cursor:pointer;max-width:100px;white-space:nowrap;transition:border-color .15s;}
+  .tracker-cat-btn:hover{border-color:rgba(201,168,76,0.6);}
+  .tracker-cat-btn svg{flex-shrink:0;opacity:.7;}
+  .tracker-cat-list{position:absolute;top:calc(100% + 3px);right:0;min-width:110px;background:rgba(18,13,4,0.98);border:1px solid rgba(201,168,76,0.45);border-radius:3px;z-index:200;box-shadow:0 4px 14px rgba(0,0,0,0.75);overflow:hidden;}
+  .tracker-cat-opt{font-family:'Cinzel',serif;font-size:.62rem;color:rgba(201,168,76,0.75);padding:.38rem .65rem;cursor:pointer;transition:background .1s,color .1s;white-space:nowrap;}
+  .tracker-cat-opt:hover{background:rgba(201,168,76,0.12);color:rgba(201,168,76,1);}
+  .tracker-cat-opt.selected{background:rgba(201,168,76,0.18);color:var(--gold-light);font-weight:600;}
 </style>
 </head>
 <body>
@@ -1609,7 +1619,6 @@ function renderLootTracker(){
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
   {
-    const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
     const items=sorted.map(a=>{
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
       const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
@@ -1631,11 +1640,18 @@ function renderLootTracker(){
         ${bidBtns}
       </div>`;
     }).join('');
+    const catOptHtml=cats.map(c=>`<div class="tracker-cat-opt${c===sel?' selected':''}" onclick="window._setTrackerCat('${c}');document.getElementById('tracker-cat-list').style.display='none';">${c}</div>`).join('');
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
       <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
         <span style="flex:1;">Run (${all.length})</span>
-        <select id="tracker-cat-select" onchange="window._setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
+        <div class="tracker-cat-wrap">
+          <div class="tracker-cat-btn" id="tracker-cat-btn" onclick="(function(){var l=document.getElementById('tracker-cat-list');l.style.display=l.style.display==='block'?'none':'block';})()">
+            <span id="tracker-cat-label">${sel}</span>
+            <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
+        </div>
       </div>
       ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
@@ -2929,6 +2945,9 @@ function setTab(t){tab=t;render();}
 document.addEventListener('click',e=>{
   const dd=document.getElementById('item-dropdown');
   if(dd&&!dd.contains(e.target)&&e.target.id!=='item-search-input')dd.style.display='none';
+  const tl=document.getElementById('tracker-cat-list');
+  const tb=document.getElementById('tracker-cat-btn');
+  if(tl&&!tl.contains(e.target)&&tb&&!tb.contains(e.target))tl.style.display='none';
 });
 
 // ── Swipe gestures ────────────────────────────────────────────────────────

@@ -605,7 +605,7 @@
     <div style="width:140px;flex-shrink:0;display:flex;align-items:center;">
       <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
-        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip()"></span>
+        <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)"></span>
       </div>
     </div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);text-align:center;">
@@ -1293,9 +1293,10 @@ function showOnlineTooltip(e){
       _onlineTooltipHideT=setTimeout(()=>tip.remove(),200);
     }
   },true);
-  // Pin position at first show
-  const px=e.clientX-10, py=e.clientY+16;
-  tip.style.cssText=`position:fixed;left:${px}px;top:${py}px;`;
+  // Anchor to the counter element, not the mouse
+  const anchor=document.getElementById('hdr-online');
+  const rect=anchor?anchor.getBoundingClientRect():{left:10,bottom:30};
+  tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+6}px;`;
 
   const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#0070dd',epic:'#a335ee',legendary:'#ff8000'};
   function itemLink(a){
@@ -1354,8 +1355,14 @@ function showOnlineTooltip(e){
     fetchCrossRunStats().then(hist=>{ if(document.body.contains(tip)) renderTip(hist); });
   }
 }
-function hideOnlineTooltip(){
-  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll(".online-tooltip").forEach(t=>t.remove()),200);
+function hideOnlineTooltip(e){
+  // Don't hide if mouse moved into the tooltip
+  const tip=document.querySelector('.online-tooltip');
+  if(tip&&e&&tip.contains(e.relatedTarget)) return;
+  _onlineTooltipHideT=setTimeout(()=>{
+    const t=document.querySelector('.online-tooltip');
+    if(t&&!t.matches(':hover')) t.remove();
+  },200);
 }
 
 function showMemberTooltipFromHeader(event){

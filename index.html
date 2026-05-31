@@ -962,6 +962,17 @@ function subscribeToRun(){
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
     presenceData=data.presence||{};
+    // Update online counter immediately whenever presence changes
+    (function(){
+      const onlineEl=document.getElementById('hdr-online');
+      const onlineCount=document.getElementById('hdr-online-count');
+      if(onlineEl&&onlineCount&&user){
+        const seen={};
+        Object.values(presenceData).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
+        onlineCount.textContent=Object.keys(seen).length+' Online';
+        onlineEl.style.display='flex';
+      }
+    })();
     if(data.settings){
       raidSettings={...raidSettings,...data.settings};
       if(data.settings.categories) raidCategories=data.settings.categories;
@@ -1238,7 +1249,7 @@ function renderHdr(){
   if(onlineEl&&onlineCount&&user){
     const entries=Object.values(presenceData||{});
     const seen={};
-    entries.forEach(m=>{if(m.name&&(!seen[m.name]||m.lastSeen>seen[m.name]))seen[m.name]=m.lastSeen;});
+    entries.forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
     const n=Object.keys(seen).length;
     onlineCount.textContent=`${n} Online`;
     onlineEl.style.display='flex';
@@ -1265,12 +1276,23 @@ function showOnlineTooltip(e){
   Object.values(presenceData||{}).forEach(m=>{
     if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen) byName[m.name]=m;
   });
-  const members=Object.values(byName);
+  // Dedup case-insensitively, keep most recent
+  const dedupMap={};
+  Object.values(byName).forEach(m=>{
+    const key=(m.name||'').toLowerCase();
+    if(!dedupMap[key]||m.lastSeen>dedupMap[key].lastSeen) dedupMap[key]=m;
+  });
+  const members=Object.values(dedupMap).sort((a,b)=>a.name.localeCompare(b.name));
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
-  tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
-  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),400);};
+  tip.addEventListener('mouseenter',()=>clearTimeout(_onlineTooltipHideT),true);
+  tip.addEventListener('mouseleave',(ev)=>{
+    // Only hide if leaving the tooltip entirely, not moving into a child
+    if(!tip.contains(ev.relatedTarget)){
+      _onlineTooltipHideT=setTimeout(()=>tip.remove(),1200);
+    }
+  },true);
   // Pin position at first show
   const px=e.clientX-10, py=e.clientY+16;
   tip.style.cssText=`position:fixed;left:${px}px;top:${py}px;`;
@@ -1279,7 +1301,8 @@ function showOnlineTooltip(e){
   function itemLink(a){
     const c=qualityColor[a.quality||'common']||'#ffffff';
     const href=a.itemId?`https://www.wowhead.com/item=${a.itemId}`:'#';
-    return`<a href="${href}" target="_blank" rel="noopener" data-wh-icon-size="small" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;"> ${(a.currentBid||a.price||0).toLocaleString()}g</span>`;
+    const price=(a.currentBid||a.price||0).toLocaleString();
+    return`<span style="display:flex;align-items:baseline;gap:.35rem;"><a href="${href}" target="_blank" rel="noopener" data-wh-icon-size="small" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;white-space:nowrap;flex-shrink:0;">${price}g</span></span>`;
   }
   function renderTip(hist){
     const sold=auctionList().filter(a=>a.status==='sold');
@@ -1332,7 +1355,7 @@ function showOnlineTooltip(e){
   }
 }
 function hideOnlineTooltip(){
-  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),400);
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll(".online-tooltip").forEach(t=>t.remove()),1200);
 }
 
 function showMemberTooltipFromHeader(event){

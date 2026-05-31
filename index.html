@@ -1232,14 +1232,13 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count — dedup by name, show all non-stale (120s window)
+  // Online count — dedup by name only (tooltip handles staleness filtering)
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
     const byName={};
     Object.values(presenceData||{}).forEach(m=>{if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen)byName[m.name]=m;});
-    const activeMembers=Object.values(byName).filter(m=>Date.now()-(m.lastSeen||0)<120000);
-    const n=activeMembers.length;
+    const n=Object.keys(byName).length;
     onlineCount.textContent=`${n} Online`;
     onlineEl.style.display='flex';
   }
@@ -1272,36 +1271,52 @@ function showOnlineTooltip(e){
   const px=e.clientX-10, py=e.clientY+16;
   tip.style.cssText=`position:fixed;left:${px}px;top:${py}px;`;
 
+  const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#0070dd',epic:'#a335ee',legendary:'#ff8000'};
+  function itemLink(a){
+    const c=qualityColor[a.quality||'common']||'#ffffff';
+    const href=a.itemId?`https://www.wowhead.com/item=${a.itemId}`:'#';
+    return`<a href="${href}" target="_blank" rel="noopener" data-wh-icon-size="small" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;"> ${(a.currentBid||a.price||0).toLocaleString()}g</span>`;
+  }
   function renderTip(hist){
     const sold=auctionList().filter(a=>a.status==='sold');
     tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.6rem;">ONLINE NOW</div>`
       +members.map(m=>{
-        // Current run
-        const curItems=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name);
+        const curItems=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name)
+                          .sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
         const curSpend=curItems.reduce((s,a)=>s+(a.currentBid||0),0);
-        const topCur=curItems.sort((a,b)=>(b.currentBid||0)-(a.currentBid||0))[0];
-        // Historical (all runs)
         const h=hist?.[m.name];
         const histSpend=h?.totalSpent||0;
         const histItems=h?.itemsWon||0;
         const histRuns=h?.runCount||0;
-        return`<div style="padding:.4rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.07)'" onmouseleave="this.style.background=''">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.3rem;">
+        const allTimeItems=(h?.items||[]).sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5);
+        return`<div style="padding:.45rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
+          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
             <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
             <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
           </div>
-          <div style="padding-left:1rem;display:flex;flex-direction:column;gap:.18rem;">
-            <div style="font-size:.7rem;color:var(--text-muted);">
-              <span style="color:var(--gold-light);">This run:</span>
-              ${curSpend>0?`<span style="color:var(--gold);font-weight:600;"> ${curSpend.toLocaleString()}g</span> · ${curItems.length} item${curItems.length!==1?'s':''}${topCur?` · <span style="color:var(--text-bright);">${topCur.name}</span>`:''}`:'<span style="color:var(--text-muted);"> nothing yet</span>'}
+          <div style="padding-left:1rem;display:flex;flex-direction:column;gap:.22rem;">
+            <div style="font-size:.7rem;">
+              <span style="color:var(--gold-light);">This run</span>
+              ${curSpend>0
+                ?`<span style="color:var(--gold);font-weight:600;"> ${curSpend.toLocaleString()}g</span><span style="color:var(--text-muted);"> · ${curItems.length} item${curItems.length!==1?'s':''}</span>`
+                :`<span style="color:var(--text-muted);"> — nothing yet</span>`}
             </div>
-            ${histItems>0?`<div style="font-size:.7rem;color:var(--text-muted);">
-              <span style="color:var(--gold-light);">All time:</span>
-              <span style="color:var(--gold);font-weight:600;"> ${histSpend.toLocaleString()}g</span> · ${histItems} item${histItems!==1?'s':''} · ${histRuns} run${histRuns!==1?'s':''}
+            ${curItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.2);">
+              ${curItems.map(a=>`<div>${itemLink(a)}</div>`).join('')}
             </div>`:''}
+            ${histItems>0?`<div style="font-size:.7rem;margin-top:.1rem;">
+              <span style="color:var(--gold-light);">All time</span>
+              <span style="color:var(--gold);font-weight:600;"> ${histSpend.toLocaleString()}g</span>
+              <span style="color:var(--text-muted);"> · ${histItems} item${histItems!==1?'s':''} · ${histRuns} run${histRuns!==1?'s':''}</span>
+            </div>
+            ${allTimeItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.12);">
+              ${allTimeItems.map(a=>`<div>${itemLink(a)}</div>`).join('')}
+            </div>`:''}
+            `:''}
           </div>
         </div>`;
       }).join('');
+    if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
   }
 
   renderTip(crossRunCache);

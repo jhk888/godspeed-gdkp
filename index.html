@@ -1232,11 +1232,13 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count (left side) — always show when logged in
+  // Online count — dedup by name then filter active
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const n=getActiveMembers(presenceData).length;
+    const byName={};
+    Object.values(presenceData||{}).forEach(m=>{if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen)byName[m.name]=m;});
+    const n=Object.values(byName).filter(m=>Date.now()-(m.lastSeen||0)<90000).length;
     onlineCount.textContent=`${n} Online`;
     onlineEl.style.display='flex';
   }
@@ -1256,21 +1258,34 @@ let _onlineTooltipHideT=null;
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
   document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
-  const members=Object.values(presenceData||{});
+  // Dedup by name (keep most recent lastSeen), then filter active
+  const byName={};
+  Object.values(presenceData||{}).forEach(m=>{
+    if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen) byName[m.name]=m;
+  });
+  const members=Object.values(byName).filter(m=>Date.now()-(m.lastSeen||0)<90000);
   if(!members.length)return;
+  const sold=auctionList().filter(a=>a.status==='sold');
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
   tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
   tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),150);};
-  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.5rem;">ONLINE NOW</div>`
+  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.6rem;">ONLINE NOW</div>`
     +members.map(m=>{
-      const spend=getMemberSpend(m.name);
-      const items=auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name).length;
-      return`<div style="display:flex;align-items:center;gap:.5rem;padding:.25rem .3rem;border-radius:3px;cursor:default;" onmouseenter="this.style.background='rgba(212,169,60,0.08)'" onmouseleave="this.style.background=''">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;"></span>
-        <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.6rem;">★</span>':''}</span>
-        ${spend>0?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${spend.toLocaleString()}g</span>`:''}
-        ${items>0?`<span style="font-size:.68rem;color:var(--text-muted);">${items}★</span>`:''}
+      const spend=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name).reduce((s,a)=>s+(a.currentBid||0),0);
+      const itemsBought=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name);
+      const itemCount=itemsBought.length;
+      const topItem=itemsBought.sort((a,b)=>(b.currentBid||0)-(a.currentBid||0))[0];
+      return`<div style="padding:.35rem .3rem .35rem .3rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.08);margin-bottom:.15rem;" onmouseenter="this.style.background='rgba(212,169,60,0.07)'" onmouseleave="this.style.background=''">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:${itemCount>0?'.25rem':'0'};">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
+          <span style="font-family:'Cinzel',serif;font-size:.8rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
+          ${spend>0?`<span style="font-size:.75rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${spend.toLocaleString()}g</span>`:'<span style="font-size:.7rem;color:var(--text-muted);">—</span>'}
+        </div>
+        ${itemCount>0?`<div style="padding-left:1.1rem;display:flex;flex-direction:column;gap:.1rem;">
+          <div style="font-size:.68rem;color:var(--text-muted);">${itemCount} item${itemCount!==1?'s':''} bought${topItem?` · top: <span style="color:var(--gold-light);">${topItem.name}</span> <span style="color:var(--gold);">${(topItem.currentBid||0).toLocaleString()}g</span>`:''}
+          </div>
+        </div>`:''}
       </div>`;
     }).join('');
   tip.style.left=(e.clientX-10)+'px';

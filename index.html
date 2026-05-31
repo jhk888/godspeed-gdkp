@@ -326,7 +326,9 @@
   .q-btn-base{flex:1;padding:.55rem .4rem;border:2px solid #444;background:#1a1a1a;color:#888;cursor:pointer;border-radius:4px;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:500;}
   .modal-divider{height:1px;background:var(--border-gold);margin:.25rem 0;}
   .modal-actions{display:flex;gap:.5rem;align-items:center;margin-top:.35rem;}
-  .modal-actions .modal-cancel{margin-right:auto;}
+  .modal-actions .modal-cancel{flex:1;}
+  .modal-actions .btn-gold{flex:1;}
+  .modal-actions .btn-green{flex:1;}
   /* WoW-style toast banner */
   @keyframes toastIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.85);}100%{opacity:1;transform:translate(-50%,-50%) scale(1);}}
   @keyframes toastOut{0%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(.85);}}
@@ -509,10 +511,11 @@
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   .loot-display-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;position:relative;width:100%;height:100%;}
   /* Permanent loot tracker - always visible */
-  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:180px;background:rgba(10,8,5,0.94);border:1px solid rgba(201,168,76,0.15);border-left:none;border-radius:0 6px 6px 0;z-index:45;display:none;flex-direction:column;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
+  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:180px;min-width:140px;max-width:320px;background:rgba(10,8,5,0.94);border:1px solid rgba(201,168,76,0.15);border-left:none;border-radius:0 6px 6px 0;z-index:45;display:none;flex-direction:column;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
   .loot-tracker.visible{display:flex;}
   .loot-tracker-hdr{padding:.45rem .7rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.12em;color:rgba(201,168,76,0.4);text-transform:uppercase;flex-shrink:0;cursor:grab;}
   .loot-tracker-hdr:active{cursor:grabbing;}
+  .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:ew-resize;z-index:2;}
   .loot-tracker-item{display:flex;align-items:center;gap:.3rem;padding:.28rem .7rem;border-bottom:1px solid rgba(255,255,255,0.02);}
   .loot-tracker-item a{display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;}
   .loot-tracker-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
@@ -1565,15 +1568,15 @@ function renderPanel(){
 function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
+let _trackerCatFilter='All';
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
   const all=auctionList();
   if(!all.length){tracker.classList.remove('visible');return;}
   tracker.classList.add('visible');
-  const cats=['All',...new Set(all.map(a=>a.category||'Other'))].filter(Boolean);
-  const sel=tracker._catFilter||'All';
-  tracker._catFilter=sel;
+  const cats=['All',...new Set(all.map(a=>a.category||'Other'))];
+  const sel=_trackerCatFilter;
   const filtered=sel==='All'?all:all.filter(a=>(a.category||'Other')===sel);
   const sorted=filtered.slice().sort((a,b)=>{
     const o={open:0,queued:1,sold:2,expired:3};
@@ -1622,9 +1625,10 @@ function renderLootTracker(){
   }).join('');
   const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
   tracker.innerHTML=`
+    <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
     <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
       <span style="flex:1;">Run (${all.length})</span>
-      <select onchange="document.getElementById('loot-tracker')._catFilter=this.value;renderLootTracker();" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.7);font-family:'Cinzel',serif;font-size:.44rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer;max-width:70px;">
+      <select onchange="_trackerCatFilter=this.value;renderLootTracker();" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.7);font-family:'Cinzel',serif;font-size:.44rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer;max-width:70px;">
         ${catOptions}
       </select>
     </div>
@@ -2941,7 +2945,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{_trackerCatFilter,join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);
@@ -2988,11 +2992,17 @@ if (_savedUser) {
 }
 // Always init hover regardless of login state
 initPanelHover();
-// Draggable loot tracker — set once at page load
+// Draggable + resizable loot tracker — set once at page load
 if(!window._trackerDragSet){
   window._trackerDragSet=true;
-  let _tdrag=null;
+  let _tdrag=null,_tresize=null;
   document.addEventListener('mousedown',e=>{
+    const resizeHandle=e.target.closest('#loot-tracker-resize');
+    if(resizeHandle){
+      const t=document.getElementById('loot-tracker');if(!t)return;
+      _tresize={startX:e.clientX,startW:t.offsetWidth};
+      e.preventDefault();return;
+    }
     const hdr=e.target.closest('.loot-tracker-hdr');
     if(!hdr)return;
     const t=document.getElementById('loot-tracker');if(!t)return;
@@ -3006,12 +3016,17 @@ if(!window._trackerDragSet){
     e.preventDefault();
   });
   document.addEventListener('mousemove',e=>{
+    if(_tresize){
+      const t=document.getElementById('loot-tracker');if(!t)return;
+      const newW=Math.max(140,Math.min(320,_tresize.startW+(e.clientX-_tresize.startX)));
+      t.style.width=newW+'px';return;
+    }
     if(!_tdrag)return;
     const t=document.getElementById('loot-tracker');if(!t)return;
     t.style.left=Math.max(0,Math.min(window.innerWidth-t.offsetWidth,e.clientX-_tdrag.x))+'px';
     t.style.top=Math.max(0,Math.min(window.innerHeight-40,e.clientY-_tdrag.y))+'px';
   });
-  document.addEventListener('mouseup',()=>{_tdrag=null;});
+  document.addEventListener('mouseup',()=>{_tdrag=null;_tresize=null;});
 }
 </script>
 </body>

@@ -1589,8 +1589,7 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 window._trackerCatFilter='All';
-
-window._setTrackerCat=function(val){window._trackerCatFilter=val;
+window._setTrackerCat=function(val){window._trackerCatFilter=val;renderLootTracker();};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;

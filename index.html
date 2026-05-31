@@ -938,7 +938,7 @@ function refreshDropdown(){
 
 function selectItem(id){
   const item=searchResults.find(r=>r.id===id);if(!item)return;
-  selectedItem=item;modalQuality=item.quality==='legendary'?'epic':item.quality||'epic';
+  selectedItem=item;modalQuality=(['epic','rare','uncommon'].includes(item.quality))?item.quality:'epic';
   searchQuery=item.name;searchResults=[];
   const inp=document.getElementById('item-search-input');if(inp)inp.value=item.name;
   const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';
@@ -1511,8 +1511,8 @@ function buildModal(title,a,fn){
     <div class="fg"><div class="lbl">Note</div><input type="text" id="m-note" value="${a?a.note||'':''}" placeholder="e.g. reserved, officer only..." /></div>
     <div class="modal-actions">
       <button class="btn btn-danger btn-sm modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-gold btn-sm" onclick="${fn}()">${isEdit?'Save Changes':'Add to Queue'}</button>
-      ${!isEdit?`<button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="addToQueueAndStart()">&#9654; Add &amp; Start</button>`:''}
+      <button class="btn btn-gold btn-sm" onclick="${fn}()">${isEdit?'Save':'Queue'}</button>
+      ${!isEdit?`<button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="addToQueueAndStart()">&#9654; Start</button>`:''}
     </div>
   </div></div>`;
 }

@@ -874,7 +874,16 @@ function startTick(){
         }
       }
     });
-    renderLootTracker();
+    // Update tracker timers in-place only — don't rebuild HTML
+    const now2=Date.now();
+    auctionList().forEach(a=>{
+      const el=document.getElementById('tracker-timer-'+a.id);if(!el)return;
+      if(a.status==='open'&&!a.paused&&a.endsAt){
+        const rem=Math.max(0,Math.ceil((a.endsAt-now2)/1000));
+        el.textContent=fmtTime(rem);el.style.color=rem<=10?'#e26060':'rgba(201,168,76,0.5)';
+      }else if(a.status==='open'&&a.paused){el.textContent='Paused';el.style.color='#c87818';}
+      else el.textContent='';
+    });
   },1000);
 }
 
@@ -1580,13 +1589,13 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 window._trackerCatFilter='All';
-window._trackerDataHash='';
-window._setTrackerCat=function(val){window._trackerCatFilter=val;window._trackerDataHash='';renderLootTracker();};
+
+window._setTrackerCat=function(val){window._trackerCatFilter=val;
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
   const all=auctionList();
-  if(!all.length){tracker.classList.remove("visible");window._trackerDataHash="";return;}
+  if(!all.length){tracker.classList.remove("visible");}
   tracker.classList.add('visible');
   const cats=['All',...new Set(all.map(a=>a.category||'Other'))];
   const sel=window._trackerCatFilter||'All';
@@ -1600,10 +1609,7 @@ function renderLootTracker(){
     sold:'background:rgba(80,80,80,0.15);color:#666;border:1px solid rgba(80,80,80,0.2);',
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
-  // Only rebuild HTML when structural data changes — keeps select stable
-  const hash=all.map(a=>`${a.id}:${a.status}:${a.currentBid}:${a.category}`).join('|')+sel;
-  if(hash!==window._trackerDataHash){
-    window._trackerDataHash=hash;
+  {
     const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
     const items=sorted.map(a=>{
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';

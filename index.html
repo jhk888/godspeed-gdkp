@@ -1232,13 +1232,13 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count (left side) — show all presence entries
+  // Online count (left side) — always show when logged in
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const n=Object.keys(presenceData||{}).length;
+    const n=getActiveMembers(presenceData).length;
     onlineCount.textContent=`${n} Online`;
-    onlineEl.style.display=n>0?'flex':'none';
+    onlineEl.style.display='flex';
   }
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>

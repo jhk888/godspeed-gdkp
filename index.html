@@ -1232,13 +1232,14 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count — dedup by name only (tooltip handles staleness filtering)
+  // Online count — raw key count from presenceData, always show when logged in
   const onlineEl=document.getElementById('hdr-online');
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
-    const byName={};
-    Object.values(presenceData||{}).forEach(m=>{if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen)byName[m.name]=m;});
-    const n=Object.keys(byName).length;
+    const entries=Object.values(presenceData||{});
+    const seen={};
+    entries.forEach(m=>{if(m.name&&(!seen[m.name]||m.lastSeen>seen[m.name]))seen[m.name]=m.lastSeen;});
+    const n=Object.keys(seen).length;
     onlineCount.textContent=`${n} Online`;
     onlineEl.style.display='flex';
   }
@@ -1257,17 +1258,20 @@ function renderHdr(){
 let _onlineTooltipHideT=null;
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
-  document.querySelectorAll('.online-tooltip').forEach(t=>t.remove());
+  // Don't reposition if already visible — prevents teleporting
+  const existing=document.querySelector('.online-tooltip');
+  if(existing){clearTimeout(_onlineTooltipHideT);return;}
   const byName={};
   Object.values(presenceData||{}).forEach(m=>{
     if(!byName[m.name]||m.lastSeen>byName[m.name].lastSeen) byName[m.name]=m;
   });
-  const members=Object.values(byName).filter(m=>Date.now()-(m.lastSeen||0)<120000);
+  const members=Object.values(byName);
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
   tip.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
-  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),150);};
+  tip.onmouseleave=()=>{_onlineTooltipHideT=setTimeout(()=>tip.remove(),400);};
+  // Pin position at first show
   const px=e.clientX-10, py=e.clientY+16;
   tip.style.cssText=`position:fixed;left:${px}px;top:${py}px;`;
 
@@ -1328,7 +1332,7 @@ function showOnlineTooltip(e){
   }
 }
 function hideOnlineTooltip(){
-  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),150);
+  _onlineTooltipHideT=setTimeout(()=>document.querySelectorAll('.online-tooltip').forEach(t=>t.remove()),400);
 }
 
 function showMemberTooltipFromHeader(event){

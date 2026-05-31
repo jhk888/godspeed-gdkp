@@ -1612,7 +1612,7 @@ window._toggleTrackerCollapse=function(){
   const t=document.getElementById('loot-tracker');
   if(t)t.classList.toggle('collapsed',window._trackerCollapsed);
   const btn=document.getElementById('tracker-collapse-btn');
-  if(btn)btn.textContent=window._trackerCollapsed?'▶':'▼';
+  if(btn)btn.textContent=window._trackerCollapsed?'▲':'▼';
 };
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
@@ -1667,7 +1667,7 @@ function renderLootTracker(){
           </div>
           <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
         </div>`:''}
-        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▶':'▼'}</button>
+        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
       </div>
       <div class="loot-tracker-body">
         ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}

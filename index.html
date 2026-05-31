@@ -511,18 +511,18 @@
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   .loot-display-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;position:relative;width:100%;height:100%;}
   /* Permanent loot tracker - always visible */
-  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:180px;min-width:140px;max-width:320px;background:rgba(10,8,5,0.94);border:1px solid rgba(201,168,76,0.15);border-left:none;border-radius:0 6px 6px 0;z-index:45;display:none;flex-direction:column;max-height:70vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
+  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
   .loot-tracker.visible{display:flex;}
-  .loot-tracker-hdr{padding:.45rem .7rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.12em;color:rgba(201,168,76,0.4);text-transform:uppercase;flex-shrink:0;cursor:grab;}
+  .loot-tracker-hdr{padding:.6rem .9rem;border-bottom:1px solid rgba(201,168,76,0.12);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:rgba(201,168,76,0.55);text-transform:uppercase;flex-shrink:0;cursor:grab;}
   .loot-tracker-hdr:active{cursor:grabbing;}
-  .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:5px;cursor:ew-resize;z-index:2;}
-  .loot-tracker-item{display:flex;align-items:center;gap:.3rem;padding:.28rem .7rem;border-bottom:1px solid rgba(255,255,255,0.02);}
-  .loot-tracker-item a{display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;}
-  .loot-tracker-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
-  .loot-tracker-name{font-family:'Cinzel',serif;font-size:.56rem;color:rgba(201,168,76,0.65);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .loot-tracker-right{display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;flex-shrink:0;}
-  .loot-tracker-badge{font-size:.44rem;letter-spacing:.05em;padding:.08rem .22rem;border-radius:2px;font-family:'Cinzel',serif;text-transform:uppercase;}
-  .loot-tracker-timer{font-size:.5rem;color:rgba(201,168,76,0.5);font-family:'Cinzel',serif;}
+  .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2;}
+  .loot-tracker-item{display:flex;align-items:center;gap:.35rem;padding:.4rem .9rem;border-bottom:1px solid rgba(255,255,255,0.03);}
+  .loot-tracker-item a{display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;}
+  .loot-tracker-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+  .loot-tracker-name{font-family:'Cinzel',serif;font-size:.74rem;color:rgba(201,168,76,0.75);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .loot-tracker-right{display:flex;flex-direction:column;align-items:flex-end;gap:.15rem;flex-shrink:0;}
+  .loot-tracker-badge{font-size:.58rem;letter-spacing:.05em;padding:.12rem .32rem;border-radius:2px;font-family:'Cinzel',serif;text-transform:uppercase;}
+  .loot-tracker-timer{font-size:.64rem;color:rgba(201,168,76,0.5);font-family:'Cinzel',serif;}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
   .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
@@ -1569,6 +1569,8 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 let _trackerCatFilter='All';
+window._trackerCatFilter='All';
+function setTrackerCat(val){_trackerCatFilter=val;window._trackerCatFilter=val;renderLootTracker();}
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
@@ -1606,9 +1608,9 @@ function renderLootTracker(){
     }else if(a.status==='open'&&a.paused){
       timer=`<span class="loot-tracker-timer" style="color:#c87818;">Paused</span>`;
     }
-    const price=cur?`<span style="font-size:.55rem;color:${isLeading?'#60cc80':'var(--gold)'};font-family:'Cinzel',serif;">${cur.toLocaleString()}g</span>`:'';
-    const bidBtns=a.status==='open'&&!a.paused?`<div style="display:flex;gap:.2rem;margin-top:.25rem;" onclick="event.stopPropagation();">
-      ${(a.bidButtons||[250,500,1000]).map(inc=>`<button onclick="quickBid('${a.id}',${(cur||0)+inc})" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-family:'Cinzel',serif;font-size:.44rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;">+${inc>=1000?(inc/1000)+'k':inc}</button>`).join('')}
+    const price=cur?`<span style="font-size:.68rem;color:${isLeading?'#60cc80':'var(--gold)'};font-family:'Cinzel',serif;">${cur.toLocaleString()}g</span>`:'';
+    const bidBtns=a.status==='open'&&!a.paused?`<div style="display:flex;gap:.25rem;margin-top:.3rem;" onclick="event.stopPropagation();">
+      ${(a.bidButtons||[250,500,1000]).map(inc=>`<button onclick="quickBid('${a.id}',${(cur||0)+inc})" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-family:'Cinzel',serif;font-size:.58rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer;">+${inc>=1000?(inc/1000)+'k':inc}</button>`).join('')}
     </div>`:'';
     return`<div class="loot-tracker-item" style="flex-direction:column;align-items:flex-start;padding:.35rem .7rem;">
       <a ${wowAttrs} style="display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;">
@@ -1628,7 +1630,7 @@ function renderLootTracker(){
     <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
     <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
       <span style="flex:1;">Run (${all.length})</span>
-      <select onchange="_trackerCatFilter=this.value;renderLootTracker();" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.7);font-family:'Cinzel',serif;font-size:.44rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer;max-width:70px;">
+      <select onchange="setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">
         ${catOptions}
       </select>
     </div>
@@ -2945,7 +2947,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{_trackerCatFilter,join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{_trackerCatFilter,setTrackerCat,join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

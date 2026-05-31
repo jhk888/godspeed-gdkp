@@ -508,13 +508,17 @@
   .loot-sidebar-name{font-family:'Cinzel',serif;font-size:.6rem;color:rgba(201,168,76,0.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   .loot-display-main{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.8rem;padding:2rem 1.5rem;position:relative;width:100%;height:100%;}
-  /* Permanent loot tracker on main page */
-  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:190px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.15);border-left:none;border-radius:0 6px 6px 0;z-index:50;display:flex;flex-direction:column;max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  .loot-tracker-hdr{padding:.5rem .75rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.12em;color:rgba(201,168,76,0.45);text-transform:uppercase;flex-shrink:0;}
-  .loot-tracker-item{display:flex;align-items:center;gap:.35rem;padding:.28rem .75rem;border-bottom:1px solid rgba(255,255,255,0.02);}
-  .loot-tracker-item a{display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;}
-  .loot-tracker-name{font-family:'Cinzel',serif;font-size:.58rem;color:rgba(201,168,76,0.65);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .loot-tracker-badge{font-size:.45rem;letter-spacing:.05em;padding:.08rem .25rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
+  /* Permanent loot tracker - always visible */
+  .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:180px;background:rgba(10,8,5,0.94);border:1px solid rgba(201,168,76,0.15);border-left:none;border-radius:0 6px 6px 0;z-index:45;display:none;flex-direction:column;max-height:65vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;}
+  .loot-tracker.visible{display:flex;}
+  .loot-tracker-hdr{padding:.45rem .7rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.52rem;letter-spacing:.12em;color:rgba(201,168,76,0.4);text-transform:uppercase;flex-shrink:0;}
+  .loot-tracker-item{display:flex;align-items:center;gap:.3rem;padding:.28rem .7rem;border-bottom:1px solid rgba(255,255,255,0.02);}
+  .loot-tracker-item a{display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;}
+  .loot-tracker-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+  .loot-tracker-name{font-family:'Cinzel',serif;font-size:.56rem;color:rgba(201,168,76,0.65);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .loot-tracker-right{display:flex;flex-direction:column;align-items:flex-end;gap:.1rem;flex-shrink:0;}
+  .loot-tracker-badge{font-size:.44rem;letter-spacing:.05em;padding:.08rem .22rem;border-radius:2px;font-family:'Cinzel',serif;text-transform:uppercase;}
+  .loot-tracker-timer{font-size:.5rem;color:rgba(201,168,76,0.5);font-family:'Cinzel',serif;}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
   .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
@@ -542,7 +546,8 @@
     </div>
     <div id="hdr-user" style="display:flex;align-items:center;gap:.6rem;margin-left:auto;"></div>
   </div>
-  <div class="main" id="main">
+  <div id="loot-tracker" class="loot-tracker"></div>
+<div class="main" id="main">
     <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:1rem;">
       <div style="width:32px;height:32px;border:2px solid var(--border-gold);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;"></div>
       <div style="font-family:'Cinzel',serif;font-size:.8rem;color:var(--text-muted);letter-spacing:.15em;">Connecting...</div>
@@ -854,6 +859,7 @@ function startTick(){
         }
       }
     });
+    renderLootTracker();
   },1000);
 }
 
@@ -875,10 +881,9 @@ function subscribeToRun(){
     const newLootDisplay=!!data.lootDisplay;
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
-      if(lootDisplayMode){renderLootDisplay();renderLootTracker();}
+      if(lootDisplayMode){renderLootDisplay();}
       else{
         document.getElementById('loot-display-overlay')?.remove();
-        document.getElementById('loot-tracker')?.remove();
       }
       const lootBtn=document.querySelector('[onclick="toggleLootDisplay()"]');
       if(lootBtn)lootBtn.innerHTML=lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot';
@@ -1375,6 +1380,7 @@ function renderMain(){
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  renderLootTracker();
 }
 
 function updateSettings(){
@@ -1559,35 +1565,58 @@ function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
 function renderLootTracker(){
-  document.getElementById('loot-tracker')?.remove();
-  if(!lootDisplayMode)return;
-  const all=auctionList().sort((a,b)=>{
+  const tracker=document.getElementById('loot-tracker');
+  if(!tracker||!user)return;
+  const all=auctionList();
+  if(!all.length){tracker.classList.remove('visible');return;}
+  tracker.classList.add('visible');
+  const cats=['All',...new Set(all.map(a=>a.category||'Other'))].filter(Boolean);
+  const sel=tracker._catFilter||'All';
+  tracker._catFilter=sel;
+  const filtered=sel==='All'?all:all.filter(a=>(a.category||'Other')===sel);
+  const sorted=filtered.slice().sort((a,b)=>{
     const o={open:0,queued:1,sold:2,expired:3};
     return(o[a.status]??4)-(o[b.status]??4);
   });
-  const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'#666',expired:'#cc6060'};
+  const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'#555',expired:'#cc6060'};
   const statusLabels={open:'Live',queued:'Queue',sold:'Sold',expired:'Exp'};
   const statusBadgeCss={
     open:'background:rgba(96,204,128,0.15);color:#60cc80;border:1px solid rgba(96,204,128,0.3);',
     queued:'background:rgba(201,168,76,0.12);color:#c9a84c;border:1px solid rgba(201,168,76,0.25);',
-    sold:'background:rgba(100,100,100,0.15);color:#666;border:1px solid rgba(100,100,100,0.2);',
+    sold:'background:rgba(80,80,80,0.15);color:#666;border:1px solid rgba(80,80,80,0.2);',
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
-  const items=all.map(a=>{
+  const now=Date.now();
+  const items=sorted.map(a=>{
     const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
+    let timer='';
+    if(a.status==='open'&&!a.paused&&a.endsAt){
+      const rem=Math.max(0,Math.ceil((a.endsAt-now)/1000));
+      const urgent=rem<=10;
+      timer=`<div class="loot-tracker-timer" style="color:${urgent?'#e26060':'rgba(201,168,76,0.45)'};">${fmtTime(rem)}</div>`;
+    }else if(a.status==='open'&&a.paused){
+      timer=`<div class="loot-tracker-timer" style="color:#c87818;">Paused</div>`;
+    }
     return`<div class="loot-tracker-item">
-      <a ${wowAttrs} style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;">
-        <div style="width:5px;height:5px;border-radius:50%;flex-shrink:0;background:${statusColors[a.status]||'#666'};"></div>
+      <a ${wowAttrs} style="display:flex;align-items:center;gap:.3rem;text-decoration:none;width:100%;min-width:0;">
+        <div class="loot-tracker-dot" style="background:${statusColors[a.status]||'#666'};"></div>
         <span class="loot-tracker-name">${a.name}</span>
-        <span class="loot-tracker-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
+        <div class="loot-tracker-right">
+          <span class="loot-tracker-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
+          ${timer}
+        </div>
       </a>
     </div>`;
   }).join('');
-  const tracker=document.createElement('div');
-  tracker.id='loot-tracker';
-  tracker.className='loot-tracker';
-  tracker.innerHTML=`<div class="loot-tracker-hdr">Run Loot (${all.length})</div>${items}`;
-  document.body.appendChild(tracker);
+  const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
+  tracker.innerHTML=`
+    <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
+      <span style="flex:1;">Run (${all.length})</span>
+      <select onchange="document.getElementById('loot-tracker')._catFilter=this.value;renderLootTracker();" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.2);color:rgba(201,168,76,0.7);font-family:'Cinzel',serif;font-size:.44rem;padding:.1rem .2rem;border-radius:2px;cursor:pointer;max-width:70px;">
+        ${catOptions}
+      </select>
+    </div>
+    ${items||'<div style="padding:.5rem .7rem;font-size:.56rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
 }
 
@@ -1656,7 +1685,10 @@ function renderLootDisplay(){
       ${isRL?`<button class="loot-display-close" onclick="event.stopPropagation();toggleLootDisplay()">&#x2715; End Display</button>`:''}
       <div class="loot-display-title">${title}</div>
       <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-      <div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>
+      ${n===1
+        ?`<div onclick="event.stopPropagation();">${cards}</div>`
+        :`<div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>`
+      }
       ${isRL?`<div style="position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:.6rem;color:rgba(201,168,76,0.25);letter-spacing:.12em;white-space:nowrap;pointer-events:none;">CLICK ANYWHERE TO CLOSE</div>`:''}
     </div>`;
 

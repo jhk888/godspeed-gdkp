@@ -225,8 +225,12 @@
   .cat-row-label.cat-row-caster{background:rgba(50,150,255,0.18);color:#80c0ff;border-left:3px solid #80c0ff;}
   .cat-row-label.cat-row-other{background:rgba(200,200,200,0.1);color:#ccc;border-left:3px solid #ccc;}
   .cat-row-scroll{display:flex;gap:1.2rem;overflow-x:auto;padding-bottom:.5rem;-webkit-overflow-scrolling:touch;}
-  .cat-row-scroll::-webkit-scrollbar{height:4px;}
-  .cat-row-scroll::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:2px;}
+  /* Global themed scrollbars */
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:rgba(10,8,5,0.5);}
+  ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.25);border-radius:3px;}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,0.45);}
+  * {scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.25) rgba(10,8,5,0.5);}
   .cat-row-scroll > div{flex-shrink:0;width:340px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.2rem;margin-bottom:1.75rem;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
@@ -1570,6 +1574,7 @@ function toggleLootDisplay(){
 }
 let _trackerCatFilter='All';
 let _trackerDataHash='';
+window._setTrackerCat=function(val){_trackerCatFilter=val;_trackerDataHash='';renderLootTracker();};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
@@ -1618,7 +1623,7 @@ function renderLootTracker(){
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
       <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
         <span style="flex:1;">Run (${all.length})</span>
-        <select id="tracker-cat-select" data-tracker-filter="1" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
+        <select id="tracker-cat-select" onchange="window._setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
       </div>
       ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
@@ -2991,14 +2996,6 @@ if (_savedUser) {
 }
 // Always init hover regardless of login state
 initPanelHover();
-// Delegated listener for tracker category filter
-document.addEventListener('change',e=>{
-  if(e.target&&e.target.dataset.trackerFilter){
-    _trackerCatFilter=e.target.value;
-    _trackerDataHash=''; // force rebuild
-    renderLootTracker();
-  }
-});
 // Draggable + resizable loot tracker — set once at page load
 if(!window._trackerDragSet){
   window._trackerDragSet=true;

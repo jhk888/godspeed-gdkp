@@ -127,10 +127,15 @@
   .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
   /* Narrow desktop / vertical monitor (601px–1100px) */
   @media(min-width:601px) and (max-width:1100px){
+    /* Push main content right to clear the fixed tracker */
+    .main{padding-left:260px;}
     /* Pot bar: stack stats on top, actions below */
     .pot-bar{flex-direction:column;padding:.85rem 1.25rem;gap:.5rem;}
     .pot-bar-actions{width:100%;justify-content:center;}
     .pot-val{font-size:1.75rem;}
+    /* Header: hide less-critical buttons to stop crowding the logo */
+    #mute-btn{display:none !important;}
+    .rl-badge{display:none;}
   }
 
   @media(max-width:600px){

@@ -99,6 +99,13 @@
   .main{flex:1;padding:1.5rem 2rem;max-width:1600px;margin:0 auto;width:100%;}
   input[type=text],input[type=number],input[type=password]{width:100%;background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);padding:.6rem .8rem;font-family:'Inter',sans-serif;font-size:1rem;border-radius:3px;outline:none;transition:border-color .2s;}
   input[type=text]:focus,input[type=number]:focus,input[type=password]:focus{border-color:var(--gold);}
+  select{background:rgba(20,14,6,0.95);border:1px solid var(--border-gold);color:var(--gold);padding:.4rem .6rem;font-family:'Cinzel',serif;font-size:.8rem;border-radius:3px;outline:none;cursor:pointer;transition:border-color .15s;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23c9a84c' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .5rem center;padding-right:1.6rem;}
+  select:focus{border-color:var(--gold);}
+  select option{background:#130e05;color:var(--gold);}
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;width:16px;height:16px;border:1px solid var(--border-gold);border-radius:2px;background:var(--bg-input);cursor:pointer;position:relative;flex-shrink:0;vertical-align:middle;}
+  input[type=checkbox]:checked{background:var(--gold);border-color:var(--gold);}
+  input[type=checkbox]:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;color:#1a1208;font-weight:700;line-height:1;}
+  input[type=checkbox]:hover{border-color:var(--gold);}
   .lbl{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:.3rem;}
   .fg{display:flex;flex-direction:column;gap:.3rem;position:relative;}
   .login-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;gap:1.75rem;}
@@ -1572,17 +1579,17 @@ function renderPanel(){
 function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
-let _trackerCatFilter='All';
-let _trackerDataHash='';
-window._setTrackerCat=function(val){_trackerCatFilter=val;_trackerDataHash='';renderLootTracker();};
+window._trackerCatFilter='All';
+window._trackerDataHash='';
+window._setTrackerCat=function(val){window._trackerCatFilter=val;window._trackerDataHash='';renderLootTracker();};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
   const all=auctionList();
-  if(!all.length){tracker.classList.remove('visible');_trackerDataHash='';return;}
+  if(!all.length){tracker.classList.remove("visible");window._trackerDataHash="";return;}
   tracker.classList.add('visible');
   const cats=['All',...new Set(all.map(a=>a.category||'Other'))];
-  const sel=_trackerCatFilter;
+  const sel=window._trackerCatFilter||'All';
   const filtered=sel==='All'?all:all.filter(a=>(a.category||'Other')===sel);
   const sorted=filtered.slice().sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
   const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'#555',expired:'#cc6060'};
@@ -1595,8 +1602,8 @@ function renderLootTracker(){
   };
   // Only rebuild HTML when structural data changes — keeps select stable
   const hash=all.map(a=>`${a.id}:${a.status}:${a.currentBid}:${a.category}`).join('|')+sel;
-  if(hash!==_trackerDataHash){
-    _trackerDataHash=hash;
+  if(hash!==window._trackerDataHash){
+    window._trackerDataHash=hash;
     const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
     const items=sorted.map(a=>{
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
@@ -2949,7 +2956,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{_trackerCatFilter,join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

@@ -1298,13 +1298,15 @@ function showOnlineTooltip(e){
   const rect=anchor?anchor.getBoundingClientRect():{left:10,bottom:30};
   const GAP=6;
   tip.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom+GAP}px;`;
-  // Transparent bridge fills the gap + full-width safe zone above the panel
+  // Transparent bridge fills the gap — sized to match tooltip width after render
   const bridge=document.createElement('div');
-  bridge.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom}px;width:320px;height:${GAP+4}px;z-index:999;`;
+  bridge.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.bottom}px;width:${tip.offsetWidth||290}px;height:${GAP+4}px;z-index:999;`;
   bridge.onmouseenter=()=>clearTimeout(_onlineTooltipHideT);
   bridge.onmouseleave=(ev)=>{if(!tip.contains(ev.relatedTarget)&&!anchor.contains(ev.relatedTarget)){_onlineTooltipHideT=setTimeout(()=>{tip.remove();bridge.remove();},200);}};
   tip._bridge=bridge;
   document.body.appendChild(bridge);
+  // Resize bridge once tip has rendered and has a real width
+  requestAnimationFrame(()=>{bridge.style.width=tip.offsetWidth+'px';});
   // Remove bridge when tip is removed
   const origRemove=tip.remove.bind(tip);
   tip.remove=()=>{bridge.remove();origRemove();};

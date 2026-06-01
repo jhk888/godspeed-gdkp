@@ -2011,7 +2011,7 @@ function renderLootDisplay(){
     </div>`;
 
   // Click on overlay background closes display
-  overlay.addEventListener('click',e=>{if(e.target===overlay)toggleLootDisplay();});
+  overlay.addEventListener('click',e=>{if(!e.target.closest('.loot-display-grid,.loot-display-sidebar,.loot-card,.loot-display-close,.loot-display-sidebar-hdr'))toggleLootDisplay();});
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   // ESC to close
@@ -2953,7 +2953,7 @@ function startLootDisplayFromArchive(runKey){
           :`<div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>`
         }
       </div>`;
-    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    overlay.addEventListener('click',e=>{if(!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))overlay.remove();});
     const _escArchive=e=>{if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);

@@ -1961,8 +1961,10 @@ function renderLootDisplay(){
     return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}${spotlowGlow}">
       ${icon}
       <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
-      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;font-family:'Cinzel',serif;letter-spacing:.04em;">${winner}</div>
-      <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
+      <div style="margin-top:auto;padding-top:.35rem;display:flex;flex-direction:column;align-items:center;gap:.12rem;">
+        <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;letter-spacing:.04em;">${winner}</div>
+        <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${(a.currentBid||0).toLocaleString()}g</div>
+      </div>
     </a>`;
   }).join('');
   // Build sidebar — all auction items sorted by status priority
@@ -2932,8 +2934,10 @@ function startLootDisplayFromArchive(runKey){
       return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}">
         ${icon}
         <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
-        <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;font-family:'Cinzel',serif;">${winner}</div>
-        <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:auto;padding-top:.4rem;">${(a.currentBid||0).toLocaleString()}g</div>
+        <div style="margin-top:auto;padding-top:.35rem;display:flex;flex-direction:column;align-items:center;gap:.12rem;">
+          <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;">${winner}</div>
+          <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${(a.currentBid||0).toLocaleString()}g</div>
+        </div>
       </a>`;
     }).join('');
     const overlay=document.createElement('div');

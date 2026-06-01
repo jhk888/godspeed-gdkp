@@ -1849,6 +1849,16 @@ window._toggleTrackerCollapse=function(){
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
+  // Clear any stale inline position from previous drag session
+  if(!tracker._positionReset){
+    tracker._positionReset=true;
+    tracker.style.left='';
+    tracker.style.top='';
+    tracker.style.transform='';
+    tracker.style.borderRadius='';
+    tracker.style.borderLeft='';
+    tracker.style.width='';
+  }
   const all=auctionList();
   // Always show tracker when logged in — hide only on mobile via CSS
   tracker.classList.add('visible');
@@ -3295,12 +3305,6 @@ if (_savedUser) {
 // Always init hover regardless of login state
 initPanelHover();
 // Draggable + resizable loot tracker — set once at page load
-// Reset tracker position in case it was dragged off-screen in a previous session
-(function(){
-  const t=document.getElementById('loot-tracker');
-  if(t){t.style.left='';t.style.top='';t.style.transform='';t.style.width='';}
-})();
-
 if(!window._trackerDragSet){
   window._trackerDragSet=true;
   let _tdrag=null,_tresize=null;

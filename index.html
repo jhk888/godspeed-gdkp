@@ -770,7 +770,12 @@ async function fetchIcon(itemId){
       const text=await res.text();
       // Icon name is in the JSON as "icon":"iconname"
       const m=text.match(/"icon":"([^"]+)"/);
-      if(m){_iconCache[itemId]=m[1];return m[1];}
+      if(m){
+        _iconCache[itemId]=m[1];
+        // Persist icon to Firebase for any auction with this itemId
+        if(runId){auctionList().forEach(a=>{if(a.itemId===itemId&&!a.itemIcon){update(runRef(`/auctions/${a.id}`),{itemIcon:m[1]}).catch(()=>{});}});}
+        return m[1];
+      }
     }
   }catch(e){}
   // Fallback: try classic endpoint
@@ -779,7 +784,11 @@ async function fetchIcon(itemId){
     if(res.ok){
       const text=await res.text();
       const m=text.match(/"icon":"([^"]+)"/);
-      if(m){_iconCache[itemId]=m[1];return m[1];}
+      if(m){
+        _iconCache[itemId]=m[1];
+        if(runId){auctionList().forEach(a=>{if(a.itemId===itemId&&!a.itemIcon){update(runRef(`/auctions/${a.id}`),{itemIcon:m[1]}).catch(()=>{});}});}
+        return m[1];
+      }
     }
   }catch(e){}
   return null;
@@ -791,8 +800,10 @@ function getIconImg(itemId,icon,size=24){
   const uid='ic'+itemId;
   if(_iconCache[itemId]) return `<img src="${iconUrl(_iconCache[itemId])}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" />`;
   fetchIcon(itemId).then(ic=>{
+    if(!ic)return;
     document.querySelectorAll(`.icon-${uid}`).forEach(el=>{
-      if(ic){el.outerHTML=`<img src="${iconUrl(ic)}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" />`;}
+      const s=el.style.width||size+'px';
+      el.outerHTML=`<img src="${iconUrl(ic)}" style="width:${s};height:${s};border-radius:2px;flex-shrink:0;" />`;
     });
   });
   return `<div class="icon-${uid}" style="width:${size}px;height:${size}px;border-radius:2px;background:var(--bg-input);flex-shrink:0;"></div>`;

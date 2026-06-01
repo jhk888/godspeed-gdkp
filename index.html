@@ -2908,23 +2908,43 @@ function startLootDisplayFromArchive(runKey){
   if(!isRL)return;
   get(ref(db,'runs/'+runKey)).then(snap=>{
     const data=snap.val()||{};
-    const soldItems=Object.values(data.auctions||{}).filter(a=>a.status==='sold');
-    if(!soldItems.length){toast('No sold items in this run');return;}
-    // Temporarily override auctions and use renderLootDisplay
-    const _prevAuctions=auctions;
-    const _prevLootMode=lootDisplayMode;
-    auctions={};
-    soldItems.forEach(a=>{auctions[a.id]=a;});
-    lootDisplayMode=true;
-    renderLootDisplay();
-    auctions=_prevAuctions;
-    lootDisplayMode=_prevLootMode;
-    // Override close button to just remove overlay without touching run state
-    const overlay=document.getElementById('loot-display-overlay');
-    if(overlay){
-      const closeBtn=overlay.querySelector('.loot-display-close');
-      if(closeBtn)closeBtn.onclick=()=>overlay.remove();
-    }
+    const sold=Object.values(data.auctions||{}).filter(a=>a.status==='sold').sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
+    if(!sold.length){toast('No sold items in this run');return;}
+    document.getElementById('loot-display-overlay')?.remove();
+    const title=data.settings?.raidTitle||'Archive';
+    const n=sold.length;
+    const minCard=n===1?Math.min(340,window.innerWidth*0.7|0):n<=3?220:n<=6?180:n<=12?140:n<=20?120:100;
+    const iconSize=n===1?120:n<=3?80:n<=6?60:n<=12?44:36;
+    const nameFz=n===1?'1.1rem':n<=3?'.85rem':n<=6?'.72rem':n<=12?'.62rem':'.55rem';
+    const priceFz=n===1?'1.6rem':n<=3?'1.1rem':n<=6?'.9rem':n<=12?'.75rem':'.65rem';
+    const winnerFz=n===1?'1rem':n<=3?'.78rem':n<=6?'.68rem':'.62rem';
+    const cardPad=n===1?'1.5rem 2rem':n<=6?'1rem 1.25rem':'.6rem .75rem';
+    const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
+    const cards=sold.map((a,i)=>{
+      const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+      const winner=bids[0]?.bidder||'Unknown';
+      const qColor=qualityColors[a.quality]||'#c590ff';
+      const icon=getIconImg(a.itemId,a.itemIcon,iconSize);
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;"`:'href="#" onclick="return false;"';
+      return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}">
+        ${icon}
+        <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
+        <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;font-family:'Cinzel',serif;">${winner}</div>
+        <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
+      </a>`;
+    }).join('');
+    const overlay=document.createElement('div');
+    overlay.id='loot-display-overlay';
+    overlay.className='loot-display-overlay';
+    overlay.innerHTML=`<div class="loot-display-main">
+      <button class="loot-display-close" onclick="document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
+      <div class="loot-display-title">${title}</div>
+      <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
+      <div class="loot-display-grid" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem;">${cards}</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+    sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});
   });
 }
 

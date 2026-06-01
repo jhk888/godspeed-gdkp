@@ -112,7 +112,9 @@
   .login-brand .wordmark{font-family:'Cinzel',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;text-shadow:0 0 40px rgba(212,169,60,0.5);}
   .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.3rem;text-align:center;}
   .login-box{background:rgba(22,19,12,0.96);border:1px solid var(--border-gold);padding:2.25rem 2.5rem;border-radius:4px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:1rem;backdrop-filter:blur(10px);}
-  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:1rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
+  .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:.75rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
+  .pot-bar-stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;min-width:120px;}
+  .pot-bar-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
   .pot-val{font-family:'Cinzel',serif;font-size:2rem;color:var(--gold);font-weight:600;}
   .pot-lbl{font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase;}
   .settings-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:.9rem 1.5rem;display:flex;align-items:center;gap:1.75rem;margin-bottom:1.5rem;flex-wrap:wrap;backdrop-filter:blur(4px);}
@@ -123,6 +125,16 @@
   .tab.active{color:#1a1208;background:var(--gold);border-color:var(--gold);font-weight:600;}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
   .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
+  /* Narrow desktop / vertical monitor (601px–1100px) */
+  @media(min-width:601px) and (max-width:1100px){
+    .main{padding-left:260px;}
+    .pot-bar{flex-direction:column;padding:.85rem 1.25rem;gap:.5rem;}
+    .pot-bar-actions{width:100%;justify-content:center;}
+    .pot-val{font-size:1.75rem;}
+    #mute-btn{display:none !important;}
+    .rl-badge{display:none;}
+  }
+
   @media(max-width:600px){
     html{font-size:14px;}
 
@@ -524,6 +536,12 @@
   /* Permanent loot tracker - always visible */
   .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.2);border-left:none;border-radius:0 8px 8px 0;z-index:45;display:none;flex-direction:column;max-height:72vh;overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;user-select:none;}
   .loot-tracker.visible{display:flex;}
+  .loot-tracker.collapsed .loot-tracker-body{display:none;}
+  .loot-tracker.collapsed .loot-tracker-resize{display:none;}
+  .loot-tracker-body{overflow-y:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;flex:1;}
+  .loot-tracker.collapsed .loot-tracker-hdr{border-bottom:none;}
+  .loot-tracker-collapse{background:none;border:none;color:rgba(201,168,76,0.5);cursor:pointer;padding:0 0 0 .3rem;font-size:.7rem;line-height:1;flex-shrink:0;transition:color .15s;}
+  .loot-tracker-collapse:hover{color:rgba(201,168,76,0.9);}
   .loot-tracker-hdr{padding:.6rem .9rem;border-bottom:1px solid rgba(201,168,76,0.12);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.1em;color:rgba(201,168,76,0.55);text-transform:uppercase;flex-shrink:0;cursor:grab;}
   .loot-tracker-hdr:active{cursor:grabbing;}
   .loot-tracker-resize{position:absolute;right:0;top:0;bottom:0;width:6px;cursor:ew-resize;z-index:2;}
@@ -544,6 +562,7 @@
   .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
   .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
   .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
+  div[id^='wowhead-tooltip'],div[class*='wowhead']{z-index:100000 !important;}
 </style>
 </head>
 <body>
@@ -681,7 +700,8 @@ function toast(msg){
   },1400);
 }
 
-function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,onConfirm}){
+function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,suppressKey=null,onConfirm}){
+  if(suppressKey&&_suppressedDialogs[suppressKey]){onConfirm();return;}
   const existing=document.getElementById('wow-dialog-overlay');
   if(existing)existing.remove();
   const overlay=document.createElement('div');
@@ -693,6 +713,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
       ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="number" placeholder="${input.placeholder||''}" min="${input.min||0}" step="${input.step||1}" />`:''}
+      ${suppressKey?`<label style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;cursor:pointer;"><input type="checkbox" id="wow-suppress" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;" /><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);">Don't show this again</span></label>`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
         <button class="wow-dialog-btn ${danger?'wow-dialog-btn-danger':'wow-dialog-btn-confirm'}" id="wow-confirm">${confirmLabel}</button>
@@ -704,6 +725,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
   const close=()=>overlay.remove();
   document.getElementById('wow-cancel').onclick=close;
   document.getElementById('wow-confirm').onclick=()=>{
+    if(suppressKey&&document.getElementById('wow-suppress')?.checked){_suppressedDialogs[suppressKey]=true;_saveSuppress();}
     if(input&&inp){
       const val=parseInt(inp.value);
       if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
@@ -939,7 +961,7 @@ function refreshDropdown(){
     return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});">
       ${getIconImg(item.id, item.icon)}
       <div style="flex:1;min-width:0;">
-        <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1" style="pointer-events:none;">${item.name}</a>
+        <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1">${item.name}</a>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
       </div>
     </div>`;
@@ -1561,18 +1583,18 @@ function renderMain(){
   </div>`:'';
 
   const membersBar = renderMembersBar(presenceData);
-  const potBar=isRL?`<div class="pot-bar" style="justify-content:space-between;padding:1.25rem 1.75rem;">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
+  const potBar=isRL?`<div class="pot-bar">
+    <div class="pot-bar-stat">
       <div class="pot-lbl">Total Pot</div>
       <div class="pot-val">${p.toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${sold.length} item${sold.length!==1?'s':''} sold</div>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;">
+    <div class="pot-bar-stat">
       <div class="pot-lbl">Est. Raider Cut</div>
       <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${Math.floor(p/raiderCount()).toLocaleString()}g</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
     </div>
-    <div style="display:flex;align-items:center;gap:.5rem;">
+    <div class="pot-bar-actions">
       <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
       <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">${lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot'}</button>
     </div>
@@ -1802,8 +1824,19 @@ function renderPanel(){
 function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
+const _suppressedDialogs=JSON.parse(localStorage.getItem('gdkp_suppressed')||'{}');
+function _saveSuppress(){localStorage.setItem('gdkp_suppressed',JSON.stringify(_suppressedDialogs));}
+window._resetSuppressed=function(){Object.keys(_suppressedDialogs).forEach(k=>delete _suppressedDialogs[k]);_saveSuppress();toast('Confirmations restored');renderPanel();};
 window._trackerCatFilter='All';
+window._trackerCollapsed=false;
 window._setTrackerCat=function(val){window._trackerCatFilter=val;renderLootTracker();};
+window._toggleTrackerCollapse=function(){
+  window._trackerCollapsed=!window._trackerCollapsed;
+  const t=document.getElementById('loot-tracker');
+  if(t)t.classList.toggle('collapsed',window._trackerCollapsed);
+  const btn=document.getElementById('tracker-collapse-btn');
+  if(btn)btn.textContent=window._trackerCollapsed?'▲':'▼';
+};
 function renderLootTracker(){
   const tracker=document.getElementById('loot-tracker');
   if(!tracker||!user)return;
@@ -1823,35 +1856,26 @@ function renderLootTracker(){
     expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);',
   };
   {
-    const catOptions=cats.map(c=>`<option value="${c}" ${c===sel?'selected':''}>${c}</option>`).join('');
-    const items=sorted.map(a=>{
-      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
-      const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
-      const top=bids[0];const isLeading=top?.bidder===user;const cur=a.currentBid||0;
-      const price=cur?`<span style="font-size:.68rem;color:${isLeading?'#60cc80':'var(--gold)'};font-family:'Cinzel',serif;">${cur.toLocaleString()}g</span>`:'';
-      const bidBtns=a.status==='open'&&!a.paused?`<div style="display:flex;gap:.25rem;margin-top:.3rem;" onclick="event.stopPropagation();">
-        ${(a.bidButtons||[250,500,1000]).map(inc=>`<button onclick="quickBid('${a.id}',${cur+inc})" style="background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);color:var(--gold);font-family:'Cinzel',serif;font-size:.58rem;padding:.2rem .4rem;border-radius:2px;cursor:pointer;">+${inc>=1000?(inc/1000)+'k':inc}</button>`).join('')}
-      </div>`:'';
-      return`<div class="loot-tracker-item" style="flex-direction:column;align-items:flex-start;padding:.4rem .9rem;">
-        <a ${wowAttrs} style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">
-          <div class="loot-tracker-dot" style="background:${statusColors[a.status]||'#666'};"></div>
-          <span class="loot-tracker-name">${a.name}</span>
-          <div class="loot-tracker-right">
-            <span class="loot-tracker-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span>
-            <span id="tracker-timer-${a.id}" class="loot-tracker-timer"></span>
-            ${price}
-          </div>
-        </a>
-        ${bidBtns}
-      </div>`;
-    }).join('');
+    const catOptHtml=cats.map(c=>`<div class="tracker-cat-opt${c===sel?' selected':''}" onclick="window._setTrackerCat('${c}');document.getElementById('tracker-cat-list').style.display='none';">${c}</div>`).join('');
+    const collapsed=window._trackerCollapsed;
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
       <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
         <span style="flex:1;">Run (${all.length})</span>
-        <select id="tracker-cat-select" onchange="window._setTrackerCat(this.value)" style="background:rgba(20,14,4,0.9);border:1px solid rgba(201,168,76,0.3);color:rgba(201,168,76,0.8);font-family:'Cinzel',serif;font-size:.62rem;padding:.15rem .3rem;border-radius:2px;cursor:pointer;max-width:90px;">${catOptions}</select>
+        ${!collapsed?`<div class="tracker-cat-wrap">
+          <div class="tracker-cat-btn" id="tracker-cat-btn" onclick="(function(){var l=document.getElementById('tracker-cat-list');l.style.display=l.style.display==='block'?'none':'block';})()">
+            <span id="tracker-cat-label">${sel}</span>
+            <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+          <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
+        </div>`:''}
+        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
       </div>
-      ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}`;
+      <div class="loot-tracker-body">
+        ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}
+      </div>`;
+    if(collapsed)tracker.classList.add('collapsed');
+    else tracker.classList.remove('collapsed');
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   }
   // Update timers in-place without rebuilding HTML
@@ -2279,6 +2303,7 @@ function removeSold(id){
     msg:`Remove ${a?.name||'this item'} from sold? This will reduce the pot total.`,
     confirmLabel:'Remove',
     danger:true,
+    suppressKey:'remove_sold',
     onConfirm:()=>remove(runRef(`/auctions/${id}`))
   });
   toast('Item removed');
@@ -2418,6 +2443,7 @@ function resetAuction(id){
     msg:'All bids will be cleared and the price reset to the starting bid.',
     confirmLabel:'Reset',
     danger:true,
+    suppressKey:'reset_bids',
     onConfirm:()=>{
       const sb=a.startBid||a.currentBid||1000;
       update(runRef(`/auctions/${id}`),{bids:{},currentBid:sb});
@@ -2432,6 +2458,7 @@ function cancelAuction(id){
     msg:`${a.name||'This item'} will be returned to the queue with all bids cleared.`,
     confirmLabel:'Cancel Auction',
     danger:true,
+    suppressKey:'cancel_auction',
     onConfirm:()=>{
       update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
       tab='queued';
@@ -2964,6 +2991,7 @@ async function removePastItem(runKey, auctionId){
     msg:'This will affect cross-run totals and cannot be undone.',
     confirmLabel:'Remove',
     danger:true,
+    suppressKey:'remove_history',
     onConfirm:async()=>{
       await remove(ref(db,`runs/${runKey}/auctions/${auctionId}`));
       crossRunCache=null;

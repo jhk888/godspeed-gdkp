@@ -1094,20 +1094,22 @@ function subscribeToRun(){
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
     // Sync loot display mode for all clients
     const newLootDisplay=!!data.lootDisplay;
+    console.log('[loot] Firebase lootDisplay:',newLootDisplay,'current:',lootDisplayMode,'sold:',Object.values(data.auctions||{}).filter(a=>a.status==='sold').length);
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
       if(lootDisplayMode){
-        // Small delay to ensure auctions are fully parsed before rendering
         setTimeout(()=>{
+          const soldCount=auctionList().filter(a=>a.status==='sold').length;
+          console.log('[loot] attempting restore, sold count:',soldCount);
           if(lootDisplayMode&&!document.getElementById('loot-display-overlay'))renderLootDisplay();
-        },150);
+        },300);
       } else {
         document.getElementById('loot-display-overlay')?.remove();
       }
       const lootBtn=document.querySelector('[onclick="toggleLootDisplay()"]');
       if(lootBtn)lootBtn.innerHTML=lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot';
     } else if(lootDisplayMode){
-      if(!document.getElementById('loot-display-overlay'))setTimeout(()=>renderLootDisplay(),150);
+      if(!document.getElementById('loot-display-overlay'))setTimeout(()=>renderLootDisplay(),300);
     }
 
     // Detect new bids on open auctions — collect pending glows first
@@ -2914,8 +2916,10 @@ let _pendingDeleteRun=null;
 let _deleteUndoTimer=null;
 
 function startLootDisplayFromArchive(runKey){
-  if(!isRL)return;
+  console.log('[archive-display] called with runKey:',runKey,'isRL:',isRL);
+  if(!isRL){console.log('[archive-display] blocked — not RL');return;}
   get(ref(db,'runs/'+runKey)).then(snap=>{
+    console.log('[archive-display] Firebase snap received, exists:',snap.exists());
     const data=snap.val()||{};
     const sold=Object.values(data.auctions||{}).filter(a=>a.status==='sold').sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
     if(!sold.length){toast('No sold items in this run');return;}

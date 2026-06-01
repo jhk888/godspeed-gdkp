@@ -1094,6 +1094,14 @@ function subscribeToRun(){
     if(data.splits&&!splitsLoaded){splits=data.splits;splitsLoaded=true;}
     // Sync loot display mode for all clients
     const newLootDisplay=!!data.lootDisplay;
+    // Restore archive display for all clients
+    const _archKey=data.archiveDisplay||null;
+    if(_archKey&&!document.getElementById('loot-display-overlay')&&!newLootDisplay){
+      setTimeout(()=>{if(!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archKey);},400);
+    } else if(!_archKey&&!newLootDisplay){
+      const _ov=document.getElementById('loot-display-overlay');
+      if(_ov&&!lootDisplayMode)_ov.remove();
+    }
     console.log('[loot] Firebase lootDisplay:',newLootDisplay,'current:',lootDisplayMode,'sold:',Object.values(data.auctions||{}).filter(a=>a.status==='sold').length);
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
@@ -2928,6 +2936,7 @@ function startLootDisplayFromArchive(runKey){
   if(!isRL){console.log('[archive-display] blocked — not RL');return;}
   // Persist which archive run is being displayed so it survives tab close
   localStorage.setItem('gdkp_archive_display',runKey);
+  if(isRL)update(runRef(),{archiveDisplay:runKey});
   get(ref(db,'runs/'+runKey)).then(snap=>{
     console.log('[archive-display] Firebase snap received, exists:',snap.exists());
     const data=snap.val()||{};
@@ -2963,7 +2972,7 @@ function startLootDisplayFromArchive(runKey){
     overlay.className='loot-display-overlay';
     overlay.innerHTML=`
       <div class="loot-display-main">
-        <button class="loot-display-close" onclick="localStorage.removeItem('gdkp_archive_display');document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
+        <button class="loot-display-close" onclick="_clearArchiveDisplay()">&#x2715; Close</button>
         <div class="loot-display-title">${title}</div>
         <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
         ${n===1
@@ -2971,8 +2980,9 @@ function startLootDisplayFromArchive(runKey){
           :`<div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>`
         }
       </div>`;
-    overlay.addEventListener('click',e=>{if(!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))overlay.remove();});
-    const _escArchive=e=>{if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',_escArchive);}};
+    const _clearArchiveDisplay=()=>{localStorage.removeItem('gdkp_archive_display');if(isRL)update(runRef(),{archiveDisplay:null});overlay.remove();};
+    overlay.addEventListener('click',e=>{if(!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))_clearArchiveDisplay();});
+    const _escArchive=e=>{if(e.key==='Escape'){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();

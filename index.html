@@ -1019,7 +1019,7 @@ function renderSearchPreview(){
   if(!selectedItem){wrap.innerHTML='';return;}
   wrap.innerHTML=`<div class="search-preview">
     ${getIconImg(selectedItem.id, selectedItem.icon, 28)}
-    <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" onclick="return false;">${selectedItem.name}</a>
+    <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank">${selectedItem.name}</a>
     <span class="dropdown-item-sub">${selectedItem.slot||''}</span>
     <button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button>
   </div>`;
@@ -1925,7 +1925,7 @@ function renderLootTracker(){
       const badge=`<span style="font-size:.58rem;padding:.1rem .35rem;border-radius:2px;${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||a.status}</span>`;
       const iconHtml=getIconImg(a.itemId,a.itemIcon,24);
       const winner=a.status==='sold'?Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'':'';
-      return`<div class="loot-tracker-item"><a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" data-wowhead="item=${a.itemId||0}&domain=tbc" onclick="return false;" style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">${iconHtml}<div style="flex:1;min-width:0;"><div class="loot-tracker-name ${a.quality||'common'}">${a.name||'Unknown'}</div><div style="display:flex;align-items:center;gap:.3rem;margin-top:.1rem;">${badge}${winner?`<span style="font-size:.62rem;color:rgba(201,168,76,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${winner}</span>`:''}</div></div><div class="loot-tracker-right"><span id="tracker-timer-${a.id}" style="font-size:.62rem;color:rgba(201,168,76,0.5);"></span>${price?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${price}</span>`:''}</div></a></div>`;
+      return`<div class="loot-tracker-item"><a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" data-wowhead="item=${a.itemId||0}&domain=tbc" target="_blank" style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">${iconHtml}<div style="flex:1;min-width:0;"><div class="loot-tracker-name ${a.quality||'common'}">${a.name||'Unknown'}</div><div style="display:flex;align-items:center;gap:.3rem;margin-top:.1rem;">${badge}${winner?`<span style="font-size:.62rem;color:rgba(201,168,76,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${winner}</span>`:''}</div></div><div class="loot-tracker-right"><span id="tracker-timer-${a.id}" style="font-size:.62rem;color:rgba(201,168,76,0.5);"></span>${price?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${price}</span>`:''}</div></a></div>`;
     }).join('');
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
@@ -2128,11 +2128,11 @@ function renderCard(a,mode){
     </div>`;
   }).join('');
   const iconHTML=a.itemIcon&&a.itemId
-    ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;">${getIconImg(a.itemId,a.itemIcon,56)}</a>`
+    ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank">${getIconImg(a.itemId,a.itemIcon,56)}</a>`
     :a.itemIcon
     ?`${getIconImg(null,a.itemIcon,56)}`
     :`<div class="item-icon-placeholder"></div>`;
-  const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
+  const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
   const itemHeader=`<div class="item-header">${iconHTML}<div>${nameHTML}<div class="item-slot">${a.slot||''}${catBadge?` ${catBadge}`:''}</div></div></div>`;
   let timerSection='';
@@ -2957,7 +2957,7 @@ function startLootDisplayFromArchive(runKey){
       const winner=bids[0]?.bidder||'Unknown';
       const qColor=qualityColors[a.quality]||'#c590ff';
       const icon=getIconImg(a.itemId,a.itemIcon,iconSize);
-      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" onclick="return false;"`:'href="#" onclick="return false;"';
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
       return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}">
         ${icon}
         <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>

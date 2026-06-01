@@ -1886,16 +1886,16 @@ function renderLootTracker(){
     }).join('');
     tracker.innerHTML=`
       <div class="loot-tracker-resize" id="loot-tracker-resize"></div>
-      <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;">
-        <span style="flex:1;">Run (${all.length})</span>
-        ${!collapsed?`<div class="tracker-cat-wrap">
+      <div class="loot-tracker-hdr" style="display:flex;align-items:center;gap:.3rem;flex-wrap:nowrap;">
+        <span style="flex:1;white-space:nowrap;">Run (${all.length})</span>
+        ${!collapsed?`<div class="tracker-cat-wrap" style="position:relative;flex-shrink:0;">
           <div class="tracker-cat-btn" id="tracker-cat-btn" onclick="(function(){var l=document.getElementById('tracker-cat-list');l.style.display=l.style.display==='block'?'none':'block';})()">
             <span id="tracker-cat-label">${sel}</span>
             <svg width="8" height="5" viewBox="0 0 8 5" fill="none"><path d="M1 1l3 3 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           </div>
-          <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;">${catOptHtml}</div>
+          <div class="tracker-cat-list" id="tracker-cat-list" style="display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:200;">${catOptHtml}</div>
         </div>`:''}
-        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
+        <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" style="flex-shrink:0;" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
       </div>
       <div class="loot-tracker-body">
         ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}

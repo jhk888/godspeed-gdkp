@@ -2981,8 +2981,8 @@ function startLootDisplayFromArchive(runKey){
         }
       </div>`;
     const _clearArchiveDisplay=()=>{localStorage.removeItem('gdkp_archive_display');if(isRL)update(runRef(),{archiveDisplay:null});overlay.remove();};
-    overlay.addEventListener('click',e=>{if(!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))_clearArchiveDisplay();});
-    const _escArchive=e=>{if(e.key==='Escape'){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
+    overlay.addEventListener('click',e=>{if(isRL&&!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))_clearArchiveDisplay();});
+    const _escArchive=e=>{if(e.key==='Escape'&&isRL){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();

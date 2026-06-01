@@ -13,7 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>Godspeed GDKP</title>
 <link rel="icon" type="image/x-icon" href="./favicon.ico" />
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cinzel+Decorative:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
 <script src="https://wow.zamimg.com/widgets/power.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;}
@@ -41,7 +41,7 @@
   .hdr{border-bottom:1px solid var(--border-gold);padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;background:rgba(10,8,5,0.88);backdrop-filter:blur(6px);position:relative;}
   .logo-center{position:absolute;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;}
   .logo-center .logo-sub{pointer-events:auto;}
-  .logo{font-family:'Cinzel',serif;font-size:1.6rem;font-weight:600;color:var(--gold);letter-spacing:.1em;}
+  .logo{font-family:'Cinzel Decorative',serif;font-size:1.6rem;font-weight:600;color:var(--gold);letter-spacing:.1em;}
   .logo-sub{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.25em;color:var(--text-muted);text-transform:uppercase;margin-top:.1rem;}
   .rl-badge{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;background:rgba(212,169,60,0.18);color:var(--gold);border:1px solid var(--border-gold-strong);padding:.25rem .65rem;border-radius:2px;margin-right:.5rem;}
   .usr-chip{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.05em;color:var(--gold-light);background:rgba(212,169,60,0.1);border:1px solid var(--border-gold);padding:.3rem .8rem;border-radius:3px;}
@@ -1960,7 +1960,7 @@ function renderLootDisplay(){
     return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}${spotlowGlow}">
       ${icon}
       <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
-      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;">${winner}</div>
+      <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;font-family:'Cinzel',serif;letter-spacing:.04em;">${winner}</div>
       <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
     </a>`;
   }).join('');

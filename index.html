@@ -2009,9 +2009,12 @@ function renderLootDisplay(){
     </div>`;
 
   // Click on overlay background closes display
-  overlay.addEventListener('click',e=>{if(e.target===overlay&&isRL)toggleLootDisplay();});
+  overlay.addEventListener('click',e=>{if(e.target===overlay)toggleLootDisplay();});
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  // ESC to close
+  const _escHandler=e=>{if(e.key==='Escape'){toggleLootDisplay();document.removeEventListener('keydown',_escHandler);}};
+  document.addEventListener('keydown',_escHandler);
 }
 function confirmReset(){
   wowConfirm({
@@ -2947,6 +2950,8 @@ function startLootDisplayFromArchive(runKey){
         }
       </div>`;
     overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+    const _escArchive=e=>{if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',_escArchive);}};
+    document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
     sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});

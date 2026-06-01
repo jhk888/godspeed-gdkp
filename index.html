@@ -1677,6 +1677,14 @@ function renderMain(){
 
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   renderLootTracker();
+  // Restore archive display if it was open when tab was closed
+  if(!window._archiveRestored){
+    window._archiveRestored=true;
+    const _archiveKey=localStorage.getItem('gdkp_archive_display');
+    if(_archiveKey&&isRL&&!lootDisplayMode){
+      setTimeout(()=>{if(isRL&&!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
+    }
+  }
 }
 
 function updateSettings(){
@@ -2918,6 +2926,8 @@ let _deleteUndoTimer=null;
 function startLootDisplayFromArchive(runKey){
   console.log('[archive-display] called with runKey:',runKey,'isRL:',isRL);
   if(!isRL){console.log('[archive-display] blocked — not RL');return;}
+  // Persist which archive run is being displayed so it survives tab close
+  localStorage.setItem('gdkp_archive_display',runKey);
   get(ref(db,'runs/'+runKey)).then(snap=>{
     console.log('[archive-display] Firebase snap received, exists:',snap.exists());
     const data=snap.val()||{};
@@ -2953,7 +2963,7 @@ function startLootDisplayFromArchive(runKey){
     overlay.className='loot-display-overlay';
     overlay.innerHTML=`
       <div class="loot-display-main">
-        <button class="loot-display-close" onclick="document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
+        <button class="loot-display-close" onclick="localStorage.removeItem('gdkp_archive_display');document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
         <div class="loot-display-title">${title}</div>
         <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
         ${n===1

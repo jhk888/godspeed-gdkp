@@ -1889,7 +1889,7 @@ function renderLootTracker(){
     const items=sorted.map(a=>{
       const price=a.currentBid?`${a.currentBid.toLocaleString()}g`:'';
       const badge=`<span style="font-size:.58rem;padding:.1rem .35rem;border-radius:2px;${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||a.status}</span>`;
-      const iconHtml=a.itemIcon?`<img src="https://wow.zamimg.com/images/wow/icons/small/${a.itemIcon}.jpg" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:'<div style="width:20px;height:20px;border-radius:2px;background:rgba(201,168,76,0.1);flex-shrink:0;"></div>';
+      const iconHtml=getIconImg(a.itemId,a.itemIcon,24);
       const winner=a.status==='sold'?Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'':'';
       return`<div class="loot-tracker-item"><a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" data-wowhead="item=${a.itemId||0}&domain=tbc" onclick="return false;" style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">${iconHtml}<div style="flex:1;min-width:0;"><div class="loot-tracker-name ${a.quality||'common'}">${a.name||'Unknown'}</div><div style="display:flex;align-items:center;gap:.3rem;margin-top:.1rem;">${badge}${winner?`<span style="font-size:.62rem;color:rgba(201,168,76,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${winner}</span>`:''}</div></div><div class="loot-tracker-right"><span id="tracker-timer-${a.id}" style="font-size:.62rem;color:rgba(201,168,76,0.5);"></span>${price?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${price}</span>`:''}</div></a></div>`;
     }).join('');

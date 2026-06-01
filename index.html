@@ -1096,14 +1096,18 @@ function subscribeToRun(){
     const newLootDisplay=!!data.lootDisplay;
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
-      if(lootDisplayMode){renderLootDisplay();}
-      else{
+      if(lootDisplayMode){
+        // Small delay to ensure auctions are fully parsed before rendering
+        setTimeout(()=>{
+          if(lootDisplayMode&&!document.getElementById('loot-display-overlay'))renderLootDisplay();
+        },150);
+      } else {
         document.getElementById('loot-display-overlay')?.remove();
       }
       const lootBtn=document.querySelector('[onclick="toggleLootDisplay()"]');
       if(lootBtn)lootBtn.innerHTML=lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot';
     } else if(lootDisplayMode){
-      renderLootDisplay();
+      if(!document.getElementById('loot-display-overlay'))setTimeout(()=>renderLootDisplay(),150);
     }
 
     // Detect new bids on open auctions — collect pending glows first

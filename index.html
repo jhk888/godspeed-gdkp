@@ -1371,7 +1371,7 @@ function renderHdr(){
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
     ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
-    ${isRL?`<button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
+    ${isRL?`<button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button><button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
     <button id="mute-btn" class="btn btn-outline btn-sm" onclick="toggleMute()" title="Toggle sound">${soundMuted?'🔇':'🔊'}</button>
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
@@ -2936,12 +2936,17 @@ function startLootDisplayFromArchive(runKey){
     const overlay=document.createElement('div');
     overlay.id='loot-display-overlay';
     overlay.className='loot-display-overlay';
-    overlay.innerHTML=`<div class="loot-display-main">
-      <button class="loot-display-close" onclick="document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
-      <div class="loot-display-title">${title}</div>
-      <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-      <div class="loot-display-grid" style="display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem;">${cards}</div>
-    </div>`;
+    overlay.innerHTML=`
+      <div class="loot-display-main">
+        <button class="loot-display-close" onclick="document.getElementById('loot-display-overlay').remove()">&#x2715; Close</button>
+        <div class="loot-display-title">${title}</div>
+        <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
+        ${n===1
+          ?`<div onclick="event.stopPropagation();">${cards}</div>`
+          :`<div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>`
+        }
+      </div>`;
+    overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
     document.body.appendChild(overlay);
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
     sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});

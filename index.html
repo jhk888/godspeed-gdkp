@@ -572,8 +572,8 @@
   .loot-tracker-timer{font-size:.64rem;color:rgba(201,168,76,0.5);font-family:'Cinzel',serif;}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-align:center;margin-bottom:.3rem;text-shadow:0 0 20px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.78rem;color:var(--text-muted);letter-spacing:.08em;text-align:center;margin-bottom:1.5rem;font-family:'Cinzel',serif;}
-  .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;}
-  .loot-card{background:rgba(20,15,5,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:5px;padding:.6rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer;transition:border-color .15s,background .15s;animation:lootIn .3s ease-out both;}
+  .loot-display-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.7rem;width:100%;max-width:900px;align-items:stretch;}
+  .loot-card{background:rgba(20,15,5,0.95);border:1px solid rgba(201,168,76,0.25);border-radius:5px;padding:.6rem .5rem;display:flex;flex-direction:column;align-items:center;gap:.3rem;cursor:pointer;transition:border-color .15s,background .15s;animation:lootIn .3s ease-out both;align-self:stretch;}
   .loot-card:hover{border-color:var(--gold);background:rgba(40,30,10,0.98);}
   .loot-card-icon{width:40px;height:40px;border-radius:3px;border:1px solid rgba(201,168,76,0.2);}
   .loot-card-name{font-family:'Cinzel',serif;font-size:.58rem;color:#c590ff;text-align:center;line-height:1.35;letter-spacing:.02em;}
@@ -2933,7 +2933,7 @@ function startLootDisplayFromArchive(runKey){
         ${icon}
         <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
         <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;margin-top:.2rem;font-family:'Cinzel',serif;">${winner}</div>
-        <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:.2rem;">${(a.currentBid||0).toLocaleString()}g</div>
+        <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;margin-top:auto;padding-top:.4rem;">${(a.currentBid||0).toLocaleString()}g</div>
       </a>`;
     }).join('');
     const overlay=document.createElement('div');

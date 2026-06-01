@@ -1647,6 +1647,7 @@ function renderMain(){
     if(tab==='active') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
+    else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
   }
 
   let content='';

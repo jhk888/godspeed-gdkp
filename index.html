@@ -3295,6 +3295,12 @@ if (_savedUser) {
 // Always init hover regardless of login state
 initPanelHover();
 // Draggable + resizable loot tracker — set once at page load
+// Reset tracker position in case it was dragged off-screen in a previous session
+(function(){
+  const t=document.getElementById('loot-tracker');
+  if(t){t.style.left='';t.style.top='';t.style.transform='';t.style.width='';}
+})();
+
 if(!window._trackerDragSet){
   window._trackerDragSet=true;
   let _tdrag=null,_tresize=null;
@@ -3326,7 +3332,7 @@ if(!window._trackerDragSet){
     if(!_tdrag)return;
     const t=document.getElementById('loot-tracker');if(!t)return;
     t.style.left=Math.max(0,Math.min(window.innerWidth-t.offsetWidth,e.clientX-_tdrag.x))+'px';
-    t.style.top=Math.max(0,Math.min(window.innerHeight-40,e.clientY-_tdrag.y))+'px';
+    t.style.top=Math.max(40,Math.min(window.innerHeight-80,e.clientY-_tdrag.y))+'px';
   });
   document.addEventListener('mouseup',()=>{_tdrag=null;_tresize=null;});
 }

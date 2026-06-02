@@ -1627,7 +1627,9 @@ function renderHdr(){
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
     const seen={};
+    console.log('[presence] presenceData keys:',Object.keys(presenceData||{}).length,'data:',JSON.stringify(presenceData).slice(0,200));
     Object.values(presenceData||{}).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
+    console.log('[presence] seen names:',Object.keys(seen));
     onlineCount.textContent=Object.keys(seen).length+' Online';
     onlineEl.style.display='flex';
   }
@@ -2839,7 +2841,8 @@ function startPresence(){
 }
 
 function writePresence(){
-  if(!user||!runId) return;
+  console.log('[presence] writePresence called — user:',user,'runId:',runId);
+  if(!user||!runId){console.log('[presence] aborted — missing user or runId');return;}
   set(presenceRef(), {
     name: user,
     avatar: discordUser?.avatar || null,

@@ -271,6 +271,12 @@
   * {scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.25) rgba(10,8,5,0.5);}
   .cat-row-scroll > div{flex-shrink:0;width:340px;}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:1rem;margin-bottom:1.75rem;}
+  .card-check{position:absolute;top:.6rem;left:.6rem;width:22px;height:22px;border-radius:4px;border:2px solid rgba(201,168,76,0.45);background:rgba(14,12,9,0.85);cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:.8rem;font-weight:700;transition:all .12s;}
+  .card-check:hover{border-color:var(--gold);background:rgba(40,30,12,0.9);}
+  .card-check.checked{background:var(--gold);color:var(--bg-deep);border-color:var(--gold);}
+  .card-wrap.card-selected>*:not(.card-check){outline:2px solid var(--gold);outline-offset:-1px;border-radius:8px;}
+  .bulk-bar{display:flex;align-items:center;gap:.6rem;padding:.5rem .75rem;margin-bottom:.75rem;background:rgba(20,15,5,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:6px;flex-wrap:wrap;}
+  .bulk-bar .card-check{position:static;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
   .card.leading{border-color:rgba(212,169,60,0.7);}
@@ -2374,10 +2380,111 @@ function renderCategoryRows(list,mode){
   return rows.join('');
 }
 
+function toggleSelect(evt,id,mode){
+  evt.stopPropagation();
+  const list=currentModeList(mode);
+  const ids=list.map(a=>a.id);
+  if(evt.shiftKey&&lastSelectedId&&lastSelectedMode===mode){
+    const a=ids.indexOf(lastSelectedId),b=ids.indexOf(id);
+    if(a>=0&&b>=0){const[lo,hi]=[Math.min(a,b),Math.max(a,b)];for(let i=lo;i<=hi;i++)selectedItems.add(ids[i]);}
+  } else {
+    if(selectedItems.has(id))selectedItems.delete(id);else selectedItems.add(id);
+  }
+  lastSelectedId=id;lastSelectedMode=mode;
+  renderMain();
+}
+
+function toggleSelectAll(mode){
+  const list=currentModeList(mode);
+  const ids=list.map(a=>a.id);
+  const allSelected=ids.length>0&&ids.every(id=>selectedItems.has(id));
+  if(allSelected)ids.forEach(id=>selectedItems.delete(id));
+  else ids.forEach(id=>selectedItems.add(id));
+  renderMain();
+}
+
+function clearSelection(){selectedItems.clear();lastSelectedId=null;renderMain();}
+
+function currentModeList(mode){
+  const all=auctionList();
+  if(mode==='open')return all.filter(a=>a.status==='open');
+  if(mode==='queued')return all.filter(a=>a.status==='queued');
+  if(mode==='sold')return all.filter(a=>a.status==='sold');
+  if(mode==='expired')return all.filter(a=>a.status==='expired');
+  return [];
+}
+
+function selectedList(){return auctionList().filter(a=>selectedItems.has(a.id));}
+
+function bulkRestart(){
+  const items=selectedList().filter(a=>a.status==='expired');
+  items.forEach(a=>restartAuction(a.id,true));
+  clearSelection();
+  toast(`Restarted ${items.length} item${items.length!==1?'s':''}`);
+}
+
+function bulkStart(){
+  const items=selectedList().filter(a=>a.status==='queued');
+  items.forEach(a=>startOne(a.id,true));
+  clearSelection();
+  toast(`Started ${items.length} item${items.length!==1?'s':''}`);
+}
+
+function bulkPause(){
+  const items=selectedList().filter(a=>a.status==='open');
+  items.forEach(a=>{if(!a.paused)togglePause(a.id);});
+  clearSelection();
+}
+
+function bulkClose(){
+  const items=selectedList().filter(a=>a.status==='open');
+  wowConfirm(`Close ${items.length} live auction${items.length!==1?'s':''}? Items with bids will be sold to the current winner.`,()=>{
+    items.forEach(a=>closeAuction(a.id,true));
+    clearSelection();
+  });
+}
+
+function bulkRemove(mode){
+  const items=selectedList();
+  wowConfirm(`Remove ${items.length} item${items.length!==1?'s':''}? This cannot be undone.`,()=>{
+    const updates={};
+    items.forEach(a=>{updates[`auctions/${a.id}`]=null;});
+    update(runRef(),updates);
+    clearSelection();
+    toast(`Removed ${items.length} item${items.length!==1?'s':''}`);
+  });
+}
+
 function renderGrid(list,mode){
   if(!list.length){const msgs={open:'No live auctions',queued:'Queue is empty',sold:'No items sold yet',expired:'No expired items'};return`<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">${msgs[mode]||'Nothing here'}</div></div>`;}
   const draggable=mode==='queued'&&isRL;
-  return`<div class="grid">${list.map(a=>`<div ${draggable?`draggable="true" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" style="${draggable?'cursor:grab;':''}">${renderCard(a,mode)}</div>`).join('')}</div>`;
+  const bulkBar=isRL?renderBulkBar(list,mode):'';
+  return bulkBar+`<div class="grid">${list.map(a=>{
+    const checked=selectedItems.has(a.id);
+    const checkbox=isRL?`<div class="card-check ${checked?'checked':''}" onclick="toggleSelect(event,'${a.id}','${mode}')" title="Select">${checked?'✓':''}</div>`:'';
+    return`<div ${draggable?`draggable="true" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="${draggable?'cursor:grab;':''}position:relative;">${checkbox}${renderCard(a,mode)}</div>`;
+  }).join('')}</div>`;
+}
+
+function renderBulkBar(list,mode){
+  const ids=list.map(a=>a.id);
+  const selectedInMode=ids.filter(id=>selectedItems.has(id));
+  const allSelected=ids.length>0&&selectedInMode.length===ids.length;
+  const n=selectedInMode.length;
+  let actions='';
+  if(n>0){
+    if(mode==='expired')actions=`<button class="btn btn-green btn-sm" onclick="bulkRestart()">&#9654; Restart ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='queued')actions=`<button class="btn btn-green btn-sm" onclick="bulkStart()">&#9654; Start ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='sold')actions=`<button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkClose()">Close ${n}</button>`;
+  }
+  return`<div class="bulk-bar">
+    <div class="card-check bulk-all ${allSelected?'checked':''}" onclick="toggleSelectAll('${mode}')" title="Select all">${allSelected?'✓':''}</div>
+    <span style="font-size:.7rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${n>0?`${n} selected`:'Select all'}</span>
+    <div style="flex:1;"></div>
+    ${actions}
+    ${n>0?`<button class="btn btn-outline btn-sm" onclick="clearSelection()">Clear</button>`:''}
+  </div>`;
 }
 
 function renderCard(a,mode){
@@ -3137,6 +3244,9 @@ let banList={};
 let crossRunCache=null;
 let crossRunFetching=false;
 let activeCategory='all';
+let selectedItems=new Set();
+let lastSelectedId=null;
+let lastSelectedMode=null;
 let raidCategories=['Tier','Physical','Caster/Healer','Other'];
 let editingTitle=false;
 
@@ -3617,7 +3727,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

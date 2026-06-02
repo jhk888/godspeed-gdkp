@@ -1373,7 +1373,7 @@ function refreshDropdown(){
       counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
     ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
     return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});">
-      <span data-wowhead="item=${item.id}&domain=tbc" style="display:inline-block;line-height:0;">${getIconImg(item.id, item.icon)}</span>
+      <a href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1" style="display:inline-block;line-height:0;">${getIconImg(item.id, item.icon)}</a>
       <div style="flex:1;min-width:0;">
         <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1">${item.name}</a>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>

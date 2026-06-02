@@ -802,7 +802,7 @@ function runRef(p=''){return ref(db,`runs/${runId}${p}`);}
 function auditLog(type,data){
   if(!runId)return;
   try{
-    const entry=push(ref(db,`runs/${runId}/audit`));
+    const entry=push(ref(db,`audit/${runId}`));
     set(entry,{ts:Date.now(),type,actor:user||'unknown',...data}).catch(()=>{});
   }catch(e){}
 }

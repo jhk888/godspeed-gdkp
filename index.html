@@ -361,7 +361,7 @@
   .badge-queued{background:rgba(212,169,60,0.08);color:var(--text-muted);border:1px solid var(--border-gold);}
   .badge-paused{background:rgba(240,168,48,0.15);color:var(--amber);border:1px solid rgba(240,168,48,0.45);}
   .badge-expired{background:rgba(255,96,96,0.12);color:var(--red);border:1px solid rgba(255,96,96,0.4);}
-  .timer-row{display:flex;align-items:center;gap:.5rem;}
+  .timer-row{display:flex;align-items:center;gap:.5rem;padding-right:4rem;}
   .timer{font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);letter-spacing:.05em;}
   .timer-bar{flex:1;height:4px;background:rgba(212,169,60,0.18);border-radius:2px;overflow:hidden;}
   .timer-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .9s linear;}
@@ -826,21 +826,35 @@ async function fetchIcon(itemId){
   }catch(e){}
   return null;
 }
+let _refreshT=null;
+function refreshWowheadLinks(){
+  if(_refreshT)clearTimeout(_refreshT);
+  _refreshT=setTimeout(()=>{
+    if(window.$WowheadPower&&window.$WowheadPower.refreshLinks){
+      try{window.$WowheadPower.refreshLinks();}catch(e){}
+    }
+  },60);
+}
+
+function _normName(s){return (s||'').toLowerCase().replace(/[''`]/g,"'").replace(/\s+/g,' ').trim();}
 function backfillItemIds(){
   if(!isRL||!runId)return;
   const byName={};
-  SSC_TK_ITEMS.forEach(i=>{byName[i.n.toLowerCase()]=i.id;});
+  SSC_TK_ITEMS.forEach(i=>{byName[_normName(i.n)]=i.id;});
   const updates={};
+  let matched=0,unmatched=[];
   auctionList().forEach(a=>{
     if(!a.itemId&&a.name){
-      const id=byName[a.name.toLowerCase().trim()];
-      if(id){updates[`auctions/${a.id}/itemId`]=id;}
+      const id=byName[_normName(a.name)];
+      if(id){updates[`auctions/${a.id}/itemId`]=id;matched++;}
+      else unmatched.push(a.name);
     }
   });
   if(Object.keys(updates).length){
     update(runRef(),updates);
-    console.log('[backfill] patched',Object.keys(updates).length,'item IDs');
   }
+  if(unmatched.length)console.log('[backfill] no DB match for:',unmatched);
+  console.log('[backfill] matched',matched,'items');
 }
 
 function retryMissingIcons(){
@@ -1173,7 +1187,7 @@ var SSC_TK_ITEMS=[
   {id:32373,n:"Helm of the Illidari Shatterer",q:"epic",s:"Head"},
   {id:32235,n:"Cursed Vision of Sargeras",q:"epic",s:"Head"},
   {id:32374,n:"Zhar'doom, Greatstaff of the Devourer",q:"epic",s:"Two-Hand"},
-  {id:32375,n:"Bulwark of Azzinoth",q:"epic",s:"Off Hand"},
+  {id:32375,n:"Bulwark of Azzinoth",q:"epic",s:"Off Hand"},{id:32837,n:"Warglaive of Azzinoth",q:"legendary",s:"Main Hand"},{id:32838,n:"Warglaive of Azzinoth (Off Hand)",q:"legendary",s:"One-Hand"},
   {id:32471,n:"Shard of Azzinoth",q:"epic",s:"One-Hand"},
   {id:32336,n:"Black Bow of the Betrayer",q:"epic",s:"Ranged"},
   {id:32500,n:"Crystal Spire of Karabor",q:"epic",s:"One-Hand"},
@@ -1259,7 +1273,36 @@ var SSC_TK_ITEMS=[
   {id:30018,n:"Lord Sanguinar's Claim",q:"epic",s:"Neck"},
   {id:30017,n:"Telonicus's Pendant of Mayhem",q:"epic",s:"Neck"}
 ];
-function searchLocal(q){const ql=q.toLowerCase();return SSC_TK_ITEMS.filter(i=>i.n.toLowerCase().includes(ql)).sort((a,b)=>{const an=a.n.toLowerCase(),bn=b.n.toLowerCase();if(an===ql)return -1;if(bn===ql)return 1;if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return an.localeCompare(bn);}).map(i=>({id:i.id,name:i.n,quality:i.q,icon:null,slot:i.s}));}
+function _lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 99;const d=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);for(let j=0;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));}return d[m][n];}
+function searchLocal(q){
+  const ql=q.toLowerCase().trim();
+  if(!ql)return [];
+  const words=ql.split(/\s+/);
+  const scored=[];
+  SSC_TK_ITEMS.forEach(i=>{
+    const nl=i.n.toLowerCase();
+    let score=0;
+    if(nl===ql)score=1000;
+    else if(nl.includes(ql))score=500-nl.indexOf(ql);
+    else if(nl.startsWith(ql))score=400;
+    else {
+      // All query words must match somewhere in the name (substring or fuzzy)
+      const nameWords=nl.split(/\s+/);
+      let allMatch=true,wordScore=0;
+      for(const w of words){
+        if(w.length<2)continue;
+        if(nl.includes(w)){wordScore+=20;continue;}
+        // fuzzy: does any name word closely match this query word?
+        const close=nameWords.some(nw=>nw.includes(w)||(w.length>=4&&_lev(w,nw.slice(0,w.length+1))<=1));
+        if(close){wordScore+=8;}else{allMatch=false;break;}
+      }
+      if(allMatch&&wordScore>0)score=wordScore;
+    }
+    if(score>0)scored.push({i,score});
+  });
+  scored.sort((a,b)=>b.score-a.score||a.i.n.localeCompare(b.i.n));
+  return scored.map(s=>({id:s.i.id,name:s.i.n,quality:s.i.q,icon:null,slot:s.i.s}));
+}
 
 async function searchWowhead(query){
   if(!query||query.length<2){searchResults=[];isSearching=false;refreshDropdown();return;}
@@ -2020,7 +2063,7 @@ function renderMain(){
     ${tab!=='splits'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
-  if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  refreshWowheadLinks();
   setTimeout(retryMissingIcons,800);setTimeout(retryMissingIcons,2000);
   renderLootTracker();
   // Restore archive display if it was open when tab was closed
@@ -2580,7 +2623,7 @@ function renderCard(a,mode){
       ${rlX}
     </div>`;
   }).join('');
-  const iconHTML=a.itemIcon&&a.itemId
+  const iconHTML=a.itemId
     ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank">${getIconImg(a.itemId,a.itemIcon,56)}</a>`
     :a.itemIcon
     ?`${getIconImg(null,a.itemIcon,56)}`

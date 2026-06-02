@@ -736,6 +736,24 @@ function toast(msg){
     setTimeout(()=>el.classList.remove('hide'),200);
   },1400);
 }
+let _undoT=null;
+function toastUndo(msg,undoFn){
+  const el=document.getElementById('toast');
+  el.innerHTML='';
+  const span=document.createElement('span');span.textContent=msg;
+  const btn=document.createElement('button');
+  btn.textContent='Undo';
+  btn.style.cssText='margin-left:1rem;background:var(--gold);color:var(--bg-deep);border:none;border-radius:3px;padding:.2rem .7rem;font-family:Cinzel,serif;font-weight:600;cursor:pointer;font-size:.75rem;';
+  btn.onclick=()=>{clearTimeout(_undoT);clearTimeout(toastT);el.classList.remove('show');el.classList.add('hide');setTimeout(()=>{el.classList.remove('hide');el.textContent='';},200);undoFn();};
+  el.appendChild(span);el.appendChild(btn);
+  el.classList.remove('hide');el.classList.add('show');
+  clearTimeout(toastT);clearTimeout(_undoT);
+  // Longer window for undo
+  _undoT=setTimeout(()=>{
+    el.classList.remove('show');el.classList.add('hide');
+    setTimeout(()=>{el.classList.remove('hide');el.textContent='';},200);
+  },6000);
+}
 
 function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=false,input=null,suppressKey=null,onConfirm}){
   if(suppressKey&&_suppressedDialogs[suppressKey]){onConfirm();return;}
@@ -781,6 +799,13 @@ function auctionList(){return Object.values(auctions||{});}
 function pot(){return auctionList().filter(a=>a.status==='sold').reduce((s,a)=>s+(a.currentBid||0),0);}
 function raiderCount(){const n=new Set(auctionList().flatMap(a=>Object.values(a.bids||{}).map(b=>b.bidder)));if(user)n.add(user);return Math.max(n.size,1);}
 function runRef(p=''){return ref(db,`runs/${runId}${p}`);}
+function auditLog(type,data){
+  if(!runId)return;
+  try{
+    const entry=push(ref(db,`runs/${runId}/audit`));
+    set(entry,{ts:Date.now(),type,actor:user||'unknown',...data}).catch(()=>{});
+  }catch(e){}
+}
 function iconUrl(icon){return icon?`https://wow.zamimg.com/images/wow/icons/medium/${icon}.jpg`:''}
 // Icon cache — fetched from Wowhead media API
 const _iconCache={};
@@ -1419,7 +1444,7 @@ function startTick(){
       if(r===0&&isRL){
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         if(bids.length>0){
-          update(runRef(`/auctions/${a.id}`),{status:'sold',remaining:0});
+          update(runRef(`/auctions/${a.id}`),{status:'sold',remaining:0});auditLog('sold',{auctionId:a.id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'timer'});
           toast(a.name+' sold to '+bids[0].bidder+' for '+(a.currentBid||0).toLocaleString()+'g');
         } else {
           update(runRef(`/auctions/${a.id}`),{status:'expired',remaining:0});
@@ -2552,22 +2577,34 @@ function bulkClose(){
   });
 }
 
+let _lastRemoved=null;
 function bulkRemove(mode){
   const items=selectedList();
   const cnt=items.length;
   wowConfirm({
     title:'Remove Items?',
-    msg:`Remove ${cnt} item${cnt!==1?'s':''}? This cannot be undone.`,
+    msg:`Remove ${cnt} item${cnt!==1?'s':''}?`,
     confirmLabel:'Remove',
     danger:true,
     onConfirm:()=>{
+      // Snapshot for undo
+      _lastRemoved=items.map(a=>({...a}));
       const updates={};
       items.forEach(a=>{updates[`auctions/${a.id}`]=null;});
       update(runRef(),updates);
+      auditLog('bulk_remove',{count:cnt,items:items.map(a=>a.name)});
       clearSelection();
-      toast(`Removed ${cnt} item${cnt!==1?'s':''}`);
+      toastUndo(`Removed ${cnt} item${cnt!==1?'s':''}`,undoBulkRemove);
     }
   });
+}
+function undoBulkRemove(){
+  if(!_lastRemoved||!_lastRemoved.length)return;
+  const updates={};
+  _lastRemoved.forEach(a=>{updates[`auctions/${a.id}`]=a;});
+  update(runRef(),updates);
+  toast(`Restored ${_lastRemoved.length} item${_lastRemoved.length!==1?'s':''}`);
+  _lastRemoved=null;
 }
 
 function renderGrid(list,mode){
@@ -2869,7 +2906,7 @@ function coinExplosion(auctionId, goldAmount, preRect){
   coinExplosionAt(goldAmount, rect);
 }
 
-function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
+function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});auditLog('sold',{auctionId:id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'manual'});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
 function restartFromSold(id){
   const a=auctions[id];if(!a||!isRL)return;
   const sb=a.startBid||a.currentBid||1000;
@@ -2965,7 +3002,7 @@ function spawnCoin(e){
     },i*60);
   }
 }
-function submitBid(id,val,_evt){const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);toast('Bid placed: '+val.toLocaleString()+'g');}
+function submitBid(id,val,_evt){const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){searchResults=[];const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}// Show local results immediately
 const local=searchLocal(val);console.log('[search] query:',val,'local results:',local.length,local.map(i=>i.name));searchResults=local;isSearching=false;refreshDropdown();
@@ -3859,7 +3896,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,undoBulkRemove,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

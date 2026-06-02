@@ -2448,6 +2448,11 @@ function renderCategoryRows(list,mode){
   if(!list.length)return`<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">No live auctions</div></div>`;
   const catOrder=['Tier','Physical','Caster/Healer','Other'];
   const catLabelClass={'Tier':'cat-row-tier','Physical':'cat-row-physical','Caster/Healer':'cat-row-caster','Other':'cat-row-other'};
+  const cardWrap=(a)=>{
+    const checked=selectedItems.has(a.id);
+    const checkbox=isRL?`<div class="card-check ${checked?'checked':''}" onclick="toggleSelect(event,'${a.id}','${mode}')" title="Select">${checked?'✓':''}</div>`:'';
+    return`<div id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="position:relative;">${checkbox}${renderCard(a,mode)}</div>`;
+  };
   // Group by category
   const groups={};
   list.forEach(a=>{
@@ -2459,7 +2464,7 @@ function renderCategoryRows(list,mode){
   const rows=catOrder.filter(c=>groups[c]?.length).map(cat=>{
     const items=groups[cat];
     const cls=catLabelClass[cat]||'cat-row-other';
-    const cards=items.map(a=>`<div id="wrap-${a.id}">${renderCard(a,mode)}</div>`).join('');
+    const cards=items.map(cardWrap).join('');
     return`<div class="cat-row">
       <div class="cat-row-label ${cls}">${cat}</div>
       <div class="cat-row-scroll">${cards}</div>
@@ -2467,13 +2472,14 @@ function renderCategoryRows(list,mode){
   });
   // Any uncategorized categories not in catOrder
   Object.keys(groups).filter(c=>!catOrder.includes(c)).forEach(cat=>{
-    const cards=groups[cat].map(a=>`<div id="wrap-${a.id}">${renderCard(a,mode)}</div>`).join('');
+    const cards=groups[cat].map(cardWrap).join('');
     rows.push(`<div class="cat-row">
       <div class="cat-row-label cat-row-other">${cat}</div>
       <div class="cat-row-scroll">${cards}</div>
     </div>`);
   });
-  return rows.join('');
+  const bulkBar=isRL?renderBulkBar(list,mode):'';
+  return bulkBar+rows.join('');
 }
 
 function toggleSelect(evt,id,mode){

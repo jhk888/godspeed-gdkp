@@ -2438,20 +2438,33 @@ function bulkPause(){
 
 function bulkClose(){
   const items=selectedList().filter(a=>a.status==='open');
-  wowConfirm(`Close ${items.length} live auction${items.length!==1?'s':''}? Items with bids will be sold to the current winner.`,()=>{
-    items.forEach(a=>closeAuction(a.id,true));
-    clearSelection();
+  wowConfirm({
+    title:'Close Auctions?',
+    msg:`Close ${items.length} live auction${items.length!==1?'s':''}? Items with bids will be sold to the current winner.`,
+    confirmLabel:'Close',
+    danger:true,
+    onConfirm:()=>{
+      items.forEach(a=>closeAuction(a.id,true));
+      clearSelection();
+    }
   });
 }
 
 function bulkRemove(mode){
   const items=selectedList();
-  wowConfirm(`Remove ${items.length} item${items.length!==1?'s':''}? This cannot be undone.`,()=>{
-    const updates={};
-    items.forEach(a=>{updates[`auctions/${a.id}`]=null;});
-    update(runRef(),updates);
-    clearSelection();
-    toast(`Removed ${items.length} item${items.length!==1?'s':''}`);
+  const cnt=items.length;
+  wowConfirm({
+    title:'Remove Items?',
+    msg:`Remove ${cnt} item${cnt!==1?'s':''}? This cannot be undone.`,
+    confirmLabel:'Remove',
+    danger:true,
+    onConfirm:()=>{
+      const updates={};
+      items.forEach(a=>{updates[`auctions/${a.id}`]=null;});
+      update(runRef(),updates);
+      clearSelection();
+      toast(`Removed ${cnt} item${cnt!==1?'s':''}`);
+    }
   });
 }
 

@@ -446,7 +446,7 @@
   .toast.show{animation:toastIn .18s ease-out forwards;}
   .toast.hide{animation:toastOut .18s ease-in forwards;}
   .three-col{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
-  .rl-controls{margin-top:.2rem;}
+  .rl-controls{margin-top:.2rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;}
   .search-wrap{position:relative;}
   .search-preview{display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:rgba(201,168,76,0.06);border:1px solid var(--border-gold);border-radius:3px;margin-top:.3rem;}
   .search-preview img{width:24px;height:24px;border-radius:2px;}
@@ -4120,6 +4120,20 @@ if(!window._trackerDragSet){
   });
   document.addEventListener('mouseup',()=>{_tdrag=null;_tresize=null;});
 }
+// Scroll wheel on number inputs without requiring focus first
+document.addEventListener('wheel',e=>{
+  const el=e.target.closest('input[type="number"]');
+  if(!el)return;
+  e.preventDefault();
+  const step=parseFloat(el.step)||1;
+  const min=el.min!==''?parseFloat(el.min):-Infinity;
+  const max=el.max!==''?parseFloat(el.max):Infinity;
+  const curr=parseFloat(el.value)||0;
+  const next=e.deltaY<0?Math.min(max,curr+step):Math.max(min,curr-step);
+  el.value=next;
+  el.dispatchEvent(new Event('input',{bubbles:true}));
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+},{passive:false});
 </script>
 </body>
 </html>

@@ -578,7 +578,7 @@
   .wow-dialog-input{width:100%;background:rgba(0,0,0,0.5);border:1px solid #6b4f1a;border-radius:3px;color:#f0d878;font-family:'Cinzel',serif;font-size:.95rem;padding:.6rem .8rem;margin-bottom:1.2rem;outline:none;text-align:center;box-sizing:border-box;}
   .wow-dialog-input:focus{border-color:#c8a030;box-shadow:0 0 0 2px rgba(200,160,48,0.2);}
   .wow-dialog-btns{display:flex;gap:.7rem;justify-content:center;}
-  .wow-dialog-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+  .wow-dialog-btn:focus,.wow-dialog-btn:focus-visible{outline:3px solid #fff;outline-offset:3px;box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold);transform:translateY(-1px) scale(1.04);}
   .wow-dialog-btn{
     font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
     padding:.6rem 1.6rem;cursor:pointer;border-radius:2px;
@@ -835,14 +835,26 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
   };
   if(inp)inp.onkeydown=e=>{if(e.key==='Enter')confirmBtn.click();};
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
+  const cancelBtn=document.getElementById('wow-cancel');
+  // Focusable elements in the dialog, in tab order
+  const focusables=[cancelBtn,confirmBtn,inp].filter(Boolean);
   const _keyHandler=e=>{
     if(e.key==='Escape'){close();document.removeEventListener('keydown',_keyHandler);}
     // Enter confirms — unless focus is in the number input (handled above)
     else if(e.key==='Enter'&&document.activeElement!==inp){e.preventDefault();confirmBtn.click();document.removeEventListener('keydown',_keyHandler);}
+    // Trap Tab inside the dialog so focus never escapes to the page
+    else if(e.key==='Tab'){
+      e.preventDefault();
+      const cur=focusables.indexOf(document.activeElement);
+      let next;
+      if(e.shiftKey)next=cur<=0?focusables.length-1:cur-1;
+      else next=cur>=focusables.length-1?0:cur+1;
+      focusables[next].focus();
+    }
   };
   document.addEventListener('keydown',_keyHandler);
   const _origClose=close;
-  document.getElementById('wow-cancel').onclick=()=>{document.removeEventListener('keydown',_keyHandler);_origClose();};
+  cancelBtn.onclick=()=>{document.removeEventListener('keydown',_keyHandler);_origClose();};
 }
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
 function auctionList(){return Object.values(auctions||{});}

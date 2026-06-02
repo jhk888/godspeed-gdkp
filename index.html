@@ -578,6 +578,7 @@
   .wow-dialog-input{width:100%;background:rgba(0,0,0,0.5);border:1px solid #6b4f1a;border-radius:3px;color:#f0d878;font-family:'Cinzel',serif;font-size:.95rem;padding:.6rem .8rem;margin-bottom:1.2rem;outline:none;text-align:center;box-sizing:border-box;}
   .wow-dialog-input:focus{border-color:#c8a030;box-shadow:0 0 0 2px rgba(200,160,48,0.2);}
   .wow-dialog-btns{display:flex;gap:.7rem;justify-content:center;}
+  .wow-dialog-btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
   .wow-dialog-btn{
     font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;
     padding:.6rem 1.6rem;cursor:pointer;border-radius:2px;
@@ -816,10 +817,15 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
     </div>`;
   document.body.appendChild(overlay);
   const inp=document.getElementById('wow-dialog-input');
-  if(inp)setTimeout(()=>inp.focus(),50);
+  const confirmBtn=document.getElementById('wow-confirm');
+  // Focus reliably after the browser paints the dialog
+  requestAnimationFrame(()=>{requestAnimationFrame(()=>{
+    if(inp)inp.focus();
+    else confirmBtn.focus();
+  });});
   const close=()=>overlay.remove();
   document.getElementById('wow-cancel').onclick=close;
-  document.getElementById('wow-confirm').onclick=()=>{
+  confirmBtn.onclick=()=>{
     if(suppressKey&&document.getElementById('wow-suppress')?.checked){_suppressedDialogs[suppressKey]=true;_saveSuppress();}
     if(input&&inp){
       const val=parseInt(inp.value);
@@ -827,12 +833,16 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       close();onConfirm(val);
     }else{close();onConfirm();}
   };
-  if(inp)inp.onkeydown=e=>{if(e.key==='Enter')document.getElementById('wow-confirm').click();};
+  if(inp)inp.onkeydown=e=>{if(e.key==='Enter')confirmBtn.click();};
   overlay.addEventListener('click',e=>{if(e.target===overlay)close();});
-  const _escHandler=e=>{if(e.key==='Escape'){close();document.removeEventListener('keydown',_escHandler);}};
-  document.addEventListener('keydown',_escHandler);
+  const _keyHandler=e=>{
+    if(e.key==='Escape'){close();document.removeEventListener('keydown',_keyHandler);}
+    // Enter confirms — unless focus is in the number input (handled above)
+    else if(e.key==='Enter'&&document.activeElement!==inp){e.preventDefault();confirmBtn.click();document.removeEventListener('keydown',_keyHandler);}
+  };
+  document.addEventListener('keydown',_keyHandler);
   const _origClose=close;
-  document.getElementById('wow-cancel').onclick=()=>{document.removeEventListener('keydown',_escHandler);_origClose();};
+  document.getElementById('wow-cancel').onclick=()=>{document.removeEventListener('keydown',_keyHandler);_origClose();};
 }
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
 function auctionList(){return Object.values(auctions||{});}
@@ -2108,7 +2118,7 @@ function renderMain(){
 
   let secActions='';
   if(isRL&&tab!=='splits'){
-    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';secActions=`<div class="rl-controls">${_pauseAllBtn}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;}
+    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';const _cancelAllBtn=_live.length?`<button class="btn btn-danger btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="cancelAll()">Cancel All</button>`:'';secActions=`<div class="rl-controls">${_pauseAllBtn}${_cancelAllBtn}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;}
     else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
@@ -2899,6 +2909,30 @@ function startOne(id){
   toast(a.name+' started!');tab='active';
 }
 function startAll(){const now=Date.now();auctionList().filter(a=>a.status==='queued').forEach(a=>{update(runRef(`/auctions/${a.id}`),{status:'open',paused:false,endsAt:now+a.duration*1000,remaining:a.duration});});toast('All auctions started!');tab='active';}
+function cancelAll(){
+  const live=auctionList().filter(a=>a.status==='open');
+  if(!live.length)return;
+  wowConfirm({
+    title:'Cancel All Auctions?',
+    msg:`Return all ${live.length} live auction${live.length!==1?'s':''} to the queue and clear their bids? This cannot be undone.`,
+    confirmLabel:'Cancel All',
+    danger:true,
+    onConfirm:()=>{
+      const updates={};
+      live.forEach(a=>{
+        updates[`auctions/${a.id}/status`]='queued';
+        updates[`auctions/${a.id}/paused`]=false;
+        updates[`auctions/${a.id}/endsAt`]=null;
+        updates[`auctions/${a.id}/remaining`]=a.duration||120;
+        updates[`auctions/${a.id}/bids`]={};
+      });
+      update(runRef(),updates);
+      auditLog('cancel_all',{count:live.length,items:live.map(a=>a.name)});
+      tab='queued';
+      toast(`Cancelled ${live.length} auction${live.length!==1?'s':''} — returned to queue`);
+    }
+  });
+}
 function togglePauseAll(){
   const live=auctionList().filter(a=>a.status==='open');
   if(!live.length)return;
@@ -3991,7 +4025,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,cancelAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

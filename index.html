@@ -787,11 +787,21 @@ const _iconCache={};
 async function fetchIcon(itemId){
   if(!itemId||_iconCache[itemId]!==undefined) return _iconCache[itemId]||null;
   _iconCache[itemId]=null;
+  // First try Wowhead's in-page data (populated by power.js when tooltips load)
+  try{
+    if(window.WH&&window.WH.Wow&&window.WH.Wow.Item){
+      const it=window.WH.Wow.Item.getItem?window.WH.Wow.Item.getItem(itemId):null;
+      if(it&&it.icon){_iconCache[itemId]=it.icon;return it.icon;}
+    }
+    if(window.g_items&&window.g_items[itemId]&&window.g_items[itemId].icon){
+      _iconCache[itemId]=window.g_items[itemId].icon;return window.g_items[itemId].icon;
+    }
+  }catch(e){}
+  // Fallback to tooltip JSON endpoint
   try{
     const res=await fetch(`https://nether.wowhead.com/tbc/tooltip/item/${itemId}`);
     if(res.ok){
       const text=await res.text();
-      // Icon name is in the JSON as "icon":"iconname"
       const m=text.match(/"icon":"([^"]+)"/);
       if(m){
         _iconCache[itemId]=m[1];
@@ -816,6 +826,28 @@ async function fetchIcon(itemId){
   }catch(e){}
   return null;
 }
+function retryMissingIcons(){
+  // After Wowhead power.js loads item data, fill in any placeholder icons
+  document.querySelectorAll('[class*="icon-ic"]').forEach(el=>{
+    const cls=[...el.classList].find(c=>c.startsWith('icon-ic'));
+    if(!cls)return;
+    const itemId=cls.replace('icon-ic','');
+    let icon=null;
+    try{
+      if(window.WH&&window.WH.Wow&&window.WH.Wow.Item&&window.WH.Wow.Item.getItem){
+        const it=window.WH.Wow.Item.getItem(parseInt(itemId));
+        if(it&&it.icon)icon=it.icon;
+      }
+      if(!icon&&window.g_items&&window.g_items[itemId]&&window.g_items[itemId].icon)icon=window.g_items[itemId].icon;
+    }catch(e){}
+    if(icon){
+      _iconCache[itemId]=icon;
+      const s=el.style.width||'24px';
+      el.outerHTML=`<img src="${iconUrl(icon)}" style="width:${s};height:${s};border-radius:2px;flex-shrink:0;" />`;
+    }
+  });
+}
+
 function getIconImg(itemId,icon,size=24){
   if(icon) return `<img src="${iconUrl(icon)}" style="width:${size}px;height:${size}px;border-radius:2px;flex-shrink:0;" onerror="this.style.display='none'" />`;
   if(!itemId) return `<div style="width:${size}px;height:${size}px;border-radius:2px;background:var(--bg-input);flex-shrink:0;"></div>`;
@@ -900,7 +932,7 @@ var SSC_TK_ITEMS=[
   {id:28612,n:"Pauldrons of the Solace-Giver",q:"epic",s:"Shoulder"},
   {id:29757,n:"Gloves of the Fallen Champion",q:"epic",s:"Hands"},{id:29755,n:"Chestguard of the Fallen Hero",q:"epic",s:"Chest"},{id:29754,n:"Chestguard of the Fallen Champion",q:"epic",s:"Chest"},{id:29753,n:"Chestguard of the Fallen Defender",q:"epic",s:"Chest"},
   {id:29758,n:"Gloves of the Fallen Defender",q:"epic",s:"Hands"},
-  {id:29756,n:"Gloves of the Fallen Defender",q:"epic",s:"Hands"},
+  {id:29756,n:"Gloves of the Fallen Hero",q:"epic",s:"Hands"},
   {id:28728,n:"Aran's Soothing Sapphire",q:"epic",s:"Off Hand"},
   {id:28675,n:"Shermanar Great-Ring",q:"epic",s:"Finger"},
   {id:28672,n:"Drape of the Dark Reavers",q:"epic",s:"Back"},
@@ -1971,6 +2003,7 @@ function renderMain(){
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+  setTimeout(retryMissingIcons,800);setTimeout(retryMissingIcons,2000);
   renderLootTracker();
   // Restore archive display if it was open when tab was closed
   if(!window._archiveRestored){
@@ -3746,7 +3779,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

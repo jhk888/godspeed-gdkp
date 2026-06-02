@@ -1181,7 +1181,12 @@ var SSC_TK_ITEMS=[
   {id:34345,n:"Crown of Anasterian",q:"epic",s:"Head"},
   {id:34344,n:"Handguards of Defiled Worlds",q:"epic",s:"Hands"},
   {id:34242,n:"Tattered Cape of Antonidas",q:"epic",s:"Back"},
-  {id:34244,n:"Duplicitous Guise",q:"epic",s:"Head"}
+  {id:34244,n:"Duplicitous Guise",q:"epic",s:"Head"},
+  {id:32405,n:"Verdant Sphere",q:"epic",s:"Quest"},
+  {id:30007,n:"The Darkener's Grasp",q:"epic",s:"Neck"},
+  {id:30015,n:"The Sun King's Talisman",q:"epic",s:"Neck"},
+  {id:30018,n:"Lord Sanguinar's Claim",q:"epic",s:"Neck"},
+  {id:30017,n:"Telonicus's Pendant of Mayhem",q:"epic",s:"Neck"}
 ];
 function searchLocal(q){const ql=q.toLowerCase();return SSC_TK_ITEMS.filter(i=>i.n.toLowerCase().includes(ql)).sort((a,b)=>{const an=a.n.toLowerCase(),bn=b.n.toLowerCase();if(an===ql)return -1;if(bn===ql)return 1;if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return an.localeCompare(bn);}).map(i=>({id:i.id,name:i.n,quality:i.q,icon:null,slot:i.s}));}
 

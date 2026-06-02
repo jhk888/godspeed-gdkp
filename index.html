@@ -372,8 +372,8 @@
   .hist-row{display:flex;justify-content:space-between;}
   .you-bid{color:var(--green);}
   .empty{text-align:center;padding:3rem 1rem;color:var(--text-muted);border:1px dashed var(--border-gold);border-radius:4px;background:rgba(30,26,16,0.75);font-size:1rem;}
-  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:flex;align-items:center;justify-content:center;z-index:50;}
-  .modal{background:#161310;border:1px solid var(--border-gold-strong);border-radius:4px;padding:1.5rem 1.75rem;width:560px;display:flex;flex-direction:column;gap:.85rem;max-height:90vh;overflow-y:auto;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);display:flex;align-items:flex-start;justify-content:center;z-index:50;overflow-y:auto;padding:2.5vh 0;}
+  .modal{background:#161310;border:1px solid var(--border-gold-strong);border-radius:4px;padding:1.5rem 1.75rem;width:560px;display:flex;flex-direction:column;gap:.85rem;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;}
   .modal-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
   .q-row{display:flex;gap:.5rem;}
   .q-btn-base{flex:1;padding:.55rem .4rem;border:2px solid #444;background:#1a1a1a;color:#888;cursor:pointer;border-radius:4px;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.06em;font-weight:500;}
@@ -422,7 +422,7 @@
   .search-preview-name.common{color:var(--text-bright) !important;}
   .search-preview-clear{margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:.75rem;background:none;border:none;font-family:'Cinzel',serif;letter-spacing:.05em;}
   .search-preview-clear:hover{color:var(--red);}
-  .dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:3px;z-index:300;max-height:320px;overflow-y:auto;margin-top:2px;box-shadow:0 4px 16px rgba(0,0,0,0.7);}
+  .dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:3px;z-index:300;max-height:320px;overflow-y:auto;overscroll-behavior:contain;margin-top:2px;box-shadow:0 4px 16px rgba(0,0,0,0.7);}
   .dropdown-item{display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;cursor:pointer;transition:background .1s;outline:none;}
   .dropdown-item:hover,.dropdown-item:focus{background:rgba(201,168,76,0.15);outline:none;}
   .dropdown-item img{width:24px;height:24px;border-radius:2px;flex-shrink:0;}

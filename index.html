@@ -2154,7 +2154,8 @@ function renderLootTracker(){
   const all=auctionList();
   // Always show tracker when logged in — hide only on mobile via CSS
   tracker.classList.add('visible');
-  const cats=['All',...new Set(all.map(a=>a.category||'Other'))];
+  const _catOrder=['Tier','Physical','Caster/Healer','Other'];
+  const cats=['All',...[...new Set(all.map(a=>a.category||'Other'))].sort((a,b)=>{ const ai=_catOrder.indexOf(a),bi=_catOrder.indexOf(b); return (ai===-1?99:ai)-(bi===-1?99:bi); })];
   const sel=window._trackerCatFilter||'All';
   const filtered=sel==='All'?all:all.filter(a=>(a.category||'Other')===sel);
   const sorted=filtered.slice().sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});

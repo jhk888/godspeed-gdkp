@@ -826,6 +826,22 @@ async function fetchIcon(itemId){
   }catch(e){}
   return null;
 }
+function backfillItemIds(){
+  if(!isRL||!runId)return;
+  const byName={};
+  SSC_TK_ITEMS.forEach(i=>{byName[i.n.toLowerCase()]=i.id;});
+  const updates={};
+  auctionList().forEach(a=>{
+    if(!a.itemId&&a.name){
+      const id=byName[a.name.toLowerCase().trim()];
+      if(id){updates[`auctions/${a.id}/itemId`]=id;}
+    }
+  });
+  if(Object.keys(updates).length){
+    update(runRef(),updates);
+  }
+}
+
 function retryMissingIcons(){
   // After Wowhead power.js loads item data, fill in any placeholder icons
   document.querySelectorAll('[class*="icon-ic"]').forEach(el=>{
@@ -2008,6 +2024,7 @@ function renderMain(){
   // Restore archive display if it was open when tab was closed
   if(!window._archiveRestored){
     window._archiveRestored=true;
+    setTimeout(backfillItemIds,1000);
     const _archiveKey=localStorage.getItem('gdkp_archive_display');
     if(_archiveKey&&isRL&&!lootDisplayMode){
       setTimeout(()=>{if(isRL&&!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
@@ -3779,7 +3796,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

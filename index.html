@@ -1289,8 +1289,10 @@ function startTick(){
       const fe=document.getElementById('tfill-'+a.id),te=document.getElementById('ttext-'+a.id);
       if(fe){fe.style.width=pct+'%';fe.style.background=urgent?'#e26060':'#c9a84c';}
       if(te){te.textContent=fmtTime(r);te.style.color=urgent?'var(--red)':'var(--text-muted)';}
-      // 10s warning sound
-      if(r===10&&!soundMuted){
+      // 10s warning — only for users involved in this auction
+      const _activeBids=Object.values(a.bids||{}).filter(b=>!b.retracted);
+      const _userInvolved=_activeBids.some(b=>b.bidder===user);
+      if(r===10&&!soundMuted&&_userInvolved){
         try{
           const ctx=new(window.AudioContext||window.webkitAudioContext)();
           const now=ctx.currentTime;
@@ -1408,6 +1410,19 @@ function subscribeToRun(){
           }
           // currentBid changed without new bids = retraction updated price
           if(prev&&a.currentBid!==prev.currentBid&&newBidCount===prevBidCount) bidOnlyUpdate=false;
+        }
+        // Item goes live — play a bell sound for everyone
+        if(a.status==='open'&&prevAuctions[id]?.status==='queued'&&!soundMuted){
+          try{
+            const ctx=new(window.AudioContext||window.webkitAudioContext)();
+            const t=ctx.currentTime;
+            const o=ctx.createOscillator(),g=ctx.createGain();
+            o.connect(g);g.connect(ctx.destination);
+            o.type='sine';o.frequency.setValueAtTime(660,t);
+            o.frequency.exponentialRampToValueAtTime(880,t+0.08);
+            g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.6);
+            o.start(t);o.stop(t+0.6);
+          }catch(e){}
         }
         if(a.status==='sold'&&prevAuctions[id]?.status==='open'){
           const card=document.getElementById('card-'+id);
@@ -2073,7 +2088,7 @@ function initPanelHover(){
   const panel=document.getElementById('side-panel');
   if(!zone||!panel)return;
   const doOpen=()=>{clearTimeout(_panelHoverT);_panelHoverT=setTimeout(openPanel,120);};
-  const doClose=()=>{_panelHoverT=setTimeout(closePanel,400);};
+  const doClose=()=>{_panelHoverT=setTimeout(()=>{if(!document.hidden)closePanel();},400);};
   zone.addEventListener('mouseenter',doOpen);
   zone.addEventListener('mouseleave',()=>clearTimeout(_panelHoverT));
   panel.addEventListener('mouseenter',()=>clearTimeout(_panelHoverT));
@@ -2447,7 +2462,7 @@ function renderCard(a,mode){
       badge=topBtns;
       rlControls=bottomBtns;
     }
-    else if(mode==='queued')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
+    else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartFromSold('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
   }

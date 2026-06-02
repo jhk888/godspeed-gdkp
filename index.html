@@ -839,6 +839,7 @@ function backfillItemIds(){
   });
   if(Object.keys(updates).length){
     update(runRef(),updates);
+    console.log('[backfill] patched',Object.keys(updates).length,'item IDs');
   }
 }
 
@@ -1410,6 +1411,7 @@ function subscribeToRun(){
     auctions=data.auctions||{};
     presenceData=data.presence||{};
     updateOnlineCounter();
+    if(isRL&&!window._backfillDone){window._backfillDone=true;setTimeout(backfillItemIds,1200);}
     if(data.settings){
       raidSettings={...raidSettings,...data.settings};
       if(data.settings.categories) raidCategories=data.settings.categories;
@@ -2024,7 +2026,6 @@ function renderMain(){
   // Restore archive display if it was open when tab was closed
   if(!window._archiveRestored){
     window._archiveRestored=true;
-    setTimeout(backfillItemIds,1000);
     const _archiveKey=localStorage.getItem('gdkp_archive_display');
     if(_archiveKey&&isRL&&!lootDisplayMode){
       setTimeout(()=>{if(isRL&&!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);

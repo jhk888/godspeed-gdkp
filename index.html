@@ -13,6 +13,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
 <title>Godspeed GDKP</title>
 <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Godspeed GDKP" />
+<meta name="mobile-web-app-capable" content="yes" />
+<link rel="manifest" href="./manifest.json" />
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600&family=Cinzel+Decorative:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
 <script>const whTooltips={colorLinks:true,iconizeLinks:false,renameLinks:false,iconSize:'medium'};</script>
 <script src="https://wow.zamimg.com/widgets/power.js"></script>
@@ -230,6 +238,16 @@
     /* Tooltip — full width on mobile */
     .member-tooltip{position:fixed !important;left:8px !important;right:8px !important;width:auto !important;max-width:none !important;}
     .online-tooltip{position:fixed !important;left:8px !important;right:8px !important;top:auto !important;bottom:80px !important;width:auto !important;max-width:none !important;}
+
+    /* Hide loot tracker entirely on mobile, even when toggled visible */
+    .loot-tracker,.loot-tracker.visible{display:none !important;}
+
+    /* Tooltip — don't scale up on mobile (would overflow); allow full width */
+    .wowhead-tooltip{transform:none !important;max-width:calc(100vw - 16px) !important;}
+
+    /* Bigger touch targets for bidding */
+    .bid-quick-btn,.bid-main-btn{min-height:44px;}
+    .card-check{width:26px;height:26px;}
 
     /* FAB */
     .fab{display:flex;bottom:56px;}

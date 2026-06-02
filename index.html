@@ -313,7 +313,7 @@
   .member-chip{position:relative;}
   .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
   .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
-  .item-header{display:flex;align-items:center;gap:.75rem;padding-right:7rem;}
+  .item-header{display:flex;align-items:center;gap:.75rem;padding-right:8.5rem;}
   .item-icon{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.35);flex-shrink:0;object-fit:cover;}
   .item-icon-placeholder{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.2);background:var(--bg-input);flex-shrink:0;}
   .item-name{font-family:'Cinzel',serif;font-size:1.05rem;font-weight:500;}
@@ -875,9 +875,9 @@ var SSC_TK_ITEMS=[
   {id:28631,n:"Dragon-Quake Shoulderguards",q:"epic",s:"Shoulder"},
   {id:28621,n:"Wrynn Dynasty Greaves",q:"epic",s:"Legs"},
   {id:28612,n:"Pauldrons of the Solace-Giver",q:"epic",s:"Shoulder"},
-  {id:29757,n:"Gloves of the Fallen Champion",q:"epic",s:"Hands"},
+  {id:29757,n:"Gloves of the Fallen Champion",q:"epic",s:"Hands"},{id:29755,n:"Chestguard of the Fallen Hero",q:"epic",s:"Chest"},{id:29754,n:"Chestguard of the Fallen Champion",q:"epic",s:"Chest"},{id:29753,n:"Chestguard of the Fallen Defender",q:"epic",s:"Chest"},
   {id:29758,n:"Gloves of the Fallen Defender",q:"epic",s:"Hands"},
-  {id:29756,n:"Gloves of the Fallen Hero",q:"epic",s:"Hands"},
+  {id:29756,n:"Gloves of the Fallen Defender",q:"epic",s:"Hands"},
   {id:28728,n:"Aran's Soothing Sapphire",q:"epic",s:"Off Hand"},
   {id:28675,n:"Shermanar Great-Ring",q:"epic",s:"Finger"},
   {id:28672,n:"Drape of the Dark Reavers",q:"epic",s:"Back"},
@@ -941,7 +941,6 @@ var SSC_TK_ITEMS=[
   {id:28827,n:"Gauntlets of the Dragonslayer",q:"epic",s:"Hands"},
   {id:28828,n:"Gronn-Stitched Girdle",q:"epic",s:"Waist"},
   {id:28830,n:"Dragonspine Trophy",q:"epic",s:"Trinket"},
-  {id:29755,n:"Chest of the Fallen Hero",q:"epic",s:"Chest"},
   {id:28774,n:"Glaive of the Pit",q:"epic",s:"Two-Hand"},
   {id:28775,n:"Thundering Greathelm",q:"epic",s:"Head"},
   {id:28776,n:"Liar's Tongue Gloves",q:"epic",s:"Hands"},
@@ -2435,7 +2434,7 @@ function renderCard(a,mode){
     if(mode==='open'){
       const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
         <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
-        <div style="display:flex;flex-direction:column;gap:.25rem;margin-top:1.4rem;align-items:flex-end;">
+        <div style="display:flex;flex-direction:column;gap:.25rem;margin-top:2rem;align-items:flex-end;">
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
         </div>

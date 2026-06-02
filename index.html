@@ -1703,33 +1703,24 @@ function showOnlineTooltip(e){
         const h=hist?.[m.name];
         const histSpend=h?.totalSpent||0;
         const histItems=h?.itemsWon||0;
-        const histRuns=h?.runCount||0;
         const allTimeItems=(h?.items||[]).sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5);
-        return`<div style="padding:.45rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem;">
+        const hasThisRun=curSpend>0;
+        const hasHistory=histItems>0;
+        return`<div style="padding:.4rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
+          <div style="display:flex;align-items:center;gap:.5rem;">
             <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
             <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
+            ${hasThisRun?`<span style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);font-weight:600;">${curSpend.toLocaleString()}g</span>`:''}
           </div>
-          <div style="padding-left:1rem;display:flex;flex-direction:column;gap:.22rem;">
-            <div style="font-size:.7rem;">
-              <span style="color:var(--gold-light);">This run</span>
-              ${curSpend>0
-                ?`<span style="color:var(--gold);font-weight:600;"> ${curSpend.toLocaleString()}g</span><span style="color:var(--text-muted);"> · ${curItems.length} item${curItems.length!==1?'s':''}</span>`
-                :`<span style="color:var(--text-muted);"> — nothing yet</span>`}
-            </div>
-            ${curItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.2);">
-              ${curItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
-            </div>`:''}
-            ${histItems>0?`<div style="font-size:.7rem;margin-top:.1rem;">
-              <span style="color:var(--gold-light);">All time</span>
-              <span style="color:var(--gold);font-weight:600;"> ${histSpend.toLocaleString()}g</span>
-              <span style="color:var(--text-muted);"> · ${histItems} item${histItems!==1?'s':''} · ${histRuns} run${histRuns!==1?'s':''}</span>
-            </div>
-            ${allTimeItems.length>0?`<div style="display:flex;flex-direction:column;gap:.15rem;padding-left:.5rem;border-left:2px solid rgba(201,168,76,0.12);">
+          ${hasThisRun?`<div style="display:flex;flex-direction:column;gap:.12rem;padding-left:1.2rem;margin-top:.25rem;border-left:2px solid rgba(201,168,76,0.2);margin-left:.35rem;">
+            ${curItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
+          </div>`:''}
+          ${hasHistory?`<div style="padding-left:1.2rem;margin-top:${hasThisRun?'.3rem':'.2rem'};font-size:.68rem;color:var(--text-muted);">
+            <span style="color:var(--gold);font-weight:600;">${histSpend.toLocaleString()}g</span> · ${histItems} item${histItems!==1?'s':''}
+            ${allTimeItems.length>0&&!hasThisRun?`<div style="display:flex;flex-direction:column;gap:.1rem;margin-top:.2rem;border-left:2px solid rgba(201,168,76,0.12);padding-left:.5rem;">
               ${allTimeItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
             </div>`:''}
-            `:''}
-          </div>
+          </div>`:''}
         </div>`;
       }).join('');
     if(window.$WowheadPower) window.$WowheadPower.refreshLinks();

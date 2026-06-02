@@ -1084,10 +1084,10 @@ var SSC_TK_ITEMS=[
   {id:30627,n:"Tsunami Talisman",q:"epic",s:"Trinket"},
   {id:30096,n:"Girdle of the Invulnerable",q:"epic",s:"Waist"},
   {id:30097,n:"Coral-barbed Shoulderpads",q:"epic",s:"Shoulder"},
-  {id:30098,n:"Leggings of the Vanquished Champion",q:"epic",s:"Legs"},
-  {id:30099,n:"Leggings of the Vanquished Defender",q:"epic",s:"Legs"},
+  {id:30245,n:"Leggings of the Vanquished Champion",q:"epic",s:"Legs"},
+  {id:30246,n:"Leggings of the Vanquished Defender",q:"epic",s:"Legs"},
   {id:30100,n:"Soul-strider Boots",q:"epic",s:"Feet"},
-  {id:30101,n:"Leggings of the Vanquished Hero",q:"epic",s:"Legs"},
+  {id:30247,n:"Leggings of the Vanquished Hero",q:"epic",s:"Legs"},
   {id:30239,n:"Gloves of the Vanquished Champion",q:"epic",s:"Hands"},
   {id:30240,n:"Gloves of the Vanquished Defender",q:"epic",s:"Hands"},
   {id:30241,n:"Gloves of the Vanquished Hero",q:"epic",s:"Hands"},
@@ -1097,11 +1097,11 @@ var SSC_TK_ITEMS=[
   {id:30720,n:"Serpent-Coil Braid",q:"epic",s:"Trinket"},
   {id:30109,n:"Ring of Endless Coils",q:"epic",s:"Finger"},
   {id:30143,n:"Fang of the Leviathan",q:"epic",s:"One-Hand"},
-  {id:30136,n:"Helm of the Vanquished Champion",q:"epic",s:"Head"},
-  {id:30137,n:"Helm of the Vanquished Defender",q:"epic",s:"Head"},
-  {id:30138,n:"Helm of the Vanquished Hero",q:"epic",s:"Head"},
+  {id:30242,n:"Helm of the Vanquished Champion",q:"epic",s:"Head"},
+  {id:30243,n:"Helm of the Vanquished Defender",q:"epic",s:"Head"},
+  {id:30244,n:"Helm of the Vanquished Hero",q:"epic",s:"Head"},
   {id:29985,n:"Void Reaver Greaves",q:"epic",s:"Legs"},
-  {id:30248,n:"Pauldrons of the Vanquished Champion",q:"epic",s:"Shoulder"},
+  {id:30236,n:"Chestguard of the Vanquished Champion",q:"epic",s:"Chest"},{id:30238,n:"Chestguard of the Vanquished Hero",q:"epic",s:"Chest"},{id:30237,n:"Chestguard of the Vanquished Defender",q:"epic",s:"Chest"},{id:30248,n:"Pauldrons of the Vanquished Champion",q:"epic",s:"Shoulder"},
   {id:30249,n:"Pauldrons of the Vanquished Defender",q:"epic",s:"Shoulder"},
   {id:30250,n:"Pauldrons of the Vanquished Hero",q:"epic",s:"Shoulder"},
   {id:30446,n:"Solarian's Sapphire",q:"epic",s:"Trinket"},
@@ -1315,10 +1315,6 @@ async function searchWowhead(query){
   // Then fetch network results in background and merge extras
   try{
     let whResults=[];
-    try{
-      const res=await fetch(`https://www.wowhead.com/tbc/search/suggestions-v2?q=${encodeURIComponent(query)}&returntype=item`);
-      if(res.ok){const data=await res.json();whResults=(data.results||[]).map(r=>({id:r.id,name:r.name,quality:['poor','common','uncommon','rare','epic','legendary'][r.quality||0]||'common',icon:r.icon||null,slot:r.typeName||''}));}
-    }catch(e){}
     let workerResults=[];
     try{const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);if(res.ok)workerResults=await res.json();}catch(e){}
     const localIds=new Set(local.map(r=>r.id));
@@ -2624,7 +2620,7 @@ function renderCard(a,mode){
     </div>`;
   }).join('');
   const iconHTML=a.itemId
-    ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank">${getIconImg(a.itemId,a.itemIcon,56)}</a>`
+    ?`<a href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="display:inline-block;line-height:0;">${getIconImg(a.itemId,a.itemIcon,56)}</a>`
     :a.itemIcon
     ?`${getIconImg(null,a.itemIcon,56)}`
     :`<div class="item-icon-placeholder"></div>`;

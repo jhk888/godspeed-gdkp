@@ -1337,6 +1337,7 @@ function subscribeToRun(){
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
     presenceData=data.presence||{};
+    updateOnlineCounter();
     if(data.settings){
       raidSettings={...raidSettings,...data.settings};
       if(data.settings.categories) raidCategories=data.settings.categories;
@@ -1600,6 +1601,19 @@ function render(){
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
 }
 
+function updateOnlineCounter(){
+  const onlineEl=document.getElementById('hdr-online');
+  const onlineCount=document.getElementById('hdr-online-count');
+  if(!onlineEl||!onlineCount||!user) return;
+  const seen={};
+  Object.values(presenceData||{}).forEach(m=>{
+    if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}
+  });
+  const n=Object.keys(seen).length;
+  onlineCount.textContent=n+' Online';
+  onlineEl.style.display='flex';
+}
+
 function renderHdr(){
   // Show audit tab only to RL
   const auditBtn=document.getElementById('panel-tab-audit');
@@ -1622,15 +1636,10 @@ function renderHdr(){
       titleEl.textContent=raidTitle||'Gold DKP Run';
     }
   }
-  // Online count — dedup by name (case-insensitive), always show when logged in
+  // Online count — always show, update via updateOnlineCounter()
   const onlineEl=document.getElementById('hdr-online');
-  const onlineCount=document.getElementById('hdr-online-count');
-  if(onlineEl&&onlineCount&&user){
-    const seen={};
-    Object.values(presenceData||{}).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
-    onlineCount.textContent=Object.keys(seen).length+' Online';
-    onlineEl.style.display='flex';
-  }
+  if(onlineEl&&user) onlineEl.style.display='flex';
+  updateOnlineCounter();
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}

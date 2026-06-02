@@ -1546,6 +1546,7 @@ async function getOrCreateRun(){
   if(keys.length>0){runId=keys[0];}
   else{const nr=push(ref(db,'runs'));runId=nr.key;await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{}});}
   splitsLoaded=false;
+  console.log('[presence] getOrCreateRun complete — runId:',runId);
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
   render();
   // Single global handler for loot display dismiss (set once, never re-added)
@@ -1592,6 +1593,7 @@ function logout(){
 }
 
 function render(){
+  console.log('[presence] render() — user:',user,'runId:',runId);
   if(!user){renderLogin();return;}
   
   renderHdr();renderMain();
@@ -1760,6 +1762,7 @@ function saveRaidTitle(){
 }
 
 function renderLogin(){
+  console.log('[presence] renderLogin called — user:',user,'runId:',runId);
   const hdrUser=document.getElementById('hdr-user');
   if(hdrUser)hdrUser.innerHTML='';
   const main=document.getElementById('main');

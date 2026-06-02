@@ -2034,7 +2034,7 @@ function renderMain(){
 
   let secActions='';
   if(isRL&&tab!=='splits'){
-    if(tab==='active') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
+    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';secActions=`<div class="rl-controls">${_pauseAllBtn}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;}
     else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
     else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
@@ -2806,6 +2806,23 @@ function startOne(id){
   toast(a.name+' started!');tab='active';
 }
 function startAll(){const now=Date.now();auctionList().filter(a=>a.status==='queued').forEach(a=>{update(runRef(`/auctions/${a.id}`),{status:'open',paused:false,endsAt:now+a.duration*1000,remaining:a.duration});});toast('All auctions started!');tab='active';}
+function togglePauseAll(){
+  const live=auctionList().filter(a=>a.status==='open');
+  if(!live.length)return;
+  const anyRunning=live.some(a=>!a.paused);
+  const now=Date.now();
+  const updates={};
+  live.forEach(a=>{
+    if(anyRunning){
+      // Pause all running ones
+      if(!a.paused){updates[`auctions/${a.id}/paused`]=true;updates[`auctions/${a.id}/remaining`]=Math.max(0,Math.floor((a.endsAt-now)/1000));}
+    } else {
+      // Resume all paused ones
+      if(a.paused){updates[`auctions/${a.id}/paused`]=false;updates[`auctions/${a.id}/endsAt`]=now+(a.remaining||0)*1000;}
+    }
+  });
+  if(Object.keys(updates).length){update(runRef(),updates);toast(anyRunning?'All auctions paused':'All auctions resumed');}
+}
 function togglePause(id){const a=auctions[id];if(!a||a.status!=='open')return;if(a.paused){update(runRef(`/auctions/${id}`),{paused:false,endsAt:Date.now()+(a.remaining||0)*1000});toast(a.name+' resumed');}else{update(runRef(`/auctions/${id}`),{paused:true,remaining:Math.max(0,Math.floor((a.endsAt-Date.now())/1000))});toast(a.name+' paused');}}
 function extendTimer(id){const a=auctions[id];if(!a||a.status!=='open')return;if(a.paused){update(runRef(`/auctions/${id}`),{remaining:(a.remaining||0)+30});}else{update(runRef(`/auctions/${id}`),{endsAt:(a.endsAt||Date.now())+30000});}toast('+30s added to '+a.name);}
 function coinExplosionAt(goldAmount, rect){
@@ -3842,7 +3859,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

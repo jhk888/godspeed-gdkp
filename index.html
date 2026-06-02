@@ -1373,7 +1373,7 @@ function refreshDropdown(){
       counts.expired?`<span style="color:var(--red);font-size:.6rem;font-family:'Cinzel',serif;">${counts.expired} exp</span>`:'',
     ].filter(Boolean).join('<span style="color:var(--text-muted);font-size:.6rem;"> · </span>');
     return`<div class="dropdown-item" tabindex="0" onclick="selectItem(${item.id})" onkeydown="if(event.key==='Enter')selectItem(${item.id});">
-      ${getIconImg(item.id, item.icon)}
+      <span data-wowhead="item=${item.id}&domain=tbc" style="display:inline-block;line-height:0;">${getIconImg(item.id, item.icon)}</span>
       <div style="flex:1;min-width:0;">
         <a class="dropdown-item-name ${item.quality||'common'}" href="https://www.wowhead.com/tbc/item=${item.id}" data-wowhead="item=${item.id}&domain=tbc" onclick="return false;" tabindex="-1">${item.name}</a>
         <div style="display:flex;gap:.3rem;align-items:center;margin-top:.1rem;">${badges?badges:`<span style="color:var(--text-muted);font-size:.6rem;">${item.slot||''}</span>`}</div>
@@ -1381,7 +1381,7 @@ function refreshDropdown(){
     </div>`;
   }).join('');
   dd.style.display='block';
-  if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+  refreshWowheadLinks();
 }
 
 function selectItem(id){
@@ -1403,12 +1403,12 @@ function renderSearchPreview(){
   const wrap=document.getElementById('search-preview-wrap');if(!wrap)return;
   if(!selectedItem){wrap.innerHTML='';return;}
   wrap.innerHTML=`<div class="search-preview">
-    ${getIconImg(selectedItem.id, selectedItem.icon, 28)}
+    <a href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank" style="display:inline-block;line-height:0;">${getIconImg(selectedItem.id, selectedItem.icon, 28)}</a>
     <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank">${selectedItem.name}</a>
     <span class="dropdown-item-sub">${selectedItem.slot||''}</span>
     <button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button>
   </div>`;
-  if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+  refreshWowheadLinks();
 }
 
 function clearItemSelection(){selectedItem=null;searchQuery='';const inp=document.getElementById('item-search-input');if(inp){inp.value='';inp.focus();}const wrap=document.getElementById('search-preview-wrap');if(wrap)wrap.innerHTML='';}
@@ -1704,7 +1704,16 @@ async function getOrCreateRun(){
   if(!window._lootDisplayHandlerSet){
     window._lootDisplayHandlerSet=true;
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'&&lootDisplayMode&&isRL) toggleLootDisplay();
+      if(e.key!=='Escape')return;
+      // Priority order: confirm dialog > modal > side panel > loot display
+      const dlg=document.getElementById('wow-dialog-overlay');
+      if(dlg){const c=document.getElementById('wow-cancel');if(c)c.click();else dlg.remove();return;}
+      if(modal){closeModal();return;}
+      if(panelOpen){closePanel();return;}
+      if(lootDisplayMode&&isRL){toggleLootDisplay();return;}
+    });
+    document.addEventListener('keydown',e=>{
+      if(e.key==='Escape'&&lootDisplayMode&&isRL&&!modal&&!panelOpen) toggleLootDisplay();
     });
     document.addEventListener('click',e=>{
       if(lootDisplayMode&&isRL){

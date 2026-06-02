@@ -130,6 +130,17 @@
     .main{padding-left:260px;}
   }
 
+  /* Standard desktop (1920px) — fit 5 auction cards per row */
+  @media(min-width:1101px) and (max-width:2199px){
+    .main{max-width:1860px;}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));}
+  }
+
+  /* Large/ultrawide (2200px+) — cap card width so they don't stretch */
+  @media(min-width:2200px){
+    .grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));}
+  }
+
   /* Narrow desktop / vertical monitor (601px–1100px) */
   @media(min-width:601px) and (max-width:1100px){
     .main{padding-left:260px;}
@@ -259,7 +270,7 @@
   ::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,0.45);}
   * {scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.25) rgba(10,8,5,0.5);}
   .cat-row-scroll > div{flex-shrink:0;width:340px;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1.2rem;margin-bottom:1.75rem;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:1rem;margin-bottom:1.75rem;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
   .card.leading{border-color:rgba(212,169,60,0.7);}

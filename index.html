@@ -297,11 +297,27 @@
   .card-check{position:absolute;top:.6rem;left:.6rem;width:22px;height:22px;border-radius:4px;border:2px solid rgba(201,168,76,0.45);background:rgba(14,12,9,0.85);cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:.8rem;font-weight:700;transition:all .12s;}
   .card-check:hover{border-color:var(--gold);background:rgba(40,30,12,0.9);}
   .card-check.checked{background:var(--gold);color:var(--bg-deep);border-color:var(--gold);}
-  .card-wrap{height:100%;}
+  .card-wrap{height:100%;transition:transform .15s ease,opacity .15s ease;}
+  /* Dragged card — lifted, faded */
+  .card-wrap.dragging{opacity:.35;transform:scale(.96);}
+  .card-wrap.dragging .card{border-color:var(--gold);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+  /* Drop indicators — clear insertion line + shift neighbour aside */
+  .card-wrap.drop-before{transform:translateX(8px);}
+  .card-wrap.drop-after{transform:translateX(-8px);}
+  .card-wrap.drop-before::before,.card-wrap.drop-after::after{
+    content:'';position:absolute;top:6%;bottom:6%;width:4px;border-radius:3px;
+    background:var(--gold);box-shadow:0 0 10px var(--gold);z-index:30;
+    animation:dropPulse .8s ease-in-out infinite;
+  }
+  .card-wrap.drop-before::before{left:-7px;}
+  .card-wrap.drop-after::after{right:-7px;}
+  @keyframes dropPulse{0%,100%{opacity:.6;}50%{opacity:1;}}
   .card-wrap.card-selected>*:not(.card-check){outline:2px solid var(--gold);outline-offset:-1px;border-radius:8px;}
   .bulk-bar{display:flex;align-items:center;gap:.6rem;padding:0 .75rem;height:52px;min-height:52px;margin-bottom:.75rem;background:rgba(20,15,5,0.6);border:1px solid rgba(201,168,76,0.2);border-radius:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;}
   .bulk-bar::-webkit-scrollbar{display:none;}
   .bulk-bar .btn{white-space:nowrap;flex-shrink:0;}
+  .bar-clickable{cursor:pointer;transition:background .15s;}
+  .bar-clickable:hover{background:rgba(201,168,76,0.12);}
   .bulk-bar .card-check{position:static;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;height:100%;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
@@ -2653,7 +2669,7 @@ function renderGrid(list,mode){
   return bulkBar+`<div class="grid">${list.map(a=>{
     const checked=selectedItems.has(a.id);
     const checkbox=isRL?`<div class="card-check ${checked?'checked':''}" onclick="toggleSelect(event,'${a.id}','${mode}')" title="Select">${checked?'✓':''}</div>`:'';
-    return`<div ${draggable?`draggable="true" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="${draggable?'cursor:grab;':(isRL?'cursor:pointer;':'')}position:relative;" onclick="cardClick(event,'${a.id}','${mode}')">${checkbox}${renderCard(a,mode)}</div>`;
+    return`<div ${draggable?`draggable="true" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="${draggable?'cursor:grab;':(isRL?'cursor:pointer;':'')}position:relative;" onclick="cardClick(event,'${a.id}','${mode}')">${checkbox}${renderCard(a,mode)}</div>`;
   }).join('')}</div>`;
 }
 
@@ -2669,12 +2685,13 @@ function renderBulkBar(list,mode){
     else if(mode==='sold')actions=`<button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
     else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkClose()">Close ${n}</button>`;
   }
-  return`<div class="bulk-bar">
-    <div class="card-check bulk-all ${allSelected?'checked':''}" onclick="toggleSelectAll('${mode}')" title="Select all">${allSelected?'✓':''}</div>
+  const soloAction=(n===0); // only "Select all" present → whole bar is clickable
+  return`<div class="bulk-bar${soloAction?' bar-clickable':''}"${soloAction?` onclick="toggleSelectAll('${mode}')"`:''}>
+    <div class="card-check bulk-all ${allSelected?'checked':''}" onclick="event.stopPropagation();toggleSelectAll('${mode}')" title="Select all">${allSelected?'✓':''}</div>
     <span style="font-size:.7rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${n>0?`${n} selected`:'Select all'}</span>
     <div style="flex:1;"></div>
     ${actions}
-    ${n>0?`<button class="btn btn-outline btn-sm" onclick="clearSelection()">Clear</button>`:''}
+    ${n>0?`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();clearSelection()">Clear</button>`:''}
   </div>`;
 }
 
@@ -3880,24 +3897,63 @@ function closeModal(){
   if(wasAdding)tab='queued';
   render();
 }
-let _dragId=null;
-function dragStart(e,id){_dragId=id;e.currentTarget.style.opacity='0.4';e.dataTransfer.effectAllowed='move';}
-function dragOver(e){e.preventDefault();e.dataTransfer.dropEffect='move';e.currentTarget.style.outline='2px solid var(--gold)';}
+let _dragId=null,_dragEl=null;
+function dragStart(e,id){
+  _dragId=id;
+  _dragEl=e.currentTarget;
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',id);}catch(_){}
+  // Lifted look on the dragged card
+  setTimeout(()=>{if(_dragEl)_dragEl.classList.add('dragging');},0);
+}
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  const target=e.currentTarget;
+  if(!target||target===_dragEl)return;
+  // Decide whether to insert before or after based on cursor position
+  const rect=target.getBoundingClientRect();
+  const horizontal=rect.width>rect.height; // grid rows are horizontal
+  const before=horizontal
+    ? (e.clientX < rect.left+rect.width/2)
+    : (e.clientY < rect.top+rect.height/2);
+  // Clear other indicators
+  document.querySelectorAll('.drop-before,.drop-after').forEach(el=>{
+    if(el!==target)el.classList.remove('drop-before','drop-after');
+  });
+  target.classList.toggle('drop-before',before);
+  target.classList.toggle('drop-after',!before);
+}
+function dragLeave(e){
+  // Only clear if actually leaving the element (not entering a child)
+  if(e.currentTarget.contains(e.relatedTarget))return;
+  e.currentTarget.classList.remove('drop-before','drop-after');
+}
 function dragDrop(e,targetId){
   e.preventDefault();
+  const target=e.currentTarget;
+  const insertAfter=target&&target.classList.contains('drop-after');
+  document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
   if(!_dragId||_dragId===targetId)return;
   const queued=auctionList().filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
   const ids=queued.map(a=>a.id);
   const fromIdx=ids.indexOf(_dragId);
-  const toIdx=ids.indexOf(targetId);
+  let toIdx=ids.indexOf(targetId);
   if(fromIdx===-1||toIdx===-1)return;
-  ids.splice(fromIdx,1);ids.splice(toIdx,0,_dragId);
+  ids.splice(fromIdx,1);
+  // Recompute target index after removal
+  toIdx=ids.indexOf(targetId);
+  if(insertAfter)toIdx+=1;
+  ids.splice(toIdx,0,_dragId);
   const updates={};
   ids.forEach((id,i)=>{updates[`auctions/${id}/order`]=i;});
   update(runRef(),updates);
-  e.currentTarget.style.outline='';
 }
-function dragEnd(e){e.currentTarget.style.opacity='';e.currentTarget.style.outline='';_dragId=null;}
+function dragEnd(e){
+  if(_dragEl)_dragEl.classList.remove('dragging');
+  document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
+  _dragId=null;_dragEl=null;
+}
 function setTab(t){tab=t;render();}
 
 document.addEventListener('click',e=>{
@@ -3935,7 +3991,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

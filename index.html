@@ -1546,7 +1546,6 @@ async function getOrCreateRun(){
   if(keys.length>0){runId=keys[0];}
   else{const nr=push(ref(db,'runs'));runId=nr.key;await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{}});}
   splitsLoaded=false;
-  console.log('[presence] getOrCreateRun complete — runId:',runId);
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
   render();
   // Single global handler for loot display dismiss (set once, never re-added)
@@ -1593,7 +1592,6 @@ function logout(){
 }
 
 function render(){
-  console.log('[presence] render() — user:',user,'runId:',runId);
   if(!user){renderLogin();return;}
   
   renderHdr();renderMain();
@@ -1629,9 +1627,7 @@ function renderHdr(){
   const onlineCount=document.getElementById('hdr-online-count');
   if(onlineEl&&onlineCount&&user){
     const seen={};
-    console.log('[presence] presenceData keys:',Object.keys(presenceData||{}).length,'data:',JSON.stringify(presenceData).slice(0,200));
     Object.values(presenceData||{}).forEach(m=>{if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}});
-    console.log('[presence] seen names:',Object.keys(seen));
     onlineCount.textContent=Object.keys(seen).length+' Online';
     onlineEl.style.display='flex';
   }
@@ -1664,7 +1660,7 @@ function showOnlineTooltip(e){
     const k=(m.name||'').toLowerCase();
     if(!byName[k]||m.lastSeen>byName[k].lastSeen) byName[k]=m;
   });
-  const members=Object.values(byName).sort((a,b)=>a.name.localeCompare(b.name));
+  const members=Object.values(byName).filter(m=>m.name).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   if(!members.length)return;
   const tip=document.createElement('div');
   tip.className='online-tooltip member-tooltip';
@@ -1762,7 +1758,6 @@ function saveRaidTitle(){
 }
 
 function renderLogin(){
-  console.log('[presence] renderLogin called — user:',user,'runId:',runId);
   const hdrUser=document.getElementById('hdr-user');
   if(hdrUser)hdrUser.innerHTML='';
   const main=document.getElementById('main');
@@ -2844,8 +2839,7 @@ function startPresence(){
 }
 
 function writePresence(){
-  console.log('[presence] writePresence called — user:',user,'runId:',runId);
-  if(!user||!runId){console.log('[presence] aborted — missing user or runId');return;}
+  if(!user||!runId){return;}
   set(presenceRef(), {
     name: user,
     avatar: discordUser?.avatar || null,

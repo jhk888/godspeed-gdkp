@@ -641,7 +641,7 @@
   .loot-card-winner{font-size:.62rem;color:var(--text-muted);text-align:center;}
   .loot-card-price{font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;}
   .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
-  div[id^='wowhead-tooltip'],div[class*='wowhead']{z-index:100000 !important;}
+  div[id^='wowhead-tooltip'],div[class*='wowhead']{z-index:100000 !important;pointer-events:none !important;}
 </style>
 </head>
 <body>
@@ -926,7 +926,7 @@ function refreshWowheadLinks(){
   },60);
 }
 
-function _normName(s){return (s||'').toLowerCase().replace(/[''`]/g,"'").replace(/\s+/g,' ').trim();}
+function _normName(s){return (s||'').toLowerCase().replace(/[''`'\u2019]/g,'').replace(/-/g,' ').replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim();}
 function backfillItemIds(){
   if(!isRL||!runId)return;
   const byName={};
@@ -1451,12 +1451,12 @@ var SSC_TK_ITEMS=[
 ];
 function _lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 99;const d=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);for(let j=0;j<=n;j++)d[0][j]=j;for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));}return d[m][n];}
 function searchLocal(q){
-  const ql=q.toLowerCase().trim();
+  const ql=_normName(q);
   if(!ql)return [];
   const words=ql.split(/\s+/);
   const scored=[];
   SSC_TK_ITEMS.forEach(i=>{
-    const nl=i.n.toLowerCase();
+    const nl=_normName(i.n);
     let score=0;
     if(nl===ql)score=1000;
     else if(nl.includes(ql))score=500-nl.indexOf(ql);
@@ -1497,7 +1497,7 @@ async function searchWowhead(query){
     const seenNet=new Set();
     const extras=[...whResults,...workerResults].filter(r=>{if(localIds.has(r.id)||seenNet.has(r.id))return false;seenNet.add(r.id);return true;});
     if(searchQuery!==query)return;
-    if(extras.length){const ql=query.toLowerCase();extras.sort((a,b)=>{const an=a.name.toLowerCase(),bn=b.name.toLowerCase();if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return 0;});searchResults=[...local,...extras];refreshDropdown();}
+    if(extras.length){const ql=_normName(query);extras.sort((a,b)=>{const an=_normName(a.name),bn=_normName(b.name);if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return 0;});searchResults=[...local,...extras];refreshDropdown();}
   }catch(e){}
   if(searchQuery===query&&!searchResults.length){isSearching=false;refreshDropdown();}
 }

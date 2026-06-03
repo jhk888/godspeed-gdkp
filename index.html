@@ -2749,7 +2749,7 @@ function renderCard(a,mode){
     :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
-  const itemHeader=`<div class="item-header" style="padding-right:5.5rem;">${iconHTML}<div style="flex:1;min-width:0;">${nameHTML}</div></div>`;
+  const itemHeader=`<div class="item-header" style="padding-left:1.4rem;">${iconHTML}<div style="flex:1;min-width:0;">${nameHTML}</div></div>`;
   let timerSection='';
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';

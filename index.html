@@ -93,8 +93,10 @@
   .btn{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:3px;padding:.6rem 1.2rem;transition:all .15s;}
   .btn-gold{background:var(--gold);color:var(--bg-deep);border:1px solid var(--gold);font-weight:600;}
   .btn-gold:hover{background:var(--gold-light);}
-  .btn-outline{background:transparent;color:var(--gold);border:1px solid var(--border-gold-strong);}
-  .btn-outline:hover{border-color:var(--gold);background:rgba(212,169,60,0.09);}
+  .btn-outline{background:#0e2a3d;color:#7ab8d4;border:1px solid #2a6080;font-weight:600;}
+  .btn-outline:hover{background:#143650;border-color:#3d88aa;color:#a0d4ec;}
+  .btn-clone{background:#1e1535;color:#b08aff;border:1px solid #5a3a99;font-weight:600;}
+  .btn-clone:hover{background:#2a1d4a;border-color:#7a52cc;color:#ccaaff;}
   .btn-green{background:#1a6b30;color:#6aff8a;border:1px solid #2ecc52;font-weight:600;}
   .btn-green:hover{background:#236b33;border-color:#40ff66;}
   .btn-amber{background:#b87010;color:#fff;border:2px solid #e8900a;font-weight:600;letter-spacing:.1em;}
@@ -2884,7 +2886,7 @@ function renderCard(a,mode){
       ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
       : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
     const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;margin-top:.5rem;">
-      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Clone</button>
+      <button class="btn btn-clone btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Clone</button>
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
       <button class="btn btn-danger btn-sm" style="padding:.2rem .55rem;font-size:.65rem;margin-top:.15rem;" onclick="cancelAuction('${a.id}')">Cancel</button>
     </div>`:'' ;
@@ -2926,7 +2928,7 @@ function renderCard(a,mode){
       </div>`;
       rlControls=bottomBtns;
     }
-    else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Clone</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
+    else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;"><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-clone btn-sm" onclick="duplicateItem('${a.id}')">Clone</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartFromSold('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
   }

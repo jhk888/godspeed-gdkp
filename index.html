@@ -1653,10 +1653,11 @@ function subscribeToRun(){
       pendingGlows.concat(pendingExplosions.map(e=>({id:e.id}))).forEach(({id})=>{
         const a=auctions[id];if(!a)return;
         const wrap=document.getElementById('wrap-'+id);
-        if(wrap){
+        const oldCard=document.getElementById('card-'+id);
+        if(wrap&&oldCard){
           const t=document.createElement('div');
           t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='sold'?'sold':'expired');
-          if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
+          if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
         }
       });
       // If item count changed (new item queued), re-render the grid area only
@@ -1696,10 +1697,11 @@ function subscribeToRun(){
         pendingGlows.forEach(({id})=>{
           const a=auctions[id];if(!a)return;
           const wrap=document.getElementById('wrap-'+id);
-          if(wrap){
+          const oldCard=document.getElementById('card-'+id);
+          if(wrap&&oldCard){
             const t=document.createElement('div');
             t.innerHTML=renderCard(a,'open');
-            wrap.replaceChild(t.firstElementChild,wrap.firstElementChild);
+            if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
           }
         });
         renderHdr();

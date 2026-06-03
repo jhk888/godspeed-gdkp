@@ -2749,7 +2749,7 @@ function renderCard(a,mode){
     :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
-  const itemHeader=`<div class="item-header" style="flex-direction:column;padding-right:5.5rem;gap:.3rem;"><div style="display:flex;align-items:flex-start;gap:.75rem;">${iconHTML}<div style="flex:1;min-width:0;">${nameHTML}</div></div>${(catBadge||a.slot)?`<div style="display:flex;align-items:center;gap:.35rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}</div>`:''}</div>`;
+  const itemHeader=`<div class="item-header" style="padding-right:5.5rem;">${iconHTML}<div style="flex:1;min-width:0;">${nameHTML}</div></div>`;
   let timerSection='';
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';
@@ -2826,7 +2826,8 @@ function renderCard(a,mode){
     else if(mode==='expired')badge=`<div class="badge badge-expired">Expired</div>`;
     else badge=`<div class="badge badge-sold">Sold</div>`;
   }
-  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  const slotBadgeRow=(catBadge||a.slot)?`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}</div>`:'';
+  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}<div style="margin-top:auto;">${slotBadgeRow}${bidSection}</div>${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────

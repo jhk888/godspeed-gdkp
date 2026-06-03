@@ -1448,6 +1448,14 @@ function refreshDropdown(){
   refreshWowheadLinks();
 }
 
+function searchKeydown(e){
+  if(e.key==='Escape'){const d=document.getElementById('item-dropdown');if(d)d.style.display='none';return;}
+  // Tab or Enter selects the top suggestion when the dropdown has results
+  if((e.key==='Tab'||e.key==='Enter')&&searchResults.length&&!selectedItem){
+    e.preventDefault();
+    selectItem(searchResults[0].id);
+  }
+}
 function selectItem(id){
   const item=searchResults.find(r=>r.id===id);if(!item)return;
   selectedItem=item;modalQuality=(['epic','rare','uncommon'].includes(item.quality))?item.quality:'epic';
@@ -2040,7 +2048,7 @@ function buildModal(title,a,fn){
         <input type="text" id="item-search-input" placeholder="e.g. Warglaive of Azzinoth..." autocomplete="off"
           value="${isEdit?a.name:''}"
           oninput="onSearchInput(this.value)"
-          onkeydown="if(event.key==='Escape'){const d=document.getElementById('item-dropdown');if(d)d.style.display='none';}" />
+          onkeydown="searchKeydown(event)" />
         <div id="item-dropdown" class="dropdown" style="display:none;"></div>
       </div>
       <div id="search-preview-wrap">${isEdit?`<div class="search-preview"><span class="search-preview-name ${a.quality||'common'}">${a.name}</span><span class="dropdown-item-sub">${a.slot||''}</span><button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button></div>`:''}</div>
@@ -4036,7 +4044,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,selectItem,searchKeydown,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

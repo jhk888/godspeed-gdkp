@@ -1467,10 +1467,10 @@ function renderSearchPreview(){
   const wrap=document.getElementById('search-preview-wrap');if(!wrap)return;
   if(!selectedItem){wrap.innerHTML='';return;}
   wrap.innerHTML=`<div class="search-preview">
-    <a href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank" style="display:inline-block;line-height:0;">${getIconImg(selectedItem.id, selectedItem.icon, 28)}</a>
-    <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank">${selectedItem.name}</a>
+    <a href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank" tabindex="-1" style="display:inline-block;line-height:0;">${getIconImg(selectedItem.id, selectedItem.icon, 28)}</a>
+    <a class="search-preview-name ${selectedItem.quality||'common'}" href="https://www.wowhead.com/tbc/item=${selectedItem.id}" data-wowhead="item=${selectedItem.id}&domain=tbc" target="_blank" tabindex="-1">${selectedItem.name}</a>
     <span class="dropdown-item-sub">${selectedItem.slot||''}</span>
-    <button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button>
+    <button class="search-preview-clear" tabindex="-1" onclick="clearItemSelection()">&#x2715; Clear</button>
   </div>`;
   refreshWowheadLinks();
 }
@@ -3112,26 +3112,12 @@ let _searchFocusIdx=-1;
 function handleSearchKeydown(e){
   const dd=document.getElementById('item-dropdown');
   const items=dd?Array.from(dd.querySelectorAll('.dropdown-item')):[];
+  const open=dd&&dd.style.display!=='none'&&items.length;
   if(e.key==='Escape'){if(dd)dd.style.display='none';_searchFocusIdx=-1;return;}
-  if((e.key==='Tab'||e.key==='ArrowDown')&&items.length&&dd&&dd.style.display!=='none'){
-    e.preventDefault();
-    _searchFocusIdx=(_searchFocusIdx+1)%items.length;
-    items[_searchFocusIdx].focus();
-    return;
-  }
-  if(e.key==='ArrowUp'&&items.length&&dd&&dd.style.display!=='none'){
-    e.preventDefault();
-    _searchFocusIdx=(_searchFocusIdx-1+items.length)%items.length;
-    items[_searchFocusIdx].focus();
-    return;
-  }
-  if(e.key==='Enter'&&searchResults.length&&dd&&dd.style.display!=='none'){
-    e.preventDefault();
-    const idx=_searchFocusIdx>=0?_searchFocusIdx:0;
-    if(searchResults[idx])selectItem(searchResults[idx].id);
-    _searchFocusIdx=-1;
-    return;
-  }
+  if(e.key==='Tab'&&open){if(e.shiftKey)return;e.preventDefault();selectItem(searchResults[0].id);_searchFocusIdx=-1;return;}
+  if(e.key==='ArrowDown'&&open){e.preventDefault();_searchFocusIdx=0;items[0].focus();return;}
+  if(e.key==='ArrowUp'&&open){e.preventDefault();_searchFocusIdx=items.length-1;items[_searchFocusIdx].focus();return;}
+  if(e.key==='Enter'&&open){e.preventDefault();const idx=_searchFocusIdx>=0?_searchFocusIdx:0;if(searchResults[idx])selectItem(searchResults[idx].id);_searchFocusIdx=-1;return;}
 }
 function handleDropdownItemKey(e,id){
   const dd=document.getElementById('item-dropdown');
@@ -3139,7 +3125,8 @@ function handleDropdownItemKey(e,id){
   const inp=document.getElementById('item-search-input');
   if(e.key==='Enter'||e.key===' '){e.preventDefault();selectItem(id);_searchFocusIdx=-1;return;}
   if(e.key==='Escape'){if(dd)dd.style.display='none';_searchFocusIdx=-1;if(inp)inp.focus();return;}
-  if(e.key==='Tab'||e.key==='ArrowDown'){
+  if(e.key==='Tab'){e.preventDefault();if(e.shiftKey){if(_searchFocusIdx<=0){_searchFocusIdx=-1;if(inp)inp.focus();return;}_searchFocusIdx--;items[_searchFocusIdx].focus();}else{selectItem(id);_searchFocusIdx=-1;}return;}
+  if(e.key==='ArrowDown'){
     e.preventDefault();
     _searchFocusIdx=(_searchFocusIdx+1)%items.length;
     items[_searchFocusIdx].focus();

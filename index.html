@@ -785,13 +785,15 @@ function toastUndo(msg,undoFn){
   const btn=document.createElement('button');
   btn.textContent='Undo';
   btn.style.cssText='margin-left:1rem;background:var(--gold);color:var(--bg-deep);border:none;border-radius:3px;padding:.2rem .7rem;font-family:Cinzel,serif;font-weight:600;cursor:pointer;font-size:.75rem;';
-  btn.onclick=()=>{clearTimeout(_undoT);clearTimeout(toastT);el.classList.remove('show');el.classList.add('hide');setTimeout(()=>{el.classList.remove('hide');el.textContent='';},200);undoFn();};
+  btn.onclick=()=>{clearTimeout(_undoT);clearTimeout(toastT);el.classList.remove('show');el.classList.add('hide');el.style.pointerEvents='';setTimeout(()=>{el.classList.remove('hide');el.textContent='';},200);undoFn();};
   el.appendChild(span);el.appendChild(btn);
+  el.style.pointerEvents='auto';
   el.classList.remove('hide');el.classList.add('show');
   clearTimeout(toastT);clearTimeout(_undoT);
   // Longer window for undo
   _undoT=setTimeout(()=>{
     el.classList.remove('show');el.classList.add('hide');
+    el.style.pointerEvents='';
     setTimeout(()=>{el.classList.remove('hide');el.textContent='';},200);
   },6000);
 }
@@ -3726,12 +3728,13 @@ async function deleteRun(runKey){
   const el=document.getElementById('toast');
   if(el){
     el.innerHTML=`Run deleted. <button onclick="undoDeleteRun()" style="background:none;border:1px solid var(--gold);color:var(--gold);cursor:pointer;font-family:'Cinzel',serif;font-size:.7rem;padding:.1rem .4rem;border-radius:3px;margin-left:.5rem;">Undo</button>`;
+    el.style.pointerEvents='auto';
     el.classList.add('show');
   }
   _deleteUndoTimer=setTimeout(()=>{
     _pendingDeleteRun=null;
     const el=document.getElementById('toast');
-    if(el){el.classList.remove('show');el.textContent='';}
+    if(el){el.classList.remove('show');el.style.pointerEvents='';el.textContent='';}
   }, 10000);
 }
 

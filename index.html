@@ -1124,7 +1124,7 @@ var SSC_TK_ITEMS=[
   {id:28778,n:"Terror Pit Girdle",q:"epic",s:"Waist"},
   {id:28779,n:"Girdle of the Endless Pit",q:"epic",s:"Waist"},
   {id:28780,n:"Soul-Eater's Handwraps",q:"epic",s:"Hands"},
-  {id:28782,n:"Crystalheart Pulse-Staff",q:"epic",s:"Two-Hand"},{id:32385,n:"Magtheridon's Head",q:"epic",s:"Quest"},{id:28792,n:"Ring of the Recalcitrant",q:"epic",s:"Finger"},{id:28793,n:"Ring of Chaos Unfettered",q:"epic",s:"Finger"},{id:28790,n:"Ring of the Stalwart Protector",q:"epic",s:"Finger"},{id:28791,n:"Ancestral Ring of Conquest",q:"epic",s:"Finger"},
+  {id:28782,n:"Crystalheart Pulse-Staff",q:"epic",s:"Two-Hand"},{id:32385,n:"Magtheridon's Head",q:"epic",s:"Quest"},{id:28792,n:"A'dal's Signet of Defense",q:"epic",s:"Finger"},{id:28793,n:"Band of Crimson Fury",q:"epic",s:"Finger"},{id:28790,n:"Naaru Lightwarden's Band",q:"epic",s:"Finger"},{id:28791,n:"Ring of the Recalcitrant",q:"epic",s:"Finger"},
   {id:28789,n:"Eye of Magtheridon",q:"epic",s:"Trinket"},
   {id:29458,n:"Aegis of the Vindicator",q:"epic",s:"Off Hand"},
   {id:33327,n:"Mask of Introspection",q:"epic",s:"Head"},
@@ -1537,11 +1537,16 @@ function refreshDropdown(){
 
 function selectItem(id){
   const item=searchResults.find(r=>r.id===id);if(!item)return;
+  // If Wowhead returned a bad slot, fall back to our local DB
+  const BAD_SLOTS=new Set(['non-equippable','nonequippable','','undefined','null']);
+  if(!item.slot||BAD_SLOTS.has(item.slot.toLowerCase())){
+    const local=SSC_TK_ITEMS.find(i=>i.id===id);
+    if(local)item.slot=local.s;
+  }
   selectedItem=item;modalQuality=(['epic','rare','uncommon'].includes(item.quality))?item.quality:'epic';
   searchQuery=item.name;searchResults=[];
   const inp=document.getElementById('item-search-input');if(inp)inp.value=item.name;
   const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';
-  const slotInp=document.getElementById('m-slot');if(slotInp&&item.slot)slotInp.value=item.slot;
   renderSearchPreview();
   ['epic','rare','uncommon'].forEach(x=>{
     const b=document.getElementById('q-'+x);if(!b)return;
@@ -2135,7 +2140,6 @@ function buildModal(title,a,fn){
       </div>
       <div id="search-preview-wrap">${isEdit?`<div class="search-preview"><span class="search-preview-name ${a.quality||'common'}">${a.name}</span><span class="dropdown-item-sub">${a.slot||''}</span><button class="search-preview-clear" onclick="clearItemSelection()">&#x2715; Clear</button></div>`:''}</div>
     </div>
-    <div class="fg"><div class="lbl">Slot / type</div><input type="text" id="m-slot" value="${a?a.slot:''}" placeholder="One-Hand Sword" /></div>
     <div class="fg"><div class="lbl">Quality</div><div class="q-row">${qRowHTML(isEdit?a.quality:modalQuality)}</div></div>
     <div class="modal-divider"></div>
     <div class="three-col">
@@ -2926,7 +2930,7 @@ function addToQueue(){
   const queuedCount=auctionList().filter(a=>a.status==='queued').length;
   for(let i=0;i<qty;i++){
     const nr=push(runRef('/auctions'));
-    set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount+i,remaining:dur,paused:false,endsAt:null});
+    set(nr,{id:nr.key,name,slot:selectedItem.slot||'',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'queued',order:queuedCount+i,remaining:dur,paused:false,endsAt:null});
   }
   selectedItem=null;searchQuery='';
   const inp=document.getElementById('item-search-input');
@@ -2955,7 +2959,7 @@ function addToQueueAndStart(){
   const endsAt=Date.now()+dur*1000;
   for(let i=0;i<qty;i++){
     const nr=push(runRef('/auctions'));
-    set(nr,{id:nr.key,name,slot:document.getElementById('m-slot')?.value?.trim()||selectedItem.slot||'Unknown',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',paused:false,endsAt,remaining:dur,order:i});
+    set(nr,{id:nr.key,name,slot:selectedItem.slot||'',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',paused:false,endsAt,remaining:dur,order:i});
   }
   modal=false;editId=null;selectedItem=null;searchQuery='';modalQuality='epic';modalCategory='Tier';
   tab='active';
@@ -2968,7 +2972,7 @@ function saveEdit(){
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
-  const updates={name,slot:document.getElementById('m-slot')?.value?.trim()||'Unknown',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
+  const updates={name,slot:selectedItem?.slot||'',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
   updates.category=modalCategory||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}

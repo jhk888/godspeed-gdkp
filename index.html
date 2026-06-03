@@ -285,7 +285,7 @@
   .cat-row-label.cat-row-physical{background:rgba(226,96,96,0.18);color:#ff8080;border-left:3px solid #ff8080;}
   .cat-row-label.cat-row-caster{background:rgba(50,150,255,0.18);color:#80c0ff;border-left:3px solid #80c0ff;}
   .cat-row-label.cat-row-other{background:rgba(200,200,200,0.1);color:#ccc;border-left:3px solid #ccc;}
-  .cat-row-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:1rem;padding-bottom:.5rem;align-items:stretch;grid-auto-rows:1fr;}
+  .cat-row-scroll{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:1rem;padding-bottom:.5rem;align-items:stretch;}
   /* Global themed scrollbars */
   ::-webkit-scrollbar{width:5px;height:5px;}
   ::-webkit-scrollbar-track{background:rgba(10,8,5,0.5);}
@@ -293,7 +293,7 @@
   ::-webkit-scrollbar-thumb:hover{background:rgba(201,168,76,0.45);}
   * {scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.25) rgba(10,8,5,0.5);}
   .cat-row-scroll > div{min-width:0;}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:1rem;margin-bottom:1.75rem;align-items:stretch;grid-auto-rows:1fr;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:1rem;margin-bottom:1.75rem;align-items:stretch;}
   .card-check{position:absolute;top:.6rem;left:.6rem;width:22px;height:22px;border-radius:4px;border:2px solid rgba(201,168,76,0.45);background:rgba(14,12,9,0.85);cursor:pointer;z-index:20;display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:.8rem;font-weight:700;transition:all .12s;}
   .card-check:hover{border-color:var(--gold);background:rgba(40,30,12,0.9);}
   .card-check.checked{background:var(--gold);color:var(--bg-deep);border-color:var(--gold);}
@@ -383,7 +383,7 @@
   .item-name.poor{color:var(--poor);}
   .item-name.legendary{color:#ff8000;}
   .item-slot{font-size:.9rem;color:var(--text-muted);}
-  .bid-section{border-top:1px solid rgba(212,169,60,0.15);padding-top:.8rem;display:flex;flex-direction:column;gap:.6rem;margin-top:auto;}
+  .bid-section{border-top:1px solid rgba(212,169,60,0.15);padding-top:.8rem;display:flex;flex-direction:column;gap:.6rem;margin-top:.7rem;}
   .bid-amt{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold-light);font-weight:500;}
   .bid-ldr{font-size:.88rem;color:var(--text-muted);}
   .bid-ldr.you{color:var(--green);}
@@ -2749,7 +2749,8 @@ function renderCard(a,mode){
     :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
-  const itemHeader=`<div class="item-header" style="padding-right:4rem;padding-left:1rem;">${iconHTML}<div style="flex:1;min-width:0;">${nameHTML}</div></div>`;
+  const headerPadRight=(isRL&&mode==='open')?'3.8rem':'.6rem';
+  const itemHeader=`<div class="item-header" style="padding-right:${headerPadRight};padding-left:.5rem;">${iconHTML}<div style="flex:1;min-width:0;overflow-wrap:break-word;height:4.2rem;overflow:hidden;">${nameHTML}</div></div>`;
   let timerSection='';
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';
@@ -2798,12 +2799,9 @@ function renderCard(a,mode){
   let badge='';
   if(isRL){
     if(mode==='open'){
-      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;">
-        <div class="badge ${a.paused?'badge-paused':'badge-open'}" style="position:static;">${a.paused?'Paused':'Live'}</div>
-        <div style="display:flex;flex-direction:column;gap:.25rem;margin-top:2rem;align-items:flex-end;">
+      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;">
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
           <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
-        </div>
       </div>`;
       const bottomBtns=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;">
         <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="display:flex;align-items:center;justify-content:center;gap:.3rem;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="9" height="11" viewBox="0 0 9 11"><rect x="0" y="0" width="3" height="11" rx="1" fill="currentColor"/><rect x="6" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg> Pause'}</button>
@@ -2818,16 +2816,16 @@ function renderCard(a,mode){
   }
   const qualityClass=(a.quality==='legendary')?'quality-legendary':(a.quality==='epic')?'quality-epic':'';
   const cc=[mode==='queued'?'queued':mode==='expired'?'expiring':isLeading?'leading':a.paused?'paused':urgent?'expiring':'', qualityClass].filter(Boolean).join(' ');
-  // Badge is set inside RL open block if RL, otherwise here
-  if(!badge){
-    if(mode==='open'&&a.paused)badge=`<div class="badge badge-paused">Paused</div>`;
-    else if(mode==='open')badge=`<div class="badge badge-open">Live</div>`;
-    else if(mode==='queued')badge=`<div class="badge badge-queued">Queued</div>`;
-    else if(mode==='expired')badge=`<div class="badge badge-expired">Expired</div>`;
-    else badge=`<div class="badge badge-sold">Sold</div>`;
-  }
-  const slotBadgeRow=(catBadge||a.slot)?`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}</div>`:'';
-  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}<div style="margin-top:auto;">${slotBadgeRow}${bidSection}</div>${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  // Status pill now lives in the slot row (right-aligned), never overlapping the name
+  let statusBadge='';
+  if(mode==='open'&&a.paused)statusBadge=`<div class="badge badge-paused" style="position:static;">Paused</div>`;
+  else if(mode==='open')statusBadge=`<div class="badge badge-open" style="position:static;">Live</div>`;
+  else if(mode==='queued')statusBadge=`<div class="badge badge-queued" style="position:static;">Queued</div>`;
+  else if(mode==='expired')statusBadge=`<div class="badge badge-expired" style="position:static;">Expired</div>`;
+  else statusBadge=`<div class="badge badge-sold" style="position:static;">Sold</div>`;
+  const slotBadgeRow=`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}<span style="margin-left:auto;">${statusBadge}</span></div>`;
+  bidSection=bidSection.replace('<div class="bid-section">','<div class="bid-section">'+slotBadgeRow);
+  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────

@@ -1494,8 +1494,9 @@ async function searchWowhead(query){
     let workerResults=[];
     try{const res=await fetch(`${SEARCH_WORKER_URL}?q=${encodeURIComponent(query)}`);if(res.ok)workerResults=await res.json();}catch(e){}
     const localIds=new Set(local.map(r=>r.id));
+    const localNames=new Set(local.map(r=>_normName(r.name)));
     const seenNet=new Set();
-    const extras=[...whResults,...workerResults].filter(r=>{if(localIds.has(r.id)||seenNet.has(r.id))return false;seenNet.add(r.id);return true;});
+    const extras=[...whResults,...workerResults].filter(r=>{if(localIds.has(r.id)||seenNet.has(r.id))return false;if(localNames.has(_normName(r.name)))return false;seenNet.add(r.id);return true;});
     if(searchQuery!==query)return;
     if(extras.length){const ql=_normName(query);extras.sort((a,b)=>{const an=_normName(a.name),bn=_normName(b.name);if(an.startsWith(ql)&&!bn.startsWith(ql))return -1;if(bn.startsWith(ql)&&!an.startsWith(ql))return 1;return 0;});searchResults=[...local,...extras];refreshDropdown();}
   }catch(e){}

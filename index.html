@@ -3112,12 +3112,26 @@ let _searchFocusIdx=-1;
 function handleSearchKeydown(e){
   const dd=document.getElementById('item-dropdown');
   const items=dd?Array.from(dd.querySelectorAll('.dropdown-item')):[];
-  const open=dd&&dd.style.display!=='none'&&items.length;
   if(e.key==='Escape'){if(dd)dd.style.display='none';_searchFocusIdx=-1;return;}
-  if(e.key==='Tab'&&open){e.preventDefault();selectItem(searchResults[0].id);_searchFocusIdx=-1;return;}
-  if(e.key==='ArrowDown'&&open){e.preventDefault();_searchFocusIdx=0;items[0].focus();return;}
-  if(e.key==='ArrowUp'&&open){e.preventDefault();_searchFocusIdx=items.length-1;items[_searchFocusIdx].focus();return;}
-  if(e.key==='Enter'&&open){e.preventDefault();const idx=_searchFocusIdx>=0?_searchFocusIdx:0;if(searchResults[idx])selectItem(searchResults[idx].id);_searchFocusIdx=-1;return;}
+  if((e.key==='Tab'||e.key==='ArrowDown')&&items.length&&dd&&dd.style.display!=='none'){
+    e.preventDefault();
+    _searchFocusIdx=(_searchFocusIdx+1)%items.length;
+    items[_searchFocusIdx].focus();
+    return;
+  }
+  if(e.key==='ArrowUp'&&items.length&&dd&&dd.style.display!=='none'){
+    e.preventDefault();
+    _searchFocusIdx=(_searchFocusIdx-1+items.length)%items.length;
+    items[_searchFocusIdx].focus();
+    return;
+  }
+  if(e.key==='Enter'&&searchResults.length&&dd&&dd.style.display!=='none'){
+    e.preventDefault();
+    const idx=_searchFocusIdx>=0?_searchFocusIdx:0;
+    if(searchResults[idx])selectItem(searchResults[idx].id);
+    _searchFocusIdx=-1;
+    return;
+  }
 }
 function handleDropdownItemKey(e,id){
   const dd=document.getElementById('item-dropdown');
@@ -3125,8 +3139,7 @@ function handleDropdownItemKey(e,id){
   const inp=document.getElementById('item-search-input');
   if(e.key==='Enter'||e.key===' '){e.preventDefault();selectItem(id);_searchFocusIdx=-1;return;}
   if(e.key==='Escape'){if(dd)dd.style.display='none';_searchFocusIdx=-1;if(inp)inp.focus();return;}
-  if(e.key==='Tab'){e.preventDefault();selectItem(id);_searchFocusIdx=-1;return;}
-  if(e.key==='ArrowDown'){
+  if(e.key==='Tab'||e.key==='ArrowDown'){
     e.preventDefault();
     _searchFocusIdx=(_searchFocusIdx+1)%items.length;
     items[_searchFocusIdx].focus();

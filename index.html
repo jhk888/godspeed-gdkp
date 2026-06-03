@@ -372,7 +372,7 @@
   .member-chip{position:relative;}
   .raid-title-display{font-family:'Cinzel',serif;font-size:.85rem;color:var(--text-muted);letter-spacing:.08em;margin-top:.1rem;cursor:pointer;}
   .raid-title-input{font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);background:transparent;border:none;border-bottom:1px solid var(--border-gold);outline:none;width:200px;letter-spacing:.08em;}
-  .item-header{display:flex;align-items:center;gap:.75rem;padding-right:8.5rem;}
+  .item-header{display:flex;align-items:flex-start;gap:.75rem;padding-right:8.5rem;}
   .item-icon{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.35);flex-shrink:0;object-fit:cover;}
   .item-icon-placeholder{width:48px;height:48px;border-radius:4px;border:1px solid rgba(212,169,60,0.2);background:var(--bg-input);flex-shrink:0;}
   .item-name{font-family:'Cinzel',serif;font-size:1.05rem;font-weight:500;}
@@ -2749,7 +2749,7 @@ function renderCard(a,mode){
     :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
-  const itemHeader=`<div class="item-header">${iconHTML}<div>${nameHTML}<div class="item-slot">${a.slot||''}${catBadge?` ${catBadge}`:''}</div></div></div>`;
+  const itemHeader=`<div class="item-header">${iconHTML}<div style="flex:1;display:flex;flex-direction:column;min-height:5.5rem;">${nameHTML}<div class="item-slot" style="margin-top:auto;">${a.slot||''}${catBadge?` ${catBadge}`:''}</div></div></div>`;
   let timerSection='';
   if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
   let bidSection='';

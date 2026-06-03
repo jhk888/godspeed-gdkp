@@ -1821,11 +1821,14 @@ function logout(){
 
 function render(){
   if(!user){renderLogin();return;}
-  
   renderHdr();renderMain();
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
+  // Focus the active tab on page load if nothing else is focused
+  if(!modal&&(document.activeElement===document.body||!document.activeElement)){
+    setTimeout(()=>{const activeTab=document.querySelector('.tabs .tab.active');if(activeTab)activeTab.focus();},100);
+  }
 }
 
 function updateOnlineCounter(){
@@ -2126,11 +2129,11 @@ function renderMain(){
 
 
   const tabs=`<div class="tabs">
-    <div class="tab ${tab==='active'?'active':''}" onclick="setTab('active')">Live (${active.length})</div>
-    <div class="tab ${tab==='queued'?'active':''}" onclick="setTab('queued')">Queue (${queued.length})</div>
-    <div class="tab ${tab==='sold'?'active':''}" onclick="setTab('sold')">Sold (${sold.length})</div>
-    ${expired.length||isRL?`<div class="tab ${tab==='expired'?'active':''}" onclick="setTab('expired')" style="${expired.length?'color:var(--red);':''}">Expired (${expired.length})</div>`:''}
-    ${isRL?`<div class="tab ${tab==='splits'?'active':''}" onclick="setTab('splits')">Splits</div>`:''}
+    <div class="tab ${tab==='active'?'active':''}" tabindex="0" onclick="setTab('active')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('active')">Live (${active.length})</div>
+    <div class="tab ${tab==='queued'?'active':''}" tabindex="0" onclick="setTab('queued')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('queued')">Queue (${queued.length})</div>
+    <div class="tab ${tab==='sold'?'active':''}" tabindex="0" onclick="setTab('sold')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('sold')">Sold (${sold.length})</div>
+    ${expired.length||isRL?`<div class="tab ${tab==='expired'?'active':''}" tabindex="0" onclick="setTab('expired')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('expired')" style="${expired.length?'color:var(--red);':''}">Expired (${expired.length})</div>`:''}
+    ${isRL?`<div class="tab ${tab==='splits'?'active':''}" tabindex="0" onclick="setTab('splits')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('splits')">Splits</div>`:''}
   </div>`;
 
   let secActions='';

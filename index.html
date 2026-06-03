@@ -401,7 +401,7 @@
   .badge-queued{background:rgba(212,169,60,0.08);color:var(--text-muted);border:1px solid var(--border-gold);}
   .badge-paused{background:rgba(240,168,48,0.15);color:var(--amber);border:1px solid rgba(240,168,48,0.45);}
   .badge-expired{background:rgba(255,96,96,0.12);color:var(--red);border:1px solid rgba(255,96,96,0.4);}
-  .timer-row{display:flex;align-items:center;gap:.5rem;padding-right:4rem;}
+  .timer-row{display:flex;align-items:center;gap:.5rem;padding-right:.2rem;}
   .timer{font-family:'Cinzel',serif;font-size:.88rem;color:var(--text-muted);letter-spacing:.05em;}
   .timer-bar{flex:1;height:4px;background:rgba(212,169,60,0.18);border-radius:2px;overflow:hidden;}
   .timer-fill{height:100%;background:var(--gold);border-radius:2px;transition:width .9s linear;}
@@ -2749,10 +2749,9 @@ function renderCard(a,mode){
     :`<div class="item-icon-placeholder"></div>`;
   const nameHTML=a.itemId?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank" style="text-decoration:none;">${a.name}</a>`:`<span class="item-name ${a.quality||'common'}">${a.name}</span>`;
   const catBadge=a.category&&a.category!=='Other'?`<span class="category-badge ${catClass(a.category)}">${a.category}</span>`:'';
-  const headerPadRight=(isRL&&mode==='open')?'3.8rem':'.6rem';
-  const itemHeader=`<div class="item-header" style="padding-right:${headerPadRight};padding-left:.5rem;">${iconHTML}<div style="flex:1;min-width:0;overflow-wrap:break-word;height:4.2rem;overflow:hidden;">${nameHTML}</div></div>`;
+  const itemHeader=`<div class="item-header" style="padding-right:.6rem;padding-left:.5rem;">${iconHTML}<div style="flex:1;min-width:0;overflow-wrap:break-word;height:4.2rem;overflow:hidden;">${nameHTML}</div></div>`;
   let timerSection='';
-  if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span></div>`;}
+  if(mode==='open'){const fc=a.paused?'#e8a430':urgent?'#e26060':'#c9a84c',tc=a.paused?'var(--amber)':urgent?'var(--red)':'var(--text-muted)';const tBtns=isRL?`<button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;flex-shrink:0;" onclick="extendTimer('${a.id}')">+30s</button><button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;flex-shrink:0;" onclick="openEdit('${a.id}')">Edit</button>`:'';timerSection=`<div class="timer-row"><div class="timer-bar"><div id="tfill-${a.id}" class="timer-fill" style="width:${pct}%;background:${fc};"></div></div><span id="ttext-${a.id}" class="timer" style="color:${tc};">${a.paused?'Paused':fmtTime(rem)}</span>${tBtns}</div>`;}
   let bidSection='';
   if(mode==='open'&&!a.paused){
     const btns=a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000];
@@ -2799,15 +2798,10 @@ function renderCard(a,mode){
   let badge='';
   if(isRL){
     if(mode==='open'){
-      const topBtns=`<div style="position:absolute;top:.6rem;right:.6rem;display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;">
-          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="openEdit('${a.id}')">Edit</button>
-          <button class="btn btn-outline btn-sm" style="padding:.2rem .5rem;font-size:.65rem;" onclick="extendTimer('${a.id}')">+30s</button>
-      </div>`;
       const bottomBtns=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.35rem;">
         <button class="btn ${a.paused?'btn-amber-resume':'btn-amber'} btn-sm" style="display:flex;align-items:center;justify-content:center;gap:.3rem;" onclick="togglePause('${a.id}')">${a.paused?'&#9654; Resume':'<svg width="9" height="11" viewBox="0 0 9 11"><rect x="0" y="0" width="3" height="11" rx="1" fill="currentColor"/><rect x="6" y="0" width="3" height="11" rx="1" fill="currentColor"/></svg> Pause'}</button>
         <button class="btn btn-gold btn-sm" onclick="closeAuction('${a.id}')">Close</button>
       </div>`;
-      badge=topBtns;
       rlControls=bottomBtns;
     }
     else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;

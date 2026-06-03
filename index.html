@@ -2710,13 +2710,12 @@ function renderBulkBar(list,mode){
   const n=selectedInMode.length;
   let actions='';
   if(n>0){
-    if(mode==='expired')actions=`<button class="btn btn-green btn-sm" onclick="bulkRestart()">&#9654; Restart ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
-    else if(mode==='queued')actions=`<button class="btn btn-green btn-sm" onclick="bulkStart()">&#9654; Start ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
-    else if(mode==='sold')actions=`<button class="btn btn-danger btn-sm" onclick="bulkRemove('${mode}')">Remove ${n}</button>`;
-    else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-danger btn-sm" onclick="bulkClose()">Close ${n}</button>`;
+    if(mode==='expired')actions=`<button class="btn btn-green btn-sm" onclick="event.stopPropagation();bulkRestart()">&#9654; Restart ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='queued')actions=`<button class="btn btn-green btn-sm" onclick="event.stopPropagation();bulkStart()">&#9654; Start ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='sold')actions=`<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
+    else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkClose()">Close ${n}</button>`;
   }
-  const soloAction=(n===0); // only "Select all" present → whole bar is clickable
-  return`<div class="bulk-bar${soloAction?' bar-clickable':''}"${soloAction?` onclick="toggleSelectAll('${mode}')"`:''}>
+  return`<div class="bulk-bar bar-clickable" onclick="toggleSelectAll('${mode}')">
     <div class="card-check bulk-all ${allSelected?'checked':''}" onclick="event.stopPropagation();toggleSelectAll('${mode}')" title="Select all">${allSelected?'✓':''}</div>
     <span style="font-size:.7rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${n>0?`${n} selected`:'Select all'}</span>
     <div style="flex:1;"></div>

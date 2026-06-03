@@ -753,7 +753,7 @@ const DEFAULT_SPLITS = {
 const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 
-let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab='active';
+let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab=localStorage.getItem('gdkp_tab')||'active';
 let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
@@ -2764,7 +2764,7 @@ function renderCard(a,mode){
       ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
       : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
     const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;margin-top:.5rem;">
-      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Dupe</button>
+      <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Clone</button>
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
       <button class="btn btn-danger btn-sm" style="padding:.2rem .55rem;font-size:.65rem;margin-top:.15rem;" onclick="cancelAuction('${a.id}')">Cancel</button>
     </div>`:'' ;
@@ -2806,7 +2806,7 @@ function renderCard(a,mode){
       </div>`;
       rlControls=bottomBtns;
     }
-    else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Dupe</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
+    else if(mode==='queued')rlControls=`<div class="rl-controls" data-wowhead-no-hover><button class="btn btn-green btn-sm" onclick="startOne('${a.id}')">&#9654; Start</button><div style="display:flex;flex-direction:column;gap:.3rem;"><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-outline btn-sm" onclick="duplicateItem('${a.id}')">Clone</button></div><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='expired')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartAuction('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEdit('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeQueued('${a.id}')">Remove</button></div>`;
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartFromSold('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
   }
@@ -4057,7 +4057,7 @@ function dragEnd(e){
   document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
   _dragId=null;_dragEl=null;
 }
-function setTab(t){tab=t;render();}
+function setTab(t){tab=t;localStorage.setItem('gdkp_tab',t);render();}
 
 document.addEventListener('click',e=>{
   const dd=document.getElementById('item-dropdown');

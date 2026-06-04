@@ -2294,14 +2294,25 @@ function renderMain(){
   let content='';
   if(tab==='splits'&&isRL){content=renderSplits();}
   else if(tab==='active'){
-    content=renderGrid(active,'open');
+    // My Bids filter
+    let liveList=active;
+    if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+    else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
+    const liveBar=renderLiveFilterBar(active);
+    content=liveBar+renderGrid(liveList,'open');
   }
   else if(tab==='queued'){
     const filtered=activeCategory==='all'?queued:queued.filter(a=>(a.category||'Other')===activeCategory);
     content=renderCategoryFilterBar(queued)+renderGrid(filtered,'queued');
   }
   else if(tab==='expired') content=renderGrid(expired,'expired');
-  else content=renderGrid(sold,'sold');
+  else{
+    // My Items filter for sold tab
+    let soldList=sold;
+    if(myItemsOnly) soldList=sold.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===user);
+    const soldBar=renderSoldFilterBar(sold);
+    content=soldBar+renderGrid(soldList,'sold');
+  }
 
   const mHTML=modal?(editId?buildModal('Edit Item',auctions[editId],'saveEdit'):buildModal('Add Item to Queue',null,'addToQueue')):'';
 
@@ -3799,6 +3810,9 @@ let banList={};
 let crossRunCache=null;
 let crossRunFetching=false;
 let activeCategory='all';
+let liveCatFilter='all';
+let myBidsOnly=false;
+let myItemsOnly=false;
 let selectedItems=new Set();
 let lastSelectedId=null;
 let lastSelectedMode=null;
@@ -4221,6 +4235,44 @@ function renderCategoryFilterBar(list){
 }
 
 function setCategoryFilter(cat){activeCategory=cat;render();}
+function setLiveCatFilter(cat){liveCatFilter=cat;myBidsOnly=false;render();}
+function toggleMyBids(){myBidsOnly=!myBidsOnly;liveCatFilter='all';render();}
+function toggleMyItems(){myItemsOnly=!myItemsOnly;render();}
+
+function renderLiveFilterBar(list){
+  if(!list.length)return'';
+  const catColors={
+    'Tier':     {on:'border-color:#ffcc44;background:#ffcc44;color:#1a1208;font-weight:600;', off:'border-color:rgba(255,180,0,0.5);background:rgba(255,180,0,0.12);color:#ffcc44;'},
+    'Physical': {on:'border-color:#ff8080;background:#ff8080;color:#1a0808;font-weight:600;', off:'border-color:rgba(226,96,96,0.5);background:rgba(226,96,96,0.12);color:#ff8080;'},
+    'Caster/Healer':{on:'border-color:#80c0ff;background:#80c0ff;color:#081020;font-weight:600;', off:'border-color:rgba(80,160,255,0.5);background:rgba(80,160,255,0.12);color:#80c0ff;'},
+    'Other':    {on:'border-color:#ccc;background:#ccc;color:#1a1208;font-weight:600;',        off:'border-color:rgba(180,180,180,0.5);background:rgba(180,180,180,0.12);color:#bbb;'},
+  };
+  // My Bids button
+  const myBidCount=list.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user)).length;
+  const myBidsBtn=!isRL&&myBidCount>0?`<button class="cat-filter-btn" style="${myBidsOnly?'border-color:#a855f7;background:#a855f7;color:#fff;font-weight:600;':'border-color:rgba(168,85,247,0.5);background:rgba(168,85,247,0.12);color:#c084fc;'}" onclick="toggleMyBids()">My Bids${myBidCount?` <span style="opacity:.7;font-size:.6em;">(${myBidCount})</span>`:''}
+  </button>`:'';
+  const allActive=!myBidsOnly&&liveCatFilter==='all';
+  const allBtn=`<button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:var(--gold);color:#1a1208;font-weight:600;':'border-color:rgba(201,168,76,0.6);background:rgba(212,169,60,0.25);color:var(--gold);'}" onclick="setLiveCatFilter('all')">All <span style="opacity:.7;font-size:.6em;">(${list.length})</span></button>`;
+  const catBtns=raidCategories.map(cat=>{
+    const count=list.filter(a=>(a.category||'Other')===cat).length;
+    if(!count)return'';
+    const isActive=!myBidsOnly&&liveCatFilter===cat;
+    const c=catColors[cat]||catColors['Other'];
+    return`<button class="cat-filter-btn" style="${isActive?c.on:c.off}" onclick="setLiveCatFilter('${cat}')">${cat} <span style="opacity:.7;font-size:.6em;">(${count})</span></button>`;
+  }).join('');
+  return`<div class="cat-filter-bar">${myBidsBtn}${allBtn}${catBtns}</div>`;
+}
+
+function renderSoldFilterBar(list){
+  if(!list.length)return'';
+  const myCount=list.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===user).length;
+  if(!myCount)return'';
+  const allActive=!myItemsOnly;
+  return`<div class="cat-filter-bar">
+    <button class="cat-filter-btn" style="${allActive?'border-color:var(--gold);background:var(--gold);color:#1a1208;font-weight:600;':'border-color:rgba(201,168,76,0.6);background:rgba(212,169,60,0.25);color:var(--gold);'}" onclick="toggleMyItems()">All <span style="opacity:.7;font-size:.6em;">(${list.length})</span></button>
+    <button class="cat-filter-btn" style="${myItemsOnly?'border-color:#a855f7;background:#a855f7;color:#fff;font-weight:600;':'border-color:rgba(168,85,247,0.5);background:rgba(168,85,247,0.12);color:#c084fc;'}" onclick="toggleMyItems()">My Items <span style="opacity:.7;font-size:.6em;">(${myCount})</span></button>
+  </div>`;
+}
 
 function closeModal(){
   _removeModalFocusTrap();
@@ -4323,7 +4375,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

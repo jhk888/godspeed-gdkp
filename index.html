@@ -300,6 +300,8 @@
   .card-check:hover{border-color:var(--gold);background:rgba(40,30,12,0.9);}
   .card-check.checked{background:var(--gold);color:var(--bg-deep);border-color:var(--gold);}
   .card-wrap{transition:transform .15s ease,opacity .15s ease;display:flex;flex-direction:column;}
+  .card-wrap.card-exiting{opacity:0;transform:scale(.94);transition:opacity .35s ease,transform .35s ease;pointer-events:none;}
+  @keyframes cardExit{0%{opacity:1;transform:scale(1);}100%{opacity:0;transform:scale(.94);}}
   .card-wrap .card{flex:1;}
   /* Dragged card — lifted, faded */
   .card-wrap.dragging{opacity:.35;transform:scale(.96);}
@@ -1789,7 +1791,7 @@ function subscribeToRun(){
         const grid=document.getElementById('auction-grid-bg');
         if(grid){
           if(tab==='queued') grid.innerHTML=renderCategoryFilterBar(queued)+renderGrid(queued,'queued');
-          else if(tab==='active') grid.innerHTML=renderCategoryRows(active,'open');
+          else if(tab==='active') grid.innerHTML=renderGrid(active,'open');
         }
       }
       // Apply glows
@@ -1845,17 +1847,17 @@ function subscribeToRun(){
         if(!statusChanged&&queuedPrev===queuedNow){
           renderHdr();
         } else {
-          const _sc=document.documentElement.scrollTop||document.body.scrollTop;
+          const _sc=_saveScroll();
           render();
-          requestAnimationFrame(()=>{document.documentElement.scrollTop=_sc;document.body.scrollTop=_sc;});
+          _restoreScroll(_sc);
           if(panelOpen&&panelTab==='raiders')renderPanel();
           if(panelOpen&&panelTab==='audit')renderAuditPanel();
           if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
         }
       } else {
-        const _sc=document.documentElement.scrollTop||document.body.scrollTop;
+        const _sc=_saveScroll();
         render();
-        requestAnimationFrame(()=>{document.documentElement.scrollTop=_sc;document.body.scrollTop=_sc;});
+        _restoreScroll(_sc);
         if(panelOpen&&panelTab==='raiders')renderPanel();
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
@@ -1950,6 +1952,8 @@ function logout(){
   clearPresence();panelOpen=false;render();
 }
 
+function _saveScroll(){const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
+function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
 function render(){
   if(!user){renderLogin();return;}
   renderHdr();renderMain();
@@ -2277,7 +2281,7 @@ function renderMain(){
   let content='';
   if(tab==='splits'&&isRL){content=renderSplits();}
   else if(tab==='active'){
-    content=renderCategoryRows(active,'open');
+    content=renderGrid(active,'open');
   }
   else if(tab==='queued'){
     const filtered=activeCategory==='all'?queued:queued.filter(a=>(a.category||'Other')===activeCategory);
@@ -2893,16 +2897,19 @@ function renderCard(a,mode){
     const cur=bids[0]?.amount||(bids.length===0?(a.startBid||1000):0);
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
-    const qbtns=hasBids
-      ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
-      : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`;
+    const isGuest=!discordUser&&!isRL;
+    const qbtns=isGuest
+      ?`<div style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.05em;">&#128274; <a onclick="joinDiscord()" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Login with Discord</a> to bid</div>`
+      :(hasBids
+        ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
+        : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`);
     const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;margin-top:.5rem;">
       <button class="btn btn-clone btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Clone</button>
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
       <button class="btn btn-danger btn-sm" style="padding:.2rem .55rem;font-size:.65rem;margin-top:.15rem;" onclick="cancelAuction('${a.id}')">Cancel</button>
     </div>`:'' ;
-    const cbtn=`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
-    const crow=showCustom?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
+    const cbtn=isGuest?'':`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
+    const crow=(!isGuest&&showCustom)?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const autoBidSet=autoBids[a.id];
     const autoBidBtn=!isRL?`<div style="margin-top:.3rem;display:flex;align-items:center;gap:.4rem;">
       ${autoBidSet
@@ -2921,7 +2928,8 @@ function renderCard(a,mode){
     bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div>${noteHTML}</div>`;
   }
   else if(mode==='sold'){
-    const paidBox=isRL?`<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;margin-top:.3rem;">
+    const isWinner=top&&top.bidder===user;
+    const paidBox=(isRL||isWinner)?`<label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;margin-top:.3rem;">
       <input type="checkbox" ${a.paid?'checked':''} onchange="togglePaid('${a.id}')" style="width:16px;height:16px;cursor:pointer;accent-color:var(--green);" />
       <span style="font-size:.8rem;color:${a.paid?'var(--green)':'var(--text-muted)'};">${a.paid?'Paid':'Mark as paid'}</span>
     </label>`:'';
@@ -3017,7 +3025,9 @@ function saveEdit(){
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
   update(runRef(`/auctions/${editId}`),updates);
+  const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' updated');
+  _restoreScroll(_sc);
 }
 function setAutoBid(id){
   const a=auctions[id];if(!a||a.status!=='open')return;
@@ -3139,7 +3149,7 @@ function coinExplosion(auctionId, goldAmount, preRect){
   coinExplosionAt(goldAmount, rect);
 }
 
-function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});auditLog('sold',{auctionId:id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'manual'});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
+function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);const wrap=document.getElementById('wrap-'+id);if(wrap)wrap.classList.add('card-exiting');update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});auditLog('sold',{auctionId:id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'manual'});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
 function restartFromSold(id){
   const a=auctions[id];if(!a||!isRL)return;
   const sb=a.startBid||a.currentBid||1000;
@@ -3235,7 +3245,9 @@ function spawnCoin(e){
     },i*60);
   }
 }
-function submitBid(id,val,_evt){const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
+function submitBid(id,val,_evt){
+  if(!discordUser&&!isRL){toast('Login with Discord to place bids');return;}
+  const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){_searchFocusIdx=-1;searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){searchResults=[];const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}// Show local results immediately
 const local=searchLocal(val);console.log('[search] query:',val,'local results:',local.length,local.map(i=>i.name));searchResults=local;isSearching=false;refreshDropdown();

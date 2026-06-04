@@ -3503,6 +3503,7 @@ function togglePaidFromOverlay(id,btn){
     },600);
   });
 }
+function markAllPaid(ids){
   const updates={};
   ids.forEach(id=>{
     if(auctions[id]) updates[`auctions/${id}/paid`]=true;

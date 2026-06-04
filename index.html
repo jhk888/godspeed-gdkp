@@ -1830,6 +1830,12 @@ function subscribeToRun(){
       // If pendingGlows is empty and bidOnlyUpdate=true, it's just a currentBid
       // echo update — skip re-render entirely so any active glow animation survives
     } else if(user) {
+      // Presence-only change (someone joined/left, no auction data changed) — just update header
+      const auctionsUnchanged=JSON.stringify(auctions)===JSON.stringify(prevAuctions);
+      if(auctionsUnchanged){
+        renderHdr();
+        if(panelOpen&&panelTab==='raiders')renderPanel();
+      } else {
       // On queue tab, skip re-render if only timer/presence data changed (prevents flickering)
       if(tab==='queued'&&!bidOnlyUpdate){
         // Check if anything structural changed in queued items
@@ -1839,16 +1845,21 @@ function subscribeToRun(){
         if(!statusChanged&&queuedPrev===queuedNow){
           renderHdr();
         } else {
+          const _sc=document.documentElement.scrollTop||document.body.scrollTop;
           render();
+          requestAnimationFrame(()=>{document.documentElement.scrollTop=_sc;document.body.scrollTop=_sc;});
           if(panelOpen&&panelTab==='raiders')renderPanel();
           if(panelOpen&&panelTab==='audit')renderAuditPanel();
           if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
         }
       } else {
+        const _sc=document.documentElement.scrollTop||document.body.scrollTop;
         render();
+        requestAnimationFrame(()=>{document.documentElement.scrollTop=_sc;document.body.scrollTop=_sc;});
         if(panelOpen&&panelTab==='raiders')renderPanel();
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
+      }
       }
     }
 

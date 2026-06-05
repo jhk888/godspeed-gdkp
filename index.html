@@ -4218,6 +4218,7 @@ function restoreArchivedRun(archiveKey){
     'Restart','Cancel'
   );
 }
+async function renderPastRunsPanel(){
   const body=document.getElementById('side-panel-body');
   if(!body) return;
   const scrollTop=body.scrollTop; // save scroll position

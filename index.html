@@ -664,8 +664,8 @@
   .rollout-hdr-meta{font-size:.75rem;color:var(--text-muted);}
   .rollout-exit{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.07em;padding:.35rem .9rem;border-radius:3px;cursor:pointer;background:rgba(226,96,96,0.12);color:var(--red);border:1px solid rgba(226,96,96,0.4);}
   .rollout-exit:hover{background:rgba(226,96,96,0.22);}
-  .rollout-body{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.75rem;align-content:start;}
-  .rollout-card{background:#1a1612;border:1px solid var(--border-gold);border-radius:5px;overflow:hidden;transition:opacity .3s,border-color .3s;}
+  .rollout-body{flex:1;overflow-y:auto;padding:1rem 1.2rem;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:.75rem;align-items:start;align-content:start;}
+  .rollout-card{background:#1a1612;border:1px solid var(--border-gold);border-radius:5px;transition:opacity .3s,border-color .3s;}
   .rollout-card.all-paid{border-color:rgba(46,180,80,0.3);opacity:.55;}
   .rollout-card-hdr{padding:.6rem .9rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(201,168,76,0.12);}
   .rollout-card-name{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold-light);font-weight:600;}
@@ -1856,7 +1856,6 @@ function subscribeToRun(){
 
     if(bidOnlyUpdate && tab==='active' && user){
       if(pendingGlows.length>0){
-        // Update affected cards in-place
         pendingGlows.forEach(({id})=>{
           const a=auctions[id];if(!a)return;
           const wrap=document.getElementById('wrap-'+id);
@@ -1870,7 +1869,6 @@ function subscribeToRun(){
         renderHdr();
       }
     } else if(user) {
-      // Compare only structurally relevant fields — ignore remaining/endsAt which tick every second
       const structKey=obj=>JSON.stringify(Object.fromEntries(
         Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,currentBid:a.currentBid,paid:a.paid,category:a.category}])
       ));
@@ -1879,28 +1877,42 @@ function subscribeToRun(){
         renderHdr();
         if(panelOpen&&panelTab==='raiders')renderPanel();
       } else if(tab==='queued'){
-        // Check if queued items changed structurally
         const queuedPrev=Object.values(prevAuctions).filter(a=>a.status==='queued');
         const queuedNow=Object.values(auctions).filter(a=>a.status==='queued');
         const statusChanged=Object.keys(auctions).some(id=>auctions[id]?.status!==prevAuctions[id]?.status);
         const countChanged=queuedPrev.length!==queuedNow.length;
         if(!statusChanged&&!countChanged){
-          // Only non-structural fields changed — update header only, no DOM rebuild
           renderHdr();
         } else {
-          // Structural change — re-render grid in-place without touching scroll
           renderHdr();
           const grid=document.getElementById('auction-grid-bg');
           if(grid){
             const all=auctionList();
             const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
-            grid.innerHTML=renderCategoryFilterBar(queued)+renderGrid(queued,'queued');
+            const filtered=activeCategory==='all'?queued:queued.filter(a=>(a.category||'Other')===activeCategory);
+            grid.innerHTML=renderCategoryFilterBar(queued)+renderGrid(filtered,'queued');
             refreshWowheadLinks();
           }
           if(panelOpen&&panelTab==='raiders')renderPanel();
           if(panelOpen&&panelTab==='audit')renderAuditPanel();
           if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
         }
+      } else if(tab==='active'){
+        // In-place rebuild for live tab — never do a full render that resets scroll
+        renderHdr();
+        const grid=document.getElementById('auction-grid-bg');
+        if(grid){
+          const all=auctionList();
+          const active=all.filter(a=>a.status==='open');
+          let liveList=active;
+          if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+          else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
+          grid.innerHTML=renderLiveFilterBar(active)+renderGrid(liveList,'open');
+          refreshWowheadLinks();
+        }
+        if(panelOpen&&panelTab==='raiders')renderPanel();
+        if(panelOpen&&panelTab==='audit')renderAuditPanel();
+        if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
       } else {
         const _sc=_saveScroll();
         render();
@@ -2626,10 +2638,12 @@ function renderRollout(){
   refreshWowheadLinks();
 }
 function rolloutTogglePaid(id,name){
+  if(!isRL)return;
   const a=auctions[id];if(!a)return;
   update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>renderRollout());
 }
 function rolloutMarkAll(ids,name){
+  if(!isRL)return;
   const updates={};
   ids.forEach(id=>{updates[`auctions/${id}/paid`]=true;});
   if(Object.keys(updates).length)update(runRef(),updates).then(()=>renderRollout());
@@ -3079,9 +3093,10 @@ function renderCard(a,mode){
     const isWinner=top&&top.bidder===user;
     const canToggle=isRL||isWinner;
     const paidBtn=canToggle
-      ?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;transition:background .15s;${a.paid
-        ?'background:rgba(46,180,80,0.15);color:#4dff70;border:1px solid rgba(46,180,80,0.4);'
-        :'background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);'}">${a.paid?'&#10003; Paid — tap to undo':'&#9679; Unpaid — tap to confirm'}</button>`
+      ?(isRL
+        ?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;transition:background .15s;${a.paid?'background:rgba(46,180,80,0.15);color:#4dff70;border:1px solid rgba(46,180,80,0.4);':'background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);'}">${a.paid?'&#10003; Paid — tap to undo':'&#9679; Unpaid — tap to confirm'}</button>`
+        :(!a.paid?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);">&#9679; Unpaid — tap to confirm</button>`
+          :`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`))
       :(a.paid?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`:'');
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-top:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div class="bid-ldr">Won by ${top?top.bidder:'&mdash;'}</div>${noteHTML}${paidBtn}</div>`;
@@ -3670,6 +3685,7 @@ function showUnpaidOverlay(){
   document.body.appendChild(ol);
 }
 function togglePaidFromOverlay(id,btn){
+  if(!isRL)return;
   const a=auctions[id];if(!a)return;
   update(runRef(`/auctions/${id}`),{paid:true}).then(()=>{
     const row=btn.closest('.unpaid-row');
@@ -3692,6 +3708,15 @@ function markAllPaid(ids){
 }
 function togglePaid(id){
   const a=auctions[id];if(!a)return;
+  if(!isRL){
+    // Non-RL: only the winner can mark paid, and only in the paid direction
+    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+    const winner=bids[0]?.bidder;
+    if(winner!==user)return;
+    if(a.paid)return; // winner can't undo paid
+    update(runRef(`/auctions/${id}`),{paid:true}).then(()=>{if(panelOpen)renderPanel();});
+    return;
+  }
   update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>{if(panelOpen)renderPanel();});
 }
 

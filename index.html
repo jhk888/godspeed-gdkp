@@ -2869,10 +2869,14 @@ async function resetRun(){
   runId=nr.key;
   splitsLoaded=false;
   splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
+  // Clear local state immediately so UI doesn't show stale pot/title
+  auctions={};
+  raidSettings={...raidSettings,raidTitle:''};
+  tab='active';
+  render();
   await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{}});
   subscribeToRun();
   toast('New run started — previous run archived');
-  tab='active';
 }
 
 // ── Grids & Cards ─────────────────────────────────────────────────────────

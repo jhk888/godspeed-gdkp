@@ -3172,10 +3172,11 @@ function saveEdit(){
   const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' updated');
   _restoreScroll(_sc);
+  setTimeout(()=>refreshWowheadLinks(),300);
 }
 function saveEditAndStart(){
   const raw=document.getElementById('item-search-input')?.value?.trim();
-  const name=selectedItem?selectedItem.name:raw;
+  const name=selectedItem?selectedItem.name:(raw||auctions[editId]?.name);
   if(!name){toast('Search and select an item');return;}
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
@@ -3183,27 +3184,38 @@ function saveEditAndStart(){
   const dur=Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer);
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
   const endsAt=Date.now()+dur*1000;
-  const updates={name,slot:selectedItem?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'open',paused:false,endsAt,remaining:dur,bids:{}};
+  const id=editId;
+  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'open',paused:false,endsAt,remaining:dur};
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
-  update(runRef(`/auctions/${editId}`),updates);
+  // Clear bids separately so we don't corrupt the local object
   const _sc=_saveScroll();
-  modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' started!');
+  modal=false;editId=null;selectedItem=null;searchQuery='';
+  tab='active';
+  // Write to Firebase: update fields then wipe bids
+  update(runRef(`/auctions/${id}`),updates).then(()=>{
+    remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
+  });
   _restoreScroll(_sc);
+  setTimeout(()=>refreshWowheadLinks(),300);
 }
 function saveEditAndQueue(){
   const raw=document.getElementById('item-search-input')?.value?.trim();
-  const name=selectedItem?selectedItem.name:raw;
+  const name=selectedItem?selectedItem.name:(raw||auctions[editId]?.name);
   if(!name){toast('Search and select an item');return;}
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const dur=Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer);
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
-  const updates={name,slot:selectedItem?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'queued',paused:false,endsAt:null,remaining:dur,bids:{}};
+  const id=editId;
+  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'queued',paused:false,endsAt:null,remaining:dur};
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
-  update(runRef(`/auctions/${editId}`),updates);
   const _sc=_saveScroll();
-  modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' moved to queue');
+  modal=false;editId=null;selectedItem=null;searchQuery='';
+  update(runRef(`/auctions/${id}`),updates).then(()=>{
+    remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
+  });
+  toast(name+' moved to queue');
   _restoreScroll(_sc);
 }
 function setAutoBid(id){

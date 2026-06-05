@@ -4244,7 +4244,7 @@ async function renderPastRunsPanel(){
       const pot=sold.reduce((s,[,a])=>s+(a.currentBid||0),0);
       const _d=run.createdAt?new Date(run.createdAt):null;
       const date=_d?_d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric',timeZone:'America/New_York'})+' '+_d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:'America/New_York'})+' ET':'Unknown date';
-      const title=run.settings?.raidTitle||'Untitled Run';
+      const title=(run.settings?.raidTitle||'Untitled Run').replace(/[\r\n]+/g,' ').trim();
       const itemRows=sold.map(([aId,a])=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         const winner=bids[0]?.bidder||'Unknown';
@@ -4261,12 +4261,14 @@ async function renderPastRunsPanel(){
         </div>`;
       }).join('');
       return`<div style="background:rgba(30,26,16,0.8);border:1px solid var(--border-gold);border-radius:4px;margin-bottom:.75rem;overflow:hidden;width:100%;">
-        <div style="padding:.6rem .85rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
-          <div style="min-width:0;flex:1;">
-            <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);">${title}</div>
-            ${date?`<div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items${isRL?` · ${pot.toLocaleString()}g`:''}</div>`:''}
+        <div style="padding:.6rem .85rem;display:flex;flex-direction:column;gap:.4rem;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;">
+            <div style="min-width:0;flex:1;">
+              <div style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--gold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${title}</div>
+              <div style="font-size:.68rem;color:var(--text-muted);margin-top:.15rem;white-space:nowrap;">${date} · ${sold.length} items${isRL?` · ${pot.toLocaleString()}g`:''}</div>
+            </div>
           </div>
-          ${isRL?`<div style="display:flex;gap:.35rem;align-items:center;flex-shrink:0;">
+          ${isRL?`<div style="display:flex;gap:.35rem;align-items:center;">
             <button type="button" onclick="startLootDisplayFromArchive('${runKey}')" style="background:none;border:1px solid rgba(201,168,76,0.35);color:var(--gold);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#10022; Display</button>
             <button type="button" onclick="restoreArchivedRun('${runKey}')" style="background:none;border:1px solid rgba(46,180,80,0.35);color:#4dff70;cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#9654; Restart</button>
             <button type="button" onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;">Delete</button>

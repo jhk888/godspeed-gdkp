@@ -4173,10 +4173,11 @@ function startLootDisplayFromArchive(runKey){
 }
 
 function restoreArchivedRun(archiveKey){
-  wowConfirm(
-    'Restart this run?',
-    'Sold items will be re-added to the queue of the current run with their original settings. Bids and winners will be cleared.',
-    async()=>{
+  wowConfirm({
+    title:'Restart this run?',
+    msg:'Sold items will be re-added to the queue of the current run with their original settings. Bids and winners will be cleared.',
+    confirmLabel:'Restart',
+    onConfirm:async()=>{
       try{
         const snap=await get(ref(db,`runs/${archiveKey}/auctions`));
         const archiveAuctions=snap.val();
@@ -4214,9 +4215,8 @@ function restoreArchivedRun(archiveKey){
         closePanel();
         setTab('queued');
       }catch(e){toast('Failed to restore run');}
-    },
-    'Restart','Cancel'
-  );
+    }
+  });
 }
 async function renderPastRunsPanel(){
   const body=document.getElementById('side-panel-body');

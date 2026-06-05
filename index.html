@@ -4174,47 +4174,58 @@ function startLootDisplayFromArchive(runKey){
 
 function restoreArchivedRun(archiveKey){
   wowConfirm({
-    title:'Restart this run?',
-    msg:'Sold items will be re-added to the queue of the current run with their original settings. Bids and winners will be cleared.',
-    confirmLabel:'Restart',
+    title:'Restore this run?',
+    msg:'All sold items, bids, and winners will be copied into the current run exactly as archived. The pot will reflect the restored totals.',
+    confirmLabel:'Restore',
     onConfirm:async()=>{
       try{
-        const snap=await get(ref(db,`runs/${archiveKey}/auctions`));
-        const archiveAuctions=snap.val();
-        if(!archiveAuctions){toast('No items found in archived run');return;}
+        const snap=await get(ref(db,`runs/${archiveKey}`));
+        const archiveRun=snap.val();
+        if(!archiveRun){toast('Archived run not found');return;}
+        const archiveAuctions=archiveRun.auctions||{};
         const soldItems=Object.values(archiveAuctions).filter(a=>a&&a.status==='sold'&&a.name);
         if(!soldItems.length){toast('No sold items to restore');return;}
-        const existing=auctionList();
-        const maxOrder=existing.reduce((m,a)=>Math.max(m,a.order??0),0);
-        const writes=soldItems.map((a,i)=>{
+        // Write each sold item into the current run preserving all data
+        const writes=soldItems.map(a=>{
           const nr=push(runRef('/auctions'));
-          return set(nr,{
+          const item={
             id:nr.key,
             name:a.name,
             slot:a.slot||'',
             quality:a.quality||'epic',
             itemId:a.itemId||null,
             itemIcon:a.itemIcon||null,
-            currentBid:a.startBid||1000,
-            startBid:a.startBid||1000,
+            currentBid:a.currentBid||0,
+            startBid:a.startBid||0,
             minIncrement:a.minIncrement||250,
             duration:a.duration||120,
             bidButtons:a.bidButtons||[250,500,1000],
             category:a.category||'Other',
             note:a.note||'',
-            bids:{},
-            status:'queued',
-            order:maxOrder+i+1,
-            remaining:a.duration||120,
+            status:'sold',
+            paid:a.paid||false,
             paused:false,
             endsAt:null,
-          });
+            remaining:0,
+            order:a.order??0,
+          };
+          // Restore bids if present
+          if(a.bids&&Object.keys(a.bids).length) item.bids=a.bids;
+          return set(nr,item);
         });
+        // Also restore settings/title if current run has none
+        const titleSnap=await get(runRef('/settings/raidTitle'));
+        if(!titleSnap.val()&&archiveRun.settings?.raidTitle){
+          await update(runRef('/settings'),{raidTitle:archiveRun.settings.raidTitle});
+        }
         await Promise.all(writes);
-        toast(`${soldItems.length} items restored to queue`);
+        toast(`${soldItems.length} items restored`);
         closePanel();
-        setTab('queued');
-      }catch(e){toast('Failed to restore run');}
+        setTab('sold');
+      }catch(e){
+        console.error('restoreArchivedRun error:',e);
+        toast('Failed to restore: '+e.message);
+      }
     }
   });
 }

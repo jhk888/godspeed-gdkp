@@ -1869,27 +1869,34 @@ function subscribeToRun(){
         });
         renderHdr();
       }
-      // If pendingGlows is empty and bidOnlyUpdate=true, it's just a currentBid
-      // echo update — skip re-render entirely so any active glow animation survives
     } else if(user) {
-      // Presence-only change (someone joined/left, no auction data changed) — just update header
-      const auctionsUnchanged=JSON.stringify(auctions)===JSON.stringify(prevAuctions);
-      if(auctionsUnchanged){
+      // Compare only structurally relevant fields — ignore remaining/endsAt which tick every second
+      const structKey=obj=>JSON.stringify(Object.fromEntries(
+        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,currentBid:a.currentBid,paid:a.paid,category:a.category}])
+      ));
+      const presenceOnly=structKey(auctions)===structKey(prevAuctions);
+      if(presenceOnly){
         renderHdr();
         if(panelOpen&&panelTab==='raiders')renderPanel();
-      } else {
-      // On queue tab, skip re-render if only timer/presence data changed (prevents flickering)
-      if(tab==='queued'&&!bidOnlyUpdate){
-        // Check if anything structural changed in queued items
-        const queuedPrev=Object.values(prevAuctions).filter(a=>a.status==='queued').length;
-        const queuedNow=Object.values(auctions).filter(a=>a.status==='queued').length;
+      } else if(tab==='queued'){
+        // Check if queued items changed structurally
+        const queuedPrev=Object.values(prevAuctions).filter(a=>a.status==='queued');
+        const queuedNow=Object.values(auctions).filter(a=>a.status==='queued');
         const statusChanged=Object.keys(auctions).some(id=>auctions[id]?.status!==prevAuctions[id]?.status);
-        if(!statusChanged&&queuedPrev===queuedNow){
+        const countChanged=queuedPrev.length!==queuedNow.length;
+        if(!statusChanged&&!countChanged){
+          // Only non-structural fields changed — update header only, no DOM rebuild
           renderHdr();
         } else {
-          const _sc=_saveScroll();
-          render();
-          _restoreScroll(_sc);
+          // Structural change — re-render grid in-place without touching scroll
+          renderHdr();
+          const grid=document.getElementById('auction-grid-bg');
+          if(grid){
+            const all=auctionList();
+            const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
+            grid.innerHTML=renderCategoryFilterBar(queued)+renderGrid(queued,'queued');
+            refreshWowheadLinks();
+          }
           if(panelOpen&&panelTab==='raiders')renderPanel();
           if(panelOpen&&panelTab==='audit')renderAuditPanel();
           if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
@@ -1901,7 +1908,6 @@ function subscribeToRun(){
         if(panelOpen&&panelTab==='raiders')renderPanel();
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
-      }
       }
     }
 

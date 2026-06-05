@@ -1870,7 +1870,7 @@ function subscribeToRun(){
       }
     } else if(user) {
       const structKey=obj=>JSON.stringify(Object.fromEntries(
-        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,currentBid:a.currentBid,paid:a.paid,category:a.category}])
+        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,paid:a.paid,category:a.category}])
       ));
       const presenceOnly=structKey(auctions)===structKey(prevAuctions);
       if(presenceOnly){
@@ -1884,7 +1884,7 @@ function subscribeToRun(){
         if(!statusChanged&&!countChanged){
           renderHdr();
         } else {
-          renderHdr();
+          renderHdr();renderTabCounts();
           const grid=document.getElementById('auction-grid-bg');
           if(grid){
             const all=auctionList();
@@ -1899,7 +1899,7 @@ function subscribeToRun(){
         }
       } else if(tab==='active'){
         // In-place rebuild for live tab — never do a full render that resets scroll
-        renderHdr();
+        renderHdr();renderTabCounts();
         const grid=document.getElementById('auction-grid-bg');
         if(grid){
           const all=auctionList();
@@ -2012,7 +2012,38 @@ function logout(){
   clearPresence();panelOpen=false;render();
 }
 
-function _saveScroll(){const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
+function renderTabCounts(){
+  const all=auctionList();
+  const active=all.filter(a=>a.status==='open');
+  const queued=all.filter(a=>a.status==='queued');
+  const sold=all.filter(a=>a.status==='sold');
+  const expired=all.filter(a=>a.status==='expired'||a.status==='cancelled');
+  const tabs=document.querySelector('.tabs');
+  if(!tabs)return;
+  const tabEls=tabs.querySelectorAll('.tab');
+  tabEls.forEach(el=>{
+    const txt=el.textContent||'';
+    if(txt.startsWith('Live'))el.childNodes[0].textContent=`Live (${active.length})`;
+    else if(txt.startsWith('Queue'))el.childNodes[0].textContent=`Queue (${queued.length})`;
+    else if(txt.startsWith('Sold')){
+      el.childNodes[0].textContent=`Sold (${sold.length})`;
+      // update owed badge
+      const badge=el.querySelector('span');
+      const owedCount=isRL?sold.filter(a=>!a.paid).length:0;
+      if(owedCount&&!badge){
+        const s=document.createElement('span');
+        s.onclick=e=>{e.stopPropagation();showUnpaidOverlay();};
+        s.style.cssText='margin-left:.4rem;background:rgba(226,96,96,0.85);color:#fff;font-size:.6rem;font-family:\'Cinzel\',serif;padding:.1rem .35rem;border-radius:3px;cursor:pointer;vertical-align:middle;';
+        s.textContent=owedCount+' owed';
+        el.appendChild(s);
+      } else if(badge){
+        if(owedCount)badge.textContent=owedCount+' owed';
+        else badge.remove();
+      }
+    }
+    else if(txt.startsWith('Expired'))el.childNodes[0].textContent=`Expired (${expired.length})`;
+  });
+}const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
 function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
 function render(){
   if(!user){renderLogin();return;}
@@ -2320,7 +2351,7 @@ function renderMain(){
       <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
     </div>
     <div class="pot-bar-actions">
-      <button class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="confirmReset()">&#x21BA; Archive</button>
       ${sold.length?`<button class="btn btn-sm" style="font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.07em;padding:.35rem .9rem;background:rgba(168,85,247,0.12);color:#c084fc;border:1px solid rgba(168,85,247,0.4);cursor:pointer;" onclick="enterRollout()">&#9760; Rollout</button>`:''}
       <button class="btn btn-gold btn-sm" style="font-weight:600;" onclick="toggleLootDisplay()">${lootDisplayMode?'&#x2715; End Display':'&#10022; Show Loot'}</button>
     </div>
@@ -4140,7 +4171,52 @@ function startLootDisplayFromArchive(runKey){
   });
 }
 
-async function renderPastRunsPanel(){
+function restoreArchivedRun(archiveKey){
+  wowConfirm(
+    'Restart this run?',
+    'Sold items will be re-added to the queue of the current run with their original settings. Bids and winners will be cleared.',
+    async()=>{
+      try{
+        const snap=await get(ref(db,`runs/${archiveKey}/auctions`));
+        const archiveAuctions=snap.val();
+        if(!archiveAuctions){toast('No items found in archived run');return;}
+        const soldItems=Object.values(archiveAuctions).filter(a=>a&&a.status==='sold'&&a.name);
+        if(!soldItems.length){toast('No sold items to restore');return;}
+        const existing=auctionList();
+        const maxOrder=existing.reduce((m,a)=>Math.max(m,a.order??0),0);
+        const writes=soldItems.map((a,i)=>{
+          const nr=push(runRef('/auctions'));
+          return set(nr,{
+            id:nr.key,
+            name:a.name,
+            slot:a.slot||'',
+            quality:a.quality||'epic',
+            itemId:a.itemId||null,
+            itemIcon:a.itemIcon||null,
+            currentBid:a.startBid||1000,
+            startBid:a.startBid||1000,
+            minIncrement:a.minIncrement||250,
+            duration:a.duration||120,
+            bidButtons:a.bidButtons||[250,500,1000],
+            category:a.category||'Other',
+            note:a.note||'',
+            bids:{},
+            status:'queued',
+            order:maxOrder+i+1,
+            remaining:a.duration||120,
+            paused:false,
+            endsAt:null,
+          });
+        });
+        await Promise.all(writes);
+        toast(`${soldItems.length} items restored to queue`);
+        closePanel();
+        setTab('queued');
+      }catch(e){toast('Failed to restore run');}
+    },
+    'Restart','Cancel'
+  );
+}
   const body=document.getElementById('side-panel-body');
   if(!body) return;
   const scrollTop=body.scrollTop; // save scroll position
@@ -4189,8 +4265,9 @@ async function renderPastRunsPanel(){
             ${date?`<div style="font-size:.7rem;color:var(--text-muted);">${date} · ${sold.length} items${isRL?` · ${pot.toLocaleString()}g`:''}</div>`:''}
           </div>
           ${isRL?`<div style="display:flex;gap:.35rem;align-items:center;flex-shrink:0;">
-            <button onclick="startLootDisplayFromArchive('${runKey}')" style="background:none;border:1px solid rgba(201,168,76,0.35);color:var(--gold);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#10022; Display</button>
-            <button onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;">Delete</button>
+            <button type="button" onclick="startLootDisplayFromArchive('${runKey}')" style="background:none;border:1px solid rgba(201,168,76,0.35);color:var(--gold);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#10022; Display</button>
+            <button type="button" onclick="restoreArchivedRun('${runKey}')" style="background:none;border:1px solid rgba(46,180,80,0.35);color:#4dff70;cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;white-space:nowrap;">&#9654; Restart</button>
+            <button type="button" onclick="deleteRun('${runKey}')" style="background:none;border:1px solid rgba(255,96,96,0.3);color:var(--red);cursor:pointer;font-size:.6rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.25rem .55rem;border-radius:3px;">Delete</button>
           </div>`:''}
         </div>
         <div style="border-top:1px solid var(--border-gold);padding:.35rem 0;max-height:60vh;overflow-y:auto;-webkit-overflow-scrolling:touch;">${itemRows}</div>
@@ -4570,7 +4647,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

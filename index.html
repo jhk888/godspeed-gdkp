@@ -2043,7 +2043,8 @@ function renderTabCounts(){
     }
     else if(txt.startsWith('Expired'))el.childNodes[0].textContent=`Expired (${expired.length})`;
   });
-}const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
+}
+function _saveScroll(){const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
 function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
 function render(){
   if(!user){renderLogin();return;}

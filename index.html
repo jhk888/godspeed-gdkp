@@ -125,6 +125,22 @@
   .login-brand .wordmark{font-family:'Cinzel',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;text-shadow:0 0 40px rgba(212,169,60,0.5);}
   .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.3rem;text-align:center;}
   .login-box{background:rgba(22,19,12,0.96);border:1px solid var(--border-gold);padding:2.25rem 2.5rem;border-radius:4px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:1rem;backdrop-filter:blur(10px);}
+  .login-box.wide{max-width:720px;}
+  .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.5rem;}
+  .login-grid .fg.full{grid-column:1/-1;}
+  .login-section-label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.18em;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid var(--border-gold);padding-bottom:.4rem;margin-bottom:.1rem;grid-column:1/-1;}
+  .bid-involvement-badge{position:absolute;top:.5rem;right:.5rem;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;padding:.15rem .45rem;border-radius:3px;pointer-events:none;z-index:10;}
+  .bid-involvement-badge.leading-badge{background:rgba(80,220,110,0.2);color:#5de87a;border:1px solid rgba(80,220,110,0.45);}
+  .bid-involvement-badge.behind-badge{background:rgba(255,80,80,0.18);color:#ff7070;border:1px solid rgba(255,80,80,0.4);}
+  .bid-involvement-badge.won-badge{background:rgba(212,169,60,0.18);color:var(--gold-light);border:1px solid var(--border-gold-strong);}
+  /* User settings modal */
+  .user-settings-wrap{display:flex;flex-direction:column;gap:1.1rem;}
+  .user-settings-sec{display:flex;flex-direction:column;gap:.75rem;}
+  .user-settings-sec-label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.18em;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid var(--border-gold);padding-bottom:.35rem;}
+  .user-settings-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .settings-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;}
+  .settings-toggle-label{font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-bright);letter-spacing:.05em;}
+  .settings-toggle-sub{font-size:.68rem;color:var(--text-muted);margin-top:.1rem;}
   .pot-bar{background:rgba(30,26,16,0.92);border:1px solid var(--border-gold);border-radius:4px;padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;gap:.75rem;flex-wrap:wrap;backdrop-filter:blur(4px);text-align:center;}
   .pot-bar-stat{display:flex;flex-direction:column;align-items:center;gap:.2rem;flex:1;min-width:120px;}
   .pot-bar-actions{display:flex;align-items:center;gap:.5rem;flex-shrink:0;}
@@ -278,6 +294,15 @@
     /* Splits */
     .splits-table{font-size:.75rem;}
     .splits-table td,.splits-table th{padding:.35rem .5rem;}
+
+    /* Login form — single column on mobile */
+    .login-box.wide{padding:1.5rem 1.25rem;}
+    .login-grid{grid-template-columns:1fr;}
+    .login-grid .fg.full{grid-column:1;}
+    .user-settings-row{grid-template-columns:1fr;}
+
+    /* Involvement badge — smaller on mobile */
+    .bid-involvement-badge{font-size:.52rem;padding:.1rem .35rem;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
@@ -326,7 +351,8 @@
   .bulk-bar .card-check{position:static;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
-  .card.leading{border-color:rgba(212,169,60,0.7);}
+  .card.leading{border-color:rgba(80,220,110,0.75);box-shadow:0 0 10px rgba(80,220,110,0.12);}
+  .card.behind{border-color:rgba(255,80,80,0.7);box-shadow:0 0 10px rgba(255,80,80,0.1);}
   .card.expiring{border-color:rgba(255,96,96,0.6);}
   .card.queued{border-color:rgba(212,169,60,0.18);opacity:.88;}
   .card.paused{border-color:rgba(240,168,48,0.55);}
@@ -2051,6 +2077,11 @@ function joinDiscord(){
 function join(){
   const name=document.getElementById('li')?.value?.trim();if(!name)return;
   user=name;isRL=document.getElementById('rlcode')?.value===RAID_LEADER_CODE;
+  // Store extra profile fields
+  const altName=document.getElementById('li-alt')?.value?.trim()||'';
+  const payment=document.getElementById('li-payment')?.value||'Auction House';
+  if(altName)localStorage.setItem('gdkp_altName',altName); else localStorage.removeItem('gdkp_altName');
+  localStorage.setItem('gdkp_payment',payment);
   // Check ban before joining
   if(isBanned({name:user})){handleBanned();return;}
   localStorage.setItem('gdkp_user',user);
@@ -2157,6 +2188,7 @@ function renderHdr(){
     ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
     ${isRL?`<button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button><button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
     <button id="mute-btn" class="btn btn-outline btn-sm" onclick="toggleMute()" title="Toggle sound">${soundMuted?'🔇':'🔊'}</button>
+    <button class="btn btn-outline btn-sm" onclick="openUserSettings()" title="Settings" style="padding:.3rem .55rem;">&#9881;</button>
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
@@ -2275,21 +2307,124 @@ function renderLogin(){
   if(hdrUser)hdrUser.innerHTML='';
   const main=document.getElementById('main');
   if(!main)return;
+  const savedName=localStorage.getItem('gdkp_user')||'';
+  const savedAlt=localStorage.getItem('gdkp_altName')||'';
+  const savedPayment=localStorage.getItem('gdkp_payment')||'Auction House';
+  const paymentOpts=['Auction House','Trade','COD'].map(o=>`<option value="${o}"${savedPayment===o?' selected':''}>${o}</option>`).join('');
   main.innerHTML=`
     <div class="login-wrap">
       <div class="login-brand"><div class="wordmark">Godspeed GDKP</div><div class="wordmark-sub">Gold DKP Run</div></div>
-      <div class="login-box">
+      <div class="login-box wide">
         <button class="discord-btn" onclick="joinDiscord()" style="width:100%;justify-content:center;font-size:.85rem;padding:.7rem 1rem;">
           <svg width="18" height="18" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.7a40 40 0 0 0-1.8 3.6 54 54 0 0 0-16.4 0A38.4 38.4 0 0 0 25.4.7 58.4 58.4 0 0 0 10.8 5C1.6 18.7-1 32.1.3 45.3a59 59 0 0 0 17.9 9.1 43 43 0 0 0 3.7-6.1 38.3 38.3 0 0 1-5.9-2.8l1.4-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38.2 38.2 0 0 1-5.9 2.9 43 43 0 0 0 3.7 6A58.7 58.7 0 0 0 70.6 45C72.2 29.7 68 16.4 60.1 4.9ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Zm23.5 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Z" fill="currentColor"/></svg>
           Login with Discord
         </button>
         <div style="display:flex;align-items:center;gap:.75rem;margin:.25rem 0;"><div style="flex:1;height:1px;background:var(--border-gold);"></div><span style="font-size:.72rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.08em;">OR</span><div style="flex:1;height:1px;background:var(--border-gold);"></div></div>
-        <div class="fg"><div class="lbl">Character name</div><input type="text" id="li" placeholder="Arthas" maxlength="24" onkeydown="if(event.key==='Enter')join()" /></div>
-        <div class="fg"><div class="lbl">Raid leader code <span style="color:var(--text-muted);font-family:'Inter',sans-serif;font-size:.8rem;letter-spacing:0;">(optional)</span></div><input type="password" id="rlcode" placeholder="Leave blank for raider" maxlength="32" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
-        <button class="btn btn-gold" onclick="join()">Join Raid</button>
+        <div class="login-grid">
+          <div class="login-section-label">Character Info</div>
+          <div class="fg"><div class="lbl">Character Name (Exact)</div><input type="text" id="li" placeholder="Arthas" maxlength="24" value="${savedName}" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
+          <div class="fg"><div class="lbl">Burner / Alt Name (Exact)</div><input type="text" id="li-alt" placeholder="Optional" maxlength="24" value="${savedAlt}" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
+          <div class="login-section-label" style="margin-top:.25rem;">Preferences</div>
+          <div class="fg"><div class="lbl">Discord Name</div><input type="text" id="li-discord" placeholder="yourname" maxlength="48" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
+          <div class="fg"><div class="lbl">Preferred Payment</div><select id="li-payment" style="background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);font-family:'Inter',sans-serif;font-size:.85rem;padding:.55rem .7rem;border-radius:3px;width:100%;appearance:auto;">${paymentOpts}</select></div>
+          <div class="fg full"><div class="lbl">Raid PIN <span style="color:var(--text-muted);font-family:'Inter',sans-serif;font-size:.8rem;letter-spacing:0;font-weight:400;">— Provided by your Raid Leader</span></div><input type="password" id="rlcode" placeholder="&#8226;&#8226;&#8226;&#8226;" maxlength="32" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
+        </div>
+        <button class="btn btn-gold" onclick="join()" style="width:100%;padding:.75rem;font-size:.85rem;letter-spacing:.1em;margin-top:.25rem;">&#10007; Enter Bidding Floor</button>
       </div>
     </div>`;
   setTimeout(()=>{const el=document.getElementById('li');if(el)el.focus();},50);
+}
+
+function openUserSettings(){
+  const savedAlt=localStorage.getItem('gdkp_altName')||'';
+  const savedPayment=localStorage.getItem('gdkp_payment')||'Auction House';
+  const paymentOpts=['Auction House','Trade','COD'].map(o=>`<option value="${o}"${savedPayment===o?' selected':''}>${o}</option>`).join('');
+  const muted=soundMuted;
+  const discordSection=discordUser?`
+    <div class="user-settings-sec">
+      <div class="user-settings-sec-label">Discord</div>
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.4rem 0;">
+        ${discordUser.avatar?`<img src="${discordUser.avatar}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border-gold);" />`:''}
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold-light);">${discordUser.username}</div>
+          <div style="font-size:.7rem;color:var(--text-muted);margin-top:.15rem;">Logged in via Discord</div>
+        </div>
+      </div>
+    </div>`:'';
+  const overlay=document.createElement('div');
+  overlay.id='user-settings-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  overlay.innerHTML=`
+    <div style="background:rgba(22,19,12,0.98);border:1px solid var(--border-gold-strong);border-radius:5px;padding:2rem 2.25rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;backdrop-filter:blur(12px);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;">Settings</div>
+        <button onclick="closeUserSettings()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:.2rem .4rem;line-height:1;" title="Close">&#10005;</button>
+      </div>
+      <div class="user-settings-wrap">
+        <div class="user-settings-sec">
+          <div class="user-settings-sec-label">Character</div>
+          <div class="user-settings-row">
+            <div class="fg"><div class="lbl">Character Name</div><input type="text" id="us-name" value="${user||''}" maxlength="24" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Arthas" /></div>
+            <div class="fg"><div class="lbl">Burner / Alt Name</div><input type="text" id="us-alt" value="${savedAlt}" maxlength="24" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Optional" /></div>
+          </div>
+        </div>
+        <div class="user-settings-sec">
+          <div class="user-settings-sec-label">Preferences</div>
+          <div class="fg" style="max-width:260px;"><div class="lbl">Preferred Payment</div><select id="us-payment" style="background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);font-family:'Inter',sans-serif;font-size:.85rem;padding:.55rem .7rem;border-radius:3px;width:100%;appearance:auto;">${paymentOpts}</select></div>
+          <div class="settings-toggle-row">
+            <div><div class="settings-toggle-label">Sound Effects</div><div class="settings-toggle-sub">Bid sounds and warnings</div></div>
+            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+              <input type="checkbox" id="us-sound" ${muted?'':'checked'} style="width:16px;height:16px;" />
+              <span style="font-size:.75rem;color:var(--text-muted);font-family:'Cinzel',serif;" id="us-sound-lbl">${muted?'Off':'On'}</span>
+            </label>
+          </div>
+        </div>
+        ${discordSection}
+        <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+          <button class="btn btn-gold" onclick="saveUserSettings()" style="flex:1;">Save</button>
+          <button class="btn btn-outline" onclick="closeUserSettings()" style="flex:1;">Cancel</button>
+        </div>
+      </div>
+    </div>`;
+  overlay.addEventListener('mousedown',e=>{if(e.target===overlay)closeUserSettings();});
+  document.body.appendChild(overlay);
+  // Wire sound toggle label
+  setTimeout(()=>{
+    const cb=document.getElementById('us-sound');
+    const lbl=document.getElementById('us-sound-lbl');
+    if(cb&&lbl)cb.onchange=()=>{lbl.textContent=cb.checked?'On':'Off';};
+    const inp=document.getElementById('us-name');if(inp)inp.focus();
+  },50);
+}
+
+function closeUserSettings(){
+  const ov=document.getElementById('user-settings-overlay');
+  if(ov)ov.remove();
+}
+
+function saveUserSettings(){
+  const newName=document.getElementById('us-name')?.value?.trim();
+  const newAlt=document.getElementById('us-alt')?.value?.trim()||'';
+  const newPayment=document.getElementById('us-payment')?.value||'Auction House';
+  const soundOn=document.getElementById('us-sound')?.checked;
+  if(!newName){toast('Character name cannot be empty');return;}
+  // Apply sound setting
+  const newMuted=!soundOn;
+  if(newMuted!==soundMuted){soundMuted=newMuted;localStorage.setItem('gdkp_muted',soundMuted?'1':'0');const mb=document.getElementById('mute-btn');if(mb)mb.textContent=soundMuted?'🔇':'🔊';}
+  // Apply character / alt changes
+  if(newAlt)localStorage.setItem('gdkp_altName',newAlt); else localStorage.removeItem('gdkp_altName');
+  localStorage.setItem('gdkp_payment',newPayment);
+  if(newName!==user){
+    // Clear old presence and re-join with new name
+    clearPresence();
+    user=newName;
+    localStorage.setItem('gdkp_user',user);
+    getOrCreateRun();renderHdr();
+  } else {
+    writePresence();
+  }
+  closeUserSettings();
+  toast('Settings saved');
 }
 
 function qRowHTML(selected){
@@ -3114,6 +3249,8 @@ function renderCard(a,mode){
   const allBids=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
   const bids=allBids.map(([,b])=>b).filter(b=>!b.retracted);
   const top=bids[0]||null,isLeading=top&&top.bidder===user;
+  const hasMyBid=bids.some(b=>b.bidder===user);
+  const isBehind=hasMyBid&&!isLeading;
   const now=Date.now();
   const rem=a.status==='open'&&!a.paused&&a.endsAt?Math.max(0,Math.floor((a.endsAt-now)/1000)):(a.remaining||0);
   const pct=a.status==='open'?Math.round((rem/(a.duration||120))*100):0;
@@ -3207,7 +3344,7 @@ function renderCard(a,mode){
     else if(mode==='sold')rlControls=`<div class="rl-controls"><button class="btn btn-green btn-sm" onclick="restartFromSold('${a.id}')">&#9654; Restart</button><button class="btn btn-outline btn-sm" onclick="openEditSold('${a.id}')">Edit</button><button class="btn btn-danger btn-sm" onclick="removeSold('${a.id}')">Remove</button></div>`;
   }
   const qualityClass=(a.quality==='legendary')?'quality-legendary':(a.quality==='epic')?'quality-epic':'';
-  const cc=[mode==='queued'?'queued':mode==='expired'?'expiring':isLeading?'leading':a.paused?'paused':urgent?'expiring':'', qualityClass].filter(Boolean).join(' ');
+  const cc=[mode==='queued'?'queued':mode==='expired'?'expiring':isLeading?'leading':isBehind?'behind':a.paused?'paused':urgent?'expiring':'', qualityClass].filter(Boolean).join(' ');
   // Status pill now lives in the slot row (right-aligned), never overlapping the name
   let statusBadge='';
   if(mode==='open'&&a.paused)statusBadge=`<div class="badge badge-paused" style="position:static;">Paused</div>`;
@@ -3217,7 +3354,14 @@ function renderCard(a,mode){
   else statusBadge=`<div class="badge badge-sold" style="position:static;">Sold</div>`;
   const slotBadgeRow=`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}<span style="margin-left:auto;">${statusBadge}</span></div>`;
   bidSection=bidSection.replace('<div class="bid-section">','<div class="bid-section">'+slotBadgeRow);
-  return`<div class="card ${cc}" id="card-${a.id}">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  // Involvement badge (top-right corner of card)
+  let invBadge='';
+  if(user){
+    if(mode==='open'&&isLeading)invBadge=`<div class="bid-involvement-badge leading-badge">&#9650; Leading</div>`;
+    else if(mode==='open'&&isBehind)invBadge=`<div class="bid-involvement-badge behind-badge">&#9660; Outbid</div>`;
+    else if(mode==='sold'&&top&&top.bidder===user)invBadge=`<div class="bid-involvement-badge won-badge">&#10003; Won</div>`;
+  }
+  return`<div class="card ${cc}" id="card-${a.id}" style="position:relative;">${badge}${invBadge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────
@@ -3830,6 +3974,8 @@ function writePresence(){
     avatar: discordUser?.avatar || null,
     discordId: discordUser?.id || null,
     discordName: discordUser ? (discordUser.username) : null,
+    altName: localStorage.getItem('gdkp_altName')||null,
+    preferredPayment: localStorage.getItem('gdkp_payment')||'Auction House',
     isRL,
     lastSeen: Date.now()
   });
@@ -4722,7 +4868,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

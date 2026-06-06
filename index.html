@@ -1866,7 +1866,7 @@ function subscribeToRun(){
             if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
           }
         });
-        renderHdr();
+        renderHdr();renderTabCounts();
       }
     } else if(user) {
       const structKey=obj=>JSON.stringify(Object.fromEntries(
@@ -1898,17 +1898,71 @@ function subscribeToRun(){
           if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
         }
       } else if(tab==='active'){
-        // In-place rebuild for live tab — never do a full render that resets scroll
+        // For retractions, update cards in-place to avoid scroll/focus disruption
         renderHdr();renderTabCounts();
-        const grid=document.getElementById('auction-grid-bg');
-        if(grid){
-          const all=auctionList();
-          const active=all.filter(a=>a.status==='open');
-          let liveList=active;
-          if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
-          else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
-          grid.innerHTML=renderLiveFilterBar(active)+renderGrid(liveList,'open');
+        const changedIds=Object.keys(auctions).filter(id=>{
+          const prev=prevAuctions[id];
+          const a=auctions[id];
+          if(!prev||!a||a.status!=='open')return false;
+          const prevRetracted=Object.values(prev.bids||{}).filter(b=>b.retracted).length;
+          const newRetracted=Object.values(a.bids||{}).filter(b=>b.retracted).length;
+          return newRetracted>prevRetracted||a.currentBid!==prev.currentBid||a.paused!==prev.paused;
+        });
+        if(changedIds.length>0&&changedIds.length<5){
+          // Small targeted update — replace only changed cards
+          changedIds.forEach(id=>{
+            const a=auctions[id];if(!a)return;
+            const wrap=document.getElementById('wrap-'+id);
+            const oldCard=document.getElementById('card-'+id);
+            if(wrap&&oldCard){
+              const t=document.createElement('div');
+              t.innerHTML=renderCard(a,'open');
+              if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
+            }
+          });
+          // Handle cards that closed — remove from grid
+          const grid=document.getElementById('auction-grid-bg');
+          if(grid){
+            Object.keys(prevAuctions).forEach(id=>{
+              if(prevAuctions[id]?.status==='open'&&auctions[id]?.status!=='open'){
+                const wrap=document.getElementById('wrap-'+id);
+                if(wrap)wrap.remove();
+              }
+            });
+            // Add any new open items
+            const newOpen=Object.keys(auctions).filter(id=>auctions[id]?.status==='open'&&!prevAuctions[id]);
+            if(newOpen.length){
+              const all=auctionList();
+              const active=all.filter(a=>a.status==='open');
+              let liveList=active;
+              if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+              else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
+              grid.innerHTML=renderLiveFilterBar(active)+renderGrid(liveList,'open');
+            } else {
+              // Just update the filter bar counts
+              const filterBar=grid.querySelector('.cat-filter-bar');
+              if(filterBar){
+                const all=auctionList();
+                const active=all.filter(a=>a.status==='open');
+                const t=document.createElement('div');
+                t.innerHTML=renderLiveFilterBar(active);
+                if(t.firstElementChild)filterBar.replaceWith(t.firstElementChild);
+              }
+            }
+          }
           refreshWowheadLinks();
+        } else {
+          // Full in-place grid rebuild for larger changes
+          const grid=document.getElementById('auction-grid-bg');
+          if(grid){
+            const all=auctionList();
+            const active=all.filter(a=>a.status==='open');
+            let liveList=active;
+            if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+            else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
+            grid.innerHTML=renderLiveFilterBar(active)+renderGrid(liveList,'open');
+            refreshWowheadLinks();
+          }
         }
         if(panelOpen&&panelTab==='raiders')renderPanel();
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
@@ -3242,13 +3296,14 @@ function saveEditAndStart(){
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
   const endsAt=Date.now()+dur*1000;
   const id=editId;
+  const prevStatus=auctions[id]?.status;
   const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'open',paused:false,endsAt,remaining:dur};
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
-  // Clear bids separately so we don't corrupt the local object
   const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';
-  tab='active';
-  // Write to Firebase: update fields then wipe bids
+  // Only switch to active tab if coming from a non-live state
+  if(prevStatus!=='open')tab='active';
+  toast(name+' started!');
   update(runRef(`/auctions/${id}`),updates).then(()=>{
     remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
   });
@@ -3649,8 +3704,9 @@ function cancelAuction(id){
     danger:true,
     suppressKey:'cancel_auction',
     onConfirm:()=>{
-      update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120,bids:{}});
-      tab='queued';
+      update(runRef(`/auctions/${id}`),{status:'queued',paused:false,endsAt:null,remaining:a.duration||120}).then(()=>{
+        remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
+      });
       toast(a.name+' cancelled — returned to queue');
     }
   });

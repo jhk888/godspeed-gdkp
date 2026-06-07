@@ -129,10 +129,7 @@
   .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.5rem;}
   .login-grid .fg.full{grid-column:1/-1;}
   .login-section-label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.18em;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid var(--border-gold);padding-bottom:.4rem;margin-bottom:.1rem;grid-column:1/-1;}
-  .bid-involvement-badge{position:absolute;top:.5rem;right:.5rem;font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.07em;text-transform:uppercase;padding:.15rem .45rem;border-radius:3px;pointer-events:none;z-index:10;}
-  .bid-involvement-badge.leading-badge{background:rgba(80,220,110,0.2);color:#5de87a;border:1px solid rgba(80,220,110,0.45);}
-  .bid-involvement-badge.behind-badge{background:rgba(255,80,80,0.18);color:#ff7070;border:1px solid rgba(255,80,80,0.4);}
-  .bid-involvement-badge.won-badge{background:rgba(212,169,60,0.18);color:var(--gold-light);border:1px solid var(--border-gold-strong);}
+
   /* User settings modal */
   .user-settings-wrap{display:flex;flex-direction:column;gap:1.1rem;}
   .user-settings-sec{display:flex;flex-direction:column;gap:.75rem;}
@@ -300,9 +297,6 @@
     .login-grid{grid-template-columns:1fr;}
     .login-grid .fg.full{grid-column:1;}
     .user-settings-row{grid-template-columns:1fr;}
-
-    /* Involvement badge — smaller on mobile */
-    .bid-involvement-badge{font-size:.52rem;padding:.1rem .35rem;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
@@ -351,8 +345,9 @@
   .bulk-bar .card-check{position:static;}
   .card{background:rgba(30,26,16,0.93);border:1px solid var(--border-gold);border-radius:5px;padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem;position:relative;transition:border-color .2s,box-shadow .2s;backdrop-filter:blur(4px);min-height:220px;overflow:hidden;}
   .card:hover{border-color:var(--border-gold-strong);}
-  .card.leading{border-color:rgba(80,220,110,0.75);box-shadow:0 0 10px rgba(80,220,110,0.12);}
-  .card.behind{border-color:rgba(255,80,80,0.7);box-shadow:0 0 10px rgba(255,80,80,0.1);}
+  .card.leading{border-color:rgba(80,220,110,0.85);box-shadow:0 0 0 1px rgba(80,220,110,0.35),0 0 18px rgba(80,220,110,0.22),inset 0 0 24px rgba(80,220,110,0.06);}
+  .card.behind{border-color:rgba(255,80,80,0.8);box-shadow:0 0 0 1px rgba(255,80,80,0.3),0 0 18px rgba(255,80,80,0.18),inset 0 0 24px rgba(255,80,80,0.05);}
+  .card.won-card{border-color:rgba(212,169,60,0.85);box-shadow:0 0 0 1px rgba(212,169,60,0.3),0 0 18px rgba(212,169,60,0.2),inset 0 0 24px rgba(212,169,60,0.06);}
   .card.expiring{border-color:rgba(255,96,96,0.6);}
   .card.queued{border-color:rgba(212,169,60,0.18);opacity:.88;}
   .card.paused{border-color:rgba(240,168,48,0.55);}
@@ -3354,14 +3349,9 @@ function renderCard(a,mode){
   else statusBadge=`<div class="badge badge-sold" style="position:static;">Sold</div>`;
   const slotBadgeRow=`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}<span style="margin-left:auto;">${statusBadge}</span></div>`;
   bidSection=bidSection.replace('<div class="bid-section">','<div class="bid-section">'+slotBadgeRow);
-  // Involvement badge (top-right corner of card)
-  let invBadge='';
-  if(user){
-    if(mode==='open'&&isLeading)invBadge=`<div class="bid-involvement-badge leading-badge">&#9650; Leading</div>`;
-    else if(mode==='open'&&isBehind)invBadge=`<div class="bid-involvement-badge behind-badge">&#9660; Outbid</div>`;
-    else if(mode==='sold'&&top&&top.bidder===user)invBadge=`<div class="bid-involvement-badge won-badge">&#10003; Won</div>`;
-  }
-  return`<div class="card ${cc}" id="card-${a.id}" style="position:relative;">${badge}${invBadge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  // Involvement badge removed — card border/glow handles leading/behind/won states
+  const wonClass=mode==='sold'&&top&&top.bidder===user?'won-card':'';
+  return`<div class="card ${[cc,wonClass].filter(Boolean).join(' ')}" id="card-${a.id}" style="position:relative;">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────

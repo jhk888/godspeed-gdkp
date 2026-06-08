@@ -639,9 +639,11 @@
   .loot-display-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.5rem 2rem;min-height:0;}
   .loot-display-grid-inner{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
   /* Loot gallery card — same grid and card size as live auctions */
-  .loot-card{background:rgba(30,26,16,0.95);border:1px solid rgba(201,168,76,0.28);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;padding:1.5rem 1.25rem 1.35rem;text-decoration:none;min-height:220px;}
+  .loot-card{background:rgba(30,26,16,0.95);border:1px solid rgba(201,168,76,0.28);border-radius:5px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;padding:1.25rem 1rem 1rem;text-decoration:none;min-height:220px;}
   .loot-card:hover{border-color:rgba(201,168,76,0.7);background:rgba(40,32,12,0.98);box-shadow:0 0 22px rgba(201,168,76,0.1);}
-  .loot-card-name{font-family:'Cinzel',serif;font-size:1rem;text-align:center;line-height:1.4;letter-spacing:.03em;word-break:break-word;}
+  .loot-card-icon-wrap{display:flex;justify-content:center;}
+  .loot-card-name{font-family:'Cinzel',serif;font-size:1rem;text-align:center;line-height:1.4;letter-spacing:.03em;word-break:break-word;flex:1;margin-top:.6rem;}
+  .loot-card-footer{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:.15rem;padding-top:.6rem;}
   .loot-card-winner{font-size:.82rem;color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;letter-spacing:.05em;}
   .loot-card-price{font-size:1.6rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em;}
   /* Permanent loot tracker - always visible */
@@ -2990,10 +2992,12 @@ function renderLootDisplay(activeCat){
     const icon=getIconImg(a.itemId,a.itemIcon,80);
     const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
     return`<a class="loot-card" ${wowAttrs} style="animation-delay:${i*18}ms;">
-      ${icon}
+      <div class="loot-card-icon-wrap">${icon}</div>
       <div class="loot-card-name" style="color:${qColor};">${a.name}</div>
-      <div class="loot-card-winner">${winner}</div>
-      <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+      <div class="loot-card-footer">
+        <div class="loot-card-winner">${winner}</div>
+        <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+      </div>
     </a>`;
   }).join('');
 
@@ -4333,10 +4337,12 @@ function startLootDisplayFromArchive(runKey){
       const icon=getIconImg(a.itemId,a.itemIcon,80);
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
       return`<a class="loot-card" ${wowAttrs} style="animation-delay:${i*18}ms;">
-        ${icon}
+        <div class="loot-card-icon-wrap">${icon}</div>
         <div class="loot-card-name" style="color:${qColor};">${a.name}</div>
-        <div class="loot-card-winner">${winner}</div>
-        <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+        <div class="loot-card-footer">
+          <div class="loot-card-winner">${winner}</div>
+          <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
+        </div>
       </a>`;
     }).join('');
 

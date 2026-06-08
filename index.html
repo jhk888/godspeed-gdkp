@@ -618,8 +618,8 @@
   .wow-dialog-btn-cancel:hover{background:linear-gradient(180deg,#352c1e 0%,#221a10 100%);}
   /* Loot display overlay */
   @keyframes lootIn{0%{opacity:0;transform:scale(.95);}100%{opacity:1;transform:scale(1);}}
-  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:200;display:flex;flex-direction:row;cursor:default;backdrop-filter:blur(8px);}
-  .loot-display-sidebar{width:220px;flex-shrink:0;background:rgba(8,6,3,0.97);border-right:1px solid rgba(201,168,76,0.15);display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:2;}
+  .loot-display-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:200;display:grid;grid-template-columns:220px 1fr;cursor:default;backdrop-filter:blur(8px);}
+  .loot-display-sidebar{background:rgba(8,6,3,0.97);border-right:1px solid rgba(201,168,76,0.15);display:flex;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;}
   .loot-display-sidebar-hdr{padding:.6rem .8rem;border-bottom:1px solid rgba(201,168,76,0.1);font-family:'Cinzel',serif;font-size:.58rem;letter-spacing:.12em;color:rgba(201,168,76,0.5);text-transform:uppercase;flex-shrink:0;}
   .loot-sidebar-item{display:flex;align-items:center;gap:.4rem;padding:.32rem .8rem;border-bottom:1px solid rgba(255,255,255,0.025);cursor:default;}
   .loot-sidebar-item a{display:flex;align-items:center;gap:.4rem;text-decoration:none;width:100%;}
@@ -627,7 +627,7 @@
   .loot-sidebar-name{font-family:'Cinzel',serif;font-size:.6rem;color:rgba(201,168,76,0.7);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;}
   .loot-sidebar-badge{font-size:.48rem;letter-spacing:.06em;padding:.1rem .28rem;border-radius:2px;flex-shrink:0;font-family:'Cinzel',serif;text-transform:uppercase;}
   /* New loot display layout */
-  .loot-display-content{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0;}
+  .loot-display-content{display:flex;flex-direction:column;overflow:hidden;}
   .loot-display-hdr{display:flex;flex-direction:row;align-items:center;padding:1rem 1.5rem .75rem;flex-shrink:0;border-bottom:1px solid rgba(201,168,76,0.08);}
   .loot-display-title{font-family:'Cinzel',serif;font-size:1.4rem;color:var(--gold);letter-spacing:.14em;text-shadow:0 0 24px rgba(200,160,50,0.5);}
   .loot-display-sub{font-size:.72rem;color:var(--text-muted);letter-spacing:.08em;font-family:'Cinzel',serif;margin-top:.2rem;}

@@ -3037,6 +3037,18 @@ function renderLootDisplay(activeCat){
     </div>`;
 
   document.body.appendChild(overlay);
+  // Debug: log computed dimensions
+  requestAnimationFrame(()=>{
+    const ov=document.getElementById('loot-display-overlay');
+    const ct=ov?.querySelector('.loot-display-content');
+    const bd=ov?.querySelector('.loot-display-body');
+    const gr=ov?.querySelector('.loot-display-grid-inner');
+    console.log('[loot-display] overlay:',ov?.getBoundingClientRect());
+    console.log('[loot-display] content:',ct?.getBoundingClientRect());
+    console.log('[loot-display] body:',bd?.getBoundingClientRect());
+    console.log('[loot-display] grid:',gr?.getBoundingClientRect());
+    console.log('[loot-display] overlay computed style:',getComputedStyle(ov||document.body).display,getComputedStyle(ov||document.body).gridTemplateColumns);
+  });
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   const _escHandler=e=>{if(e.key==='Escape'&&isRL){toggleLootDisplay();document.removeEventListener('keydown',_escHandler);}};
   document.addEventListener('keydown',_escHandler);

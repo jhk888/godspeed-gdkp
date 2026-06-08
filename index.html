@@ -635,14 +635,15 @@
   .loot-display-cat-btn{font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;padding:.3rem .9rem;border-radius:3px;border:1px solid rgba(201,168,76,0.25);background:transparent;color:rgba(201,168,76,0.5);cursor:pointer;transition:all .15s;}
   .loot-display-cat-btn:hover{border-color:rgba(201,168,76,0.55);color:rgba(201,168,76,0.85);}
   .loot-display-cat-btn.active{background:rgba(201,168,76,0.14);border-color:rgba(201,168,76,0.65);color:var(--gold-light);}
-  .loot-display-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.5rem 2rem;display:flex;flex-wrap:wrap;gap:1.1rem;align-content:flex-start;justify-content:center;}
+  .loot-display-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.5rem 2rem;}
+  .loot-display-grid-inner{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;align-items:stretch;}
   .loot-display-close{position:absolute;top:.75rem;right:.75rem;background:rgba(30,24,12,0.9);border:1px solid var(--border-gold);color:var(--gold);font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.08em;padding:.35rem .8rem;border-radius:3px;cursor:pointer;z-index:201;}
-  /* Loot gallery card — auction-card sized */
-  .loot-card{background:rgba(20,15,5,0.97);border:1px solid rgba(201,168,76,0.25);border-radius:5px;display:flex;flex-direction:column;align-items:center;gap:.55rem;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;width:200px;padding:1.1rem 1rem 1rem;text-decoration:none;flex-shrink:0;}
-  .loot-card:hover{border-color:rgba(201,168,76,0.7);background:rgba(40,30,10,0.98);box-shadow:0 0 20px rgba(201,168,76,0.1);}
-  .loot-card-name{font-family:'Cinzel',serif;font-size:.88rem;text-align:center;line-height:1.4;letter-spacing:.03em;word-break:break-word;}
-  .loot-card-winner{font-size:.76rem;color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;letter-spacing:.04em;}
-  .loot-card-price{font-size:1.45rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em;}
+  /* Loot gallery card — same grid and card size as live auctions */
+  .loot-card{background:rgba(30,26,16,0.95);border:1px solid rgba(201,168,76,0.28);border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;padding:1.5rem 1.25rem 1.35rem;text-decoration:none;min-height:220px;}
+  .loot-card:hover{border-color:rgba(201,168,76,0.7);background:rgba(40,32,12,0.98);box-shadow:0 0 22px rgba(201,168,76,0.1);}
+  .loot-card-name{font-family:'Cinzel',serif;font-size:1rem;text-align:center;line-height:1.4;letter-spacing:.03em;word-break:break-word;}
+  .loot-card-winner{font-size:.82rem;color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;letter-spacing:.05em;}
+  .loot-card-price{font-size:1.6rem;color:var(--gold);font-family:'Cinzel',serif;font-weight:600;letter-spacing:.04em;}
   /* Permanent loot tracker - always visible */
   .loot-tracker{position:fixed;left:0;top:50%;transform:translateY(-50%);width:240px;min-width:180px;max-width:420px;background:rgba(10,8,5,0.96);border:1px solid rgba(201,168,76,0.5);border-left:3px solid rgba(201,168,76,0.7);border-radius:0 8px 8px 0;z-index:150;display:none;flex-direction:column;max-height:72vh;user-select:none;}
   @media(min-width:601px){.loot-tracker{display:flex;}}
@@ -2986,7 +2987,7 @@ function renderLootDisplay(activeCat){
     const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
     const winner=bids[0]?.bidder||'Unknown';
     const qColor=qualityColors[a.quality]||'#c590ff';
-    const icon=getIconImg(a.itemId,a.itemIcon,72);
+    const icon=getIconImg(a.itemId,a.itemIcon,80);
     const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
     return`<a class="loot-card" ${wowAttrs} style="animation-delay:${i*18}ms;">
       ${icon}
@@ -3027,7 +3028,9 @@ function renderLootDisplay(activeCat){
       </div>
       ${cats.length>1?`<div class="loot-display-cats" onclick="event.stopPropagation();">${catBtns}</div>`:''}
       <div class="loot-display-body" onclick="event.stopPropagation();">
-        ${filtered.length?cards:`<div style="width:100%;text-align:center;font-family:'Cinzel',serif;font-size:.82rem;color:rgba(201,168,76,0.3);padding:4rem 0;">No items in this category</div>`}
+        <div class="loot-display-grid-inner">
+          ${filtered.length?cards:`<div style="grid-column:1/-1;text-align:center;font-family:'Cinzel',serif;font-size:.82rem;color:rgba(201,168,76,0.3);padding:4rem 0;">No items in this category</div>`}
+        </div>
       </div>
     </div>`;
 

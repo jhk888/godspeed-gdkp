@@ -2566,12 +2566,12 @@ function renderMain(){
   refreshWowheadLinks();
   setTimeout(retryMissingIcons,800);setTimeout(retryMissingIcons,2000);
   renderLootTracker();
-  // Restore archive display if it was open when tab was closed
+  // Restore archive display if it was open when tab was closed/reloaded
   if(!window._archiveRestored){
     window._archiveRestored=true;
     const _archiveKey=localStorage.getItem('gdkp_archive_display');
-    if(_archiveKey&&isRL&&!lootDisplayMode){
-      setTimeout(()=>{if(isRL&&!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
+    if(_archiveKey&&!lootDisplayMode){
+      setTimeout(()=>{if(!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
     }
   }
 }
@@ -3037,18 +3037,6 @@ function renderLootDisplay(activeCat){
     </div>`;
 
   document.body.appendChild(overlay);
-  // Debug: log computed dimensions
-  requestAnimationFrame(()=>{
-    const ov=document.getElementById('loot-display-overlay');
-    const ct=ov?.querySelector('.loot-display-content');
-    const bd=ov?.querySelector('.loot-display-body');
-    const gr=ov?.querySelector('.loot-display-grid-inner');
-    console.log('[loot-display] overlay:',ov?.getBoundingClientRect());
-    console.log('[loot-display] content:',ct?.getBoundingClientRect());
-    console.log('[loot-display] body:',bd?.getBoundingClientRect());
-    console.log('[loot-display] grid:',gr?.getBoundingClientRect());
-    console.log('[loot-display] overlay computed style:',getComputedStyle(ov||document.body).display,getComputedStyle(ov||document.body).gridTemplateColumns);
-  });
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
   const _escHandler=e=>{if(e.key==='Escape'&&isRL){toggleLootDisplay();document.removeEventListener('keydown',_escHandler);}};
   document.addEventListener('keydown',_escHandler);
@@ -3066,7 +3054,8 @@ function confirmReset(){
 async function resetRun(){
   lootDisplayMode=false;
   document.getElementById('loot-display-overlay')?.remove();
-  await update(runRef(),{archived:true,archivedAt:Date.now(),lootDisplay:false});
+  localStorage.removeItem('gdkp_archive_display');
+  await update(runRef(),{archived:true,archivedAt:Date.now(),lootDisplay:false,archiveDisplay:null});
   // Create new run
   const nr=push(ref(db,'runs'));
   runId=nr.key;
@@ -4410,18 +4399,6 @@ function startLootDisplayFromArchive(runKey){
     const _escArchive=e=>{if(e.key==='Escape'&&isRL){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
-    requestAnimationFrame(()=>{
-      const ov=document.getElementById('loot-display-overlay');
-      const ct=ov?.querySelector('.loot-display-content');
-      const bd=ov?.querySelector('.loot-display-body');
-      const gr=ov?.querySelector('.loot-display-grid-inner');
-      console.log('[archive-display] overlay rect:',JSON.stringify(ov?.getBoundingClientRect()));
-      console.log('[archive-display] content rect:',JSON.stringify(ct?.getBoundingClientRect()));
-      console.log('[archive-display] body rect:',JSON.stringify(bd?.getBoundingClientRect()));
-      console.log('[archive-display] grid rect:',JSON.stringify(gr?.getBoundingClientRect()));
-      console.log('[archive-display] overlay gridTemplateColumns:',getComputedStyle(ov||document.body).gridTemplateColumns);
-      console.log('[archive-display] content children:',ct?.children.length,'offsetWidth:',ct?.offsetWidth);
-    });
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
     sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});
   });

@@ -3028,7 +3028,7 @@ function renderLootDisplay(activeCat){
       <div class="loot-display-hdr">
         <div style="flex:1;">
           <div class="loot-display-title">${title}</div>
-          <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold &middot; ${pot.toLocaleString()}g pot</div>
+          <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold${isRL?` &middot; ${pot.toLocaleString()}g pot`:''}</div>
         </div>
         ${isRL?`<button class="loot-display-close-btn" onclick="toggleLootDisplay()">&#x2715; End Display</button>`:''}
       </div>
@@ -4390,7 +4390,7 @@ function startLootDisplayFromArchive(runKey){
         <div class="loot-display-hdr">
           <div style="flex:1;">
             <div class="loot-display-title">${title}</div>
-            <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold &middot; ${pot.toLocaleString()}g pot</div>
+            <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold${isRL?` &middot; ${pot.toLocaleString()}g pot`:''}</div>
           </div>
           ${isRL?`<button class="loot-display-close-btn" onclick="(function(){localStorage.removeItem('gdkp_archive_display');if(typeof update!=='undefined')update(runRef(),{archiveDisplay:null});document.getElementById('loot-display-overlay')?.remove();delete window._archiveSwitchCat;})()">&#x2715; Close</button>`:''}
         </div>

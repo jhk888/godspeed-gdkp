@@ -925,7 +925,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
 }
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
 function auctionList(){return Object.values(auctions||{});}
-function pot(){return auctionList().filter(a=>a.status==='sold').reduce((s,a)=>s+(a.currentBid||0),0);}
+function pot(){return auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).some(b=>!b.retracted)).reduce((s,a)=>s+(a.currentBid||0),0);}
 function raiderCount(){const n=new Set(auctionList().flatMap(a=>Object.values(a.bids||{}).map(b=>b.bidder)));if(user)n.add(user);return Math.max(n.size,1);}
 function runRef(p=''){return ref(db,`runs/${runId}${p}`);}
 function auditLog(type,data){
@@ -1757,6 +1757,14 @@ function subscribeToRun(){
       if(!document.getElementById('loot-display-overlay'))setTimeout(()=>renderLootDisplay(),300);
     }
 
+    // Rollout broadcast — show raider summary when RL enters rollout
+    const newRolloutActive=!!(data.rolloutActive);
+    if(newRolloutActive&&!isRL&&user){
+      if(!document.getElementById('raider-summary-overlay'))renderRaiderSummary();
+    } else if(!newRolloutActive){
+      document.getElementById('raider-summary-overlay')?.remove();
+    }
+
     // Detect new bids on open auctions — collect pending glows first
     const pendingGlows=[];
     const pendingExplosions=[];
@@ -2071,16 +2079,10 @@ function joinDiscord(){
 
 function join(){
   const name=document.getElementById('li')?.value?.trim();if(!name)return;
-  user=name;isRL=document.getElementById('rlcode')?.value===RAID_LEADER_CODE;
-  // Store extra profile fields
-  const altName=document.getElementById('li-alt')?.value?.trim()||'';
-  const payment=document.getElementById('li-payment')?.value||'Auction House';
-  if(altName)localStorage.setItem('gdkp_altName',altName); else localStorage.removeItem('gdkp_altName');
-  localStorage.setItem('gdkp_payment',payment);
-  // Check ban before joining
+  user=name;isRL=false;
   if(isBanned({name:user})){handleBanned();return;}
   localStorage.setItem('gdkp_user',user);
-  localStorage.setItem('gdkp_isRL',isRL?'1':'0');
+  localStorage.setItem('gdkp_isRL','0');
   getOrCreateRun();renderHdr();
 }
 function logout(){
@@ -2302,38 +2304,20 @@ function renderLogin(){
   if(hdrUser)hdrUser.innerHTML='';
   const main=document.getElementById('main');
   if(!main)return;
-  const savedName=localStorage.getItem('gdkp_user')||'';
-  const savedAlt=localStorage.getItem('gdkp_altName')||'';
-  const savedPayment=localStorage.getItem('gdkp_payment')||'Auction House';
-  const paymentOpts=['Auction House','Trade','COD'].map(o=>`<option value="${o}"${savedPayment===o?' selected':''}>${o}</option>`).join('');
   main.innerHTML=`
     <div class="login-wrap">
       <div class="login-brand"><div class="wordmark">Godspeed GDKP</div><div class="wordmark-sub">Gold DKP Run</div></div>
-      <div class="login-box wide">
-        <button class="discord-btn" onclick="joinDiscord()" style="width:100%;justify-content:center;font-size:.85rem;padding:.7rem 1rem;">
-          <svg width="18" height="18" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.7a40 40 0 0 0-1.8 3.6 54 54 0 0 0-16.4 0A38.4 38.4 0 0 0 25.4.7 58.4 58.4 0 0 0 10.8 5C1.6 18.7-1 32.1.3 45.3a59 59 0 0 0 17.9 9.1 43 43 0 0 0 3.7-6.1 38.3 38.3 0 0 1-5.9-2.8l1.4-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38.2 38.2 0 0 1-5.9 2.9 43 43 0 0 0 3.7 6A58.7 58.7 0 0 0 70.6 45C72.2 29.7 68 16.4 60.1 4.9ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Zm23.5 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Z" fill="currentColor"/></svg>
-          Login with Discord
+      <div class="login-box">
+        <div style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-align:center;text-transform:uppercase;margin-bottom:.25rem;">Sign in to enter the bidding floor</div>
+        <button class="discord-btn" onclick="joinDiscord()" style="width:100%;justify-content:center;font-size:.9rem;padding:.8rem 1rem;">
+          <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.7a40 40 0 0 0-1.8 3.6 54 54 0 0 0-16.4 0A38.4 38.4 0 0 0 25.4.7 58.4 58.4 0 0 0 10.8 5C1.6 18.7-1 32.1.3 45.3a59 59 0 0 0 17.9 9.1 43 43 0 0 0 3.7-6.1 38.3 38.3 0 0 1-5.9-2.8l1.4-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38.2 38.2 0 0 1-5.9 2.9 43 43 0 0 0 3.7 6A58.7 58.7 0 0 0 70.6 45C72.2 29.7 68 16.4 60.1 4.9ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Zm23.5 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Z" fill="currentColor"/></svg>
+          Continue with Discord
         </button>
-        <div style="display:flex;align-items:center;gap:.75rem;margin:.25rem 0;"><div style="flex:1;height:1px;background:var(--border-gold);"></div><span style="font-size:.72rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.08em;">OR</span><div style="flex:1;height:1px;background:var(--border-gold);"></div></div>
-        <div class="login-grid">
-          <div class="login-section-label">Character Info</div>
-          <div class="fg"><div class="lbl">Character Name (Exact)</div><input type="text" id="li" placeholder="Arthas" maxlength="24" value="${savedName}" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
-          <div class="fg"><div class="lbl">Burner / Alt Name (Exact)</div><input type="text" id="li-alt" placeholder="Optional" maxlength="24" value="${savedAlt}" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
-          <div class="login-section-label" style="margin-top:.25rem;">Preferences</div>
-          <div class="fg"><div class="lbl">Discord Name</div><input type="text" id="li-discord" placeholder="yourname" maxlength="48" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
-          <div class="fg"><div class="lbl">Preferred Payment</div><select id="li-payment" style="background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);font-family:'Inter',sans-serif;font-size:.85rem;padding:.55rem .7rem;border-radius:3px;width:100%;appearance:auto;">${paymentOpts}</select></div>
-          <div class="fg full"><div class="lbl">Raid PIN <span style="color:var(--text-muted);font-family:'Inter',sans-serif;font-size:.8rem;letter-spacing:0;font-weight:400;">— Provided by your Raid Leader</span></div><input type="password" id="rlcode" placeholder="&#8226;&#8226;&#8226;&#8226;" maxlength="32" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="if(event.key==='Enter')join()" /></div>
-        </div>
-        <button class="btn btn-gold" onclick="join()" style="width:100%;padding:.75rem;font-size:.85rem;letter-spacing:.1em;margin-top:.25rem;">&#10007; Enter Bidding Floor</button>
       </div>
     </div>`;
-  setTimeout(()=>{const el=document.getElementById('li');if(el)el.focus();},50);
 }
 
 function openUserSettings(){
-  const savedAlt=localStorage.getItem('gdkp_altName')||'';
-  const savedPayment=localStorage.getItem('gdkp_payment')||'Auction House';
-  const paymentOpts=['Auction House','Trade','COD'].map(o=>`<option value="${o}"${savedPayment===o?' selected':''}>${o}</option>`).join('');
   const muted=soundMuted;
   const discordSection=discordUser?`
     <div class="user-settings-sec">
@@ -2350,22 +2334,15 @@ function openUserSettings(){
   overlay.id='user-settings-overlay';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;';
   overlay.innerHTML=`
-    <div style="background:rgba(22,19,12,0.98);border:1px solid var(--border-gold-strong);border-radius:5px;padding:2rem 2.25rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;backdrop-filter:blur(12px);">
+    <div style="background:rgba(22,19,12,0.98);border:1px solid var(--border-gold-strong);border-radius:5px;padding:2rem 2.25rem;width:100%;max-width:400px;backdrop-filter:blur(12px);">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
         <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;">Settings</div>
         <button onclick="closeUserSettings()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:.2rem .4rem;line-height:1;" title="Close">&#10005;</button>
       </div>
       <div class="user-settings-wrap">
-        <div class="user-settings-sec">
-          <div class="user-settings-sec-label">Character</div>
-          <div class="user-settings-row">
-            <div class="fg"><div class="lbl">Character Name</div><input type="text" id="us-name" value="${user||''}" maxlength="24" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Arthas" /></div>
-            <div class="fg"><div class="lbl">Burner / Alt Name</div><input type="text" id="us-alt" value="${savedAlt}" maxlength="24" autocorrect="off" autocapitalize="none" spellcheck="false" placeholder="Optional" /></div>
-          </div>
-        </div>
+        ${discordSection}
         <div class="user-settings-sec">
           <div class="user-settings-sec-label">Preferences</div>
-          <div class="fg" style="max-width:260px;"><div class="lbl">Preferred Payment</div><select id="us-payment" style="background:var(--bg-input);border:1px solid var(--border-gold);color:var(--text-bright);font-family:'Inter',sans-serif;font-size:.85rem;padding:.55rem .7rem;border-radius:3px;width:100%;appearance:auto;">${paymentOpts}</select></div>
           <div class="settings-toggle-row">
             <div><div class="settings-toggle-label">Sound Effects</div><div class="settings-toggle-sub">Bid sounds and warnings</div></div>
             <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
@@ -2374,7 +2351,6 @@ function openUserSettings(){
             </label>
           </div>
         </div>
-        ${discordSection}
         <div style="display:flex;gap:.75rem;margin-top:.5rem;">
           <button class="btn btn-gold" onclick="saveUserSettings()" style="flex:1;">Save</button>
           <button class="btn btn-outline" onclick="closeUserSettings()" style="flex:1;">Cancel</button>
@@ -2383,12 +2359,10 @@ function openUserSettings(){
     </div>`;
   overlay.addEventListener('mousedown',e=>{if(e.target===overlay)closeUserSettings();});
   document.body.appendChild(overlay);
-  // Wire sound toggle label
   setTimeout(()=>{
     const cb=document.getElementById('us-sound');
     const lbl=document.getElementById('us-sound-lbl');
     if(cb&&lbl)cb.onchange=()=>{lbl.textContent=cb.checked?'On':'Off';};
-    const inp=document.getElementById('us-name');if(inp)inp.focus();
   },50);
 }
 
@@ -2398,25 +2372,13 @@ function closeUserSettings(){
 }
 
 function saveUserSettings(){
-  const newName=document.getElementById('us-name')?.value?.trim();
-  const newAlt=document.getElementById('us-alt')?.value?.trim()||'';
-  const newPayment=document.getElementById('us-payment')?.value||'Auction House';
   const soundOn=document.getElementById('us-sound')?.checked;
-  if(!newName){toast('Character name cannot be empty');return;}
-  // Apply sound setting
   const newMuted=!soundOn;
-  if(newMuted!==soundMuted){soundMuted=newMuted;localStorage.setItem('gdkp_muted',soundMuted?'1':'0');const mb=document.getElementById('mute-btn');if(mb)mb.textContent=soundMuted?'🔇':'🔊';}
-  // Apply character / alt changes
-  if(newAlt)localStorage.setItem('gdkp_altName',newAlt); else localStorage.removeItem('gdkp_altName');
-  localStorage.setItem('gdkp_payment',newPayment);
-  if(newName!==user){
-    // Clear old presence and re-join with new name
-    clearPresence();
-    user=newName;
-    localStorage.setItem('gdkp_user',user);
-    getOrCreateRun();renderHdr();
-  } else {
-    writePresence();
+  if(newMuted!==soundMuted){
+    soundMuted=newMuted;
+    localStorage.setItem('gdkp_muted',soundMuted?'1':'0');
+    const mb=document.getElementById('mute-btn');
+    if(mb)mb.textContent=soundMuted?'🔇':'🔊';
   }
   closeUserSettings();
   toast('Settings saved');
@@ -2786,11 +2748,15 @@ function renderPanel(){
 // ── Rollout Mode ──────────────────────────────────────────────────────────
 function enterRollout(){
   rolloutMode=true;
+  // Broadcast to all raiders that the run is wrapping up
+  update(runRef(),{rolloutActive:true});
   renderRollout();
 }
 function exitRollout(){
   rolloutMode=false;
+  update(runRef(),{rolloutActive:false});
   document.querySelectorAll('.rollout-overlay').forEach(e=>e.remove());
+  document.getElementById('raider-summary-overlay')?.remove();
 }
 function renderRollout(){
   document.querySelectorAll('.rollout-overlay').forEach(e=>e.remove());
@@ -2865,7 +2831,49 @@ function rolloutMarkAll(ids,name){
   if(Object.keys(updates).length)update(runRef(),updates).then(()=>renderRollout());
 }
 
-// ── Reset ─────────────────────────────────────────────────────────────────
+function renderRaiderSummary(){
+  if(!user||isRL)return;
+  document.getElementById('raider-summary-overlay')?.remove();
+  const won=auctionList().filter(a=>a.status==='sold'&&(()=>{const b=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);return b[0]?.bidder===user;})());
+  const totalSpent=won.reduce((s,a)=>s+a.currentBid,0);
+  const ol=document.createElement('div');
+  ol.id='raider-summary-overlay';
+  ol.style.cssText='position:fixed;inset:0;z-index:8999;background:rgba(8,6,4,0.88);display:flex;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(6px);';
+  ol.innerHTML=`
+    <div style="background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:6px;width:100%;max-width:480px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;">
+      <div style="padding:1.25rem 1.5rem .9rem;border-bottom:1px solid rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.1em;color:var(--gold);">Run Complete</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.2rem;">${won.length} item${won.length!==1?'s':''} won &middot; ${totalSpent.toLocaleString()}g spent</div>
+        </div>
+        <button onclick="document.getElementById('raider-summary-overlay').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:.25rem .4rem;">&#10005;</button>
+      </div>
+      <div style="overflow-y:auto;flex:1;padding:.5rem 0;">
+        ${won.length?won.map(a=>{
+          const iconHtml=getIconImg(a.itemId,a.itemIcon,32);
+          const whAttr=a.itemId?`data-wowhead="item=${a.itemId}&domain=tbc"`:'';
+          return`<div style="display:flex;align-items:center;gap:.75rem;padding:.55rem 1.5rem;border-bottom:1px solid rgba(201,168,76,0.06);">
+            <a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" ${whAttr} target="_blank" style="display:contents;">${iconHtml}</a>
+            <div style="flex:1;min-width:0;">
+              <a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" ${whAttr} target="_blank" style="text-decoration:none;">
+                <div class="item-name ${a.quality||'epic'}" style="font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name||'Unknown'}</div>
+              </a>
+              ${a.slot?`<div style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem;">${a.slot}</div>`:''}
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);white-space:nowrap;">${a.currentBid.toLocaleString()}g</div>
+          </div>`;
+        }).join(''):`<div style="padding:2.5rem 1.5rem;text-align:center;font-size:.82rem;color:var(--text-muted);">No items won this run</div>`}
+      </div>
+      ${totalSpent>0?`<div style="padding:.75rem 1.5rem;border-top:1px solid rgba(201,168,76,0.15);display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;">Total Spent</span>
+        <span style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">${totalSpent.toLocaleString()}g</span>
+      </div>`:''}
+    </div>`;
+  document.body.appendChild(ol);
+  refreshWowheadLinks();
+}
+
+
 function toggleLootDisplay(){
   update(runRef(),{lootDisplay:!lootDisplayMode});
 }
@@ -2934,6 +2942,7 @@ function renderLootTracker(){
         </div>`:''}
         <button class="loot-tracker-collapse" id="tracker-collapse-btn" onclick="window._toggleTrackerCollapse()" title="${collapsed?'Expand':'Collapse'}">${collapsed?'▲':'▼'}</button>
       </div>
+      ${!collapsed&&user?(()=>{const sp=getMemberSpend(user);return sp>0?`<div style="padding:.25rem .9rem .1rem;font-size:.68rem;color:var(--gold);font-family:'Cinzel',serif;border-bottom:1px solid rgba(201,168,76,0.1);">Spent: ${sp.toLocaleString()}g</div>`:''})():''}
       <div class="loot-tracker-body">
         ${items||'<div style="padding:.5rem .9rem;font-size:.68rem;color:rgba(201,168,76,0.3);font-family:Cinzel,serif;">None</div>'}
       </div>`;
@@ -3584,7 +3593,7 @@ function coinExplosion(auctionId, goldAmount, preRect){
   coinExplosionAt(goldAmount, rect);
 }
 
-function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);const wrap=document.getElementById('wrap-'+id);if(wrap)wrap.classList.add('card-exiting');update(runRef(`/auctions/${id}`),{status:'sold',remaining:0,paused:false});auditLog('sold',{auctionId:id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'manual'});toast(a.name+' closed — '+(bids[0]?bids[0].bidder:'nobody')+' wins for '+(a.currentBid||0).toLocaleString()+'g');}
+function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);const wrap=document.getElementById("wrap-"+id);if(wrap)wrap.classList.add("card-exiting");if(bids.length>0){update(runRef(`/auctions/${id}`),{status:"sold",remaining:0,paused:false});auditLog("sold",{auctionId:id,item:a.name,winner:bids[0].bidder,price:a.currentBid||0,closedBy:"manual"});toast(a.name+' closed — '+bids[0].bidder+' wins for '+(a.currentBid||0).toLocaleString()+'g');}else{update(runRef(`/auctions/${id}`),{status:"expired",remaining:0,paused:false});auditLog("expired",{auctionId:id,item:a.name,closedBy:"manual"});toast(a.name+' closed — no bids, moved to expired');}}
 function restartFromSold(id){
   const a=auctions[id];if(!a||!isRL)return;
   const sb=a.startBid||a.currentBid||1000;
@@ -3964,8 +3973,6 @@ function writePresence(){
     avatar: discordUser?.avatar || null,
     discordId: discordUser?.id || null,
     discordName: discordUser ? (discordUser.username) : null,
-    altName: localStorage.getItem('gdkp_altName')||null,
-    preferredPayment: localStorage.getItem('gdkp_payment')||'Auction House',
     isRL,
     lastSeen: Date.now()
   });
@@ -3983,7 +3990,7 @@ function getActiveMembers(presenceData){
 
 function getMemberSpend(name){
   return auctionList().filter(a=>a.status==='sold').reduce((sum,a)=>{
-    const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
     return sum+(bids[0]?.bidder===name?a.currentBid:0);
   },0);
 }
@@ -4858,7 +4865,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

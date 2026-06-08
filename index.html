@@ -4410,6 +4410,18 @@ function startLootDisplayFromArchive(runKey){
     const _escArchive=e=>{if(e.key==='Escape'&&isRL){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
+    requestAnimationFrame(()=>{
+      const ov=document.getElementById('loot-display-overlay');
+      const ct=ov?.querySelector('.loot-display-content');
+      const bd=ov?.querySelector('.loot-display-body');
+      const gr=ov?.querySelector('.loot-display-grid-inner');
+      console.log('[archive-display] overlay rect:',JSON.stringify(ov?.getBoundingClientRect()));
+      console.log('[archive-display] content rect:',JSON.stringify(ct?.getBoundingClientRect()));
+      console.log('[archive-display] body rect:',JSON.stringify(bd?.getBoundingClientRect()));
+      console.log('[archive-display] grid rect:',JSON.stringify(gr?.getBoundingClientRect()));
+      console.log('[archive-display] overlay gridTemplateColumns:',getComputedStyle(ov||document.body).gridTemplateColumns);
+      console.log('[archive-display] content children:',ct?.children.length,'offsetWidth:',ct?.offsetWidth);
+    });
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
     sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});
   });

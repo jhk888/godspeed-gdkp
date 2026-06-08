@@ -4309,8 +4309,6 @@ let _deleteUndoTimer=null;
 
 function startLootDisplayFromArchive(runKey){
   console.log('[archive-display] called with runKey:',runKey,'isRL:',isRL);
-  // Anyone can VIEW the archive display, only RL can trigger/close it
-  // Persist which archive run is being displayed so it survives tab close
   localStorage.setItem('gdkp_archive_display',runKey);
   if(isRL)update(runRef(),{archiveDisplay:runKey});
   get(ref(db,'runs/'+runKey)).then(snap=>{
@@ -4320,44 +4318,83 @@ function startLootDisplayFromArchive(runKey){
     if(!sold.length){toast('No sold items in this run');return;}
     document.getElementById('loot-display-overlay')?.remove();
     const title=data.settings?.raidTitle||'Archive';
-    const n=sold.length;
-    const minCard=n===1?Math.min(340,window.innerWidth*0.7|0):n<=3?220:n<=6?180:n<=12?140:n<=20?120:100;
-    const iconSize=n===1?120:n<=3?80:n<=6?60:n<=12?44:36;
-    const nameFz=n===1?'1.1rem':n<=3?'.85rem':n<=6?'.72rem':n<=12?'.62rem':'.55rem';
-    const priceFz=n===1?'1.6rem':n<=3?'1.1rem':n<=6?'.9rem':n<=12?'.75rem':'.65rem';
-    const winnerFz=n===1?'1rem':n<=3?'.78rem':n<=6?'.68rem':'.62rem';
-    const cardPad=n===1?'1.5rem 2rem':n<=6?'1rem 1.25rem':'.6rem .75rem';
     const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
-    const cards=sold.map((a,i)=>{
+    const pot=sold.reduce((s,a)=>s+(a.currentBid||0),0);
+
+    // Build category tabs
+    const cats=['All',...[...new Set(sold.map(a=>a.category||'Other'))].sort()];
+    let activeCat='All';
+
+    const buildCards=(filtered)=>filtered.map((a,i)=>{
       const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
       const winner=bids[0]?.bidder||'Unknown';
       const qColor=qualityColors[a.quality]||'#c590ff';
-      const icon=getIconImg(a.itemId,a.itemIcon,iconSize);
+      const icon=getIconImg(a.itemId,a.itemIcon,80);
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
-      return`<a class="loot-card" ${wowAttrs} style="min-width:${minCard}px;animation-delay:${i*25}ms;text-decoration:none;padding:${cardPad}">
+      return`<a class="loot-card" ${wowAttrs} style="animation-delay:${i*18}ms;">
         ${icon}
-        <div style="font-family:'Cinzel',serif;font-size:${nameFz};color:${qColor};text-align:center;line-height:1.35;margin-top:.4rem;">${a.name}</div>
-        <div style="margin-top:auto;padding-top:.35rem;display:flex;flex-direction:column;align-items:center;gap:.12rem;">
-          <div style="font-size:${winnerFz};color:var(--text-muted);text-align:center;font-family:'Cinzel',serif;">${winner}</div>
-          <div style="font-size:${priceFz};color:var(--gold);font-family:'Cinzel',serif;font-weight:600;">${(a.currentBid||0).toLocaleString()}g</div>
-        </div>
+        <div class="loot-card-name" style="color:${qColor};">${a.name}</div>
+        <div class="loot-card-winner">${winner}</div>
+        <div class="loot-card-price">${(a.currentBid||0).toLocaleString()}g</div>
       </a>`;
     }).join('');
+
+    const buildCatBtns=(active)=>cats.map(c=>{
+      const count=c==='All'?sold.length:sold.filter(a=>(a.category||'Other')===c).length;
+      return`<button class="loot-display-cat-btn${c===active?' active':''}" onclick="_archiveSwitchCat('${c}')">${c} <span style="opacity:.6;">(${count})</span></button>`;
+    }).join('');
+
     const overlay=document.createElement('div');
     overlay.id='loot-display-overlay';
     overlay.className='loot-display-overlay';
+
+    const rebuildGrid=(cat)=>{
+      const filtered=cat==='All'?sold:sold.filter(a=>(a.category||'Other')===cat);
+      const body=overlay.querySelector('.loot-display-grid-inner');
+      if(body)body.innerHTML=filtered.length?buildCards(filtered):`<div style="grid-column:1/-1;text-align:center;font-family:'Cinzel',serif;font-size:.82rem;color:rgba(201,168,76,0.3);padding:4rem 0;">No items in this category</div>`;
+      overlay.querySelectorAll('.loot-display-cat-btn').forEach(b=>{b.classList.toggle('active',b.textContent.startsWith(cat));});
+    };
+    window._archiveSwitchCat=(cat)=>{activeCat=cat;rebuildGrid(cat);};
+
+    const _clearArchiveDisplay=()=>{
+      localStorage.removeItem('gdkp_archive_display');
+      if(isRL)update(runRef(),{archiveDisplay:null});
+      overlay.remove();
+      delete window._archiveSwitchCat;
+    };
+
+    // Build sidebar from archive items
+    const allItems=Object.values(data.auctions||{}).sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
+    const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'rgba(201,168,76,0.4)',expired:'#cc6060'};
+    const statusLabels={open:'Live',queued:'Queue',sold:'Sold',expired:'Exp'};
+    const statusBadgeCss={open:'background:rgba(96,204,128,0.15);color:#60cc80;border:1px solid rgba(96,204,128,0.3);',queued:'background:rgba(201,168,76,0.12);color:#c9a84c;border:1px solid rgba(201,168,76,0.25);',sold:'background:rgba(201,168,76,0.08);color:rgba(201,168,76,0.5);border:1px solid rgba(201,168,76,0.15);',expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);'};
+    const sidebarItems=allItems.map(a=>{
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
+      return`<div class="loot-sidebar-item"><a ${wowAttrs} style="display:flex;align-items:center;gap:.4rem;text-decoration:none;width:100%;"><div class="loot-sidebar-dot" style="background:${statusColors[a.status]||'#555'};"></div><span class="loot-sidebar-name">${a.name}</span><span class="loot-sidebar-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span></a></div>`;
+    }).join('');
+
+    const initialFiltered=sold;
     overlay.innerHTML=`
-      <div class="loot-display-main">
-        ${isRL?'<button class="loot-display-close" onclick="_clearArchiveDisplay()">&#x2715; Close</button>':''}
-        <div class="loot-display-title">${title}</div>
-        <div class="loot-display-sub">${n} item${n!==1?'s':''} sold</div>
-        ${n===1
-          ?`<div onclick="event.stopPropagation();">${cards}</div>`
-          :`<div class="loot-display-grid" style="grid-template-columns:repeat(auto-fill,minmax(${minCard}px,1fr));justify-items:center;justify-content:center;" onclick="event.stopPropagation();">${cards}</div>`
-        }
+      <div class="loot-display-sidebar">
+        <div class="loot-display-sidebar-hdr">Run Loot (${allItems.length})</div>
+        ${sidebarItems}
+      </div>
+      <div class="loot-display-content">
+        <div class="loot-display-hdr">
+          <div style="flex:1;">
+            <div class="loot-display-title">${title}</div>
+            <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold &middot; ${pot.toLocaleString()}g pot</div>
+          </div>
+          ${isRL?`<button class="loot-display-close-btn" onclick="(function(){localStorage.removeItem('gdkp_archive_display');if(typeof update!=='undefined')update(runRef(),{archiveDisplay:null});document.getElementById('loot-display-overlay')?.remove();delete window._archiveSwitchCat;})()">&#x2715; Close</button>`:''}
+        </div>
+        ${cats.length>1?`<div class="loot-display-cats">${buildCatBtns('All')}</div>`:''}
+        <div class="loot-display-body">
+          <div class="loot-display-grid-inner">
+            ${buildCards(initialFiltered)}
+          </div>
+        </div>
       </div>`;
-    const _clearArchiveDisplay=()=>{localStorage.removeItem('gdkp_archive_display');if(isRL)update(runRef(),{archiveDisplay:null});overlay.remove();};
-    overlay.addEventListener('click',e=>{if(isRL&&!e.target.closest('.loot-display-grid,.loot-card,.loot-display-close'))_clearArchiveDisplay();});
+
     const _escArchive=e=>{if(e.key==='Escape'&&isRL){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
     document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);

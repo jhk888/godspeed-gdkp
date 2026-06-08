@@ -3935,6 +3935,7 @@ function togglePaidFromOverlay(id,btn){
   });
 }
 function markAllPaid(ids){
+  if(!isRL)return;
   const updates={};
   ids.forEach(id=>{
     if(auctions[id]) updates[`auctions/${id}/paid`]=true;
@@ -3942,16 +3943,8 @@ function markAllPaid(ids){
   if(Object.keys(updates).length) update(runRef(),updates).then(()=>{if(panelOpen)renderPanel();});
 }
 function togglePaid(id){
+  if(!isRL)return;
   const a=auctions[id];if(!a)return;
-  if(!isRL){
-    // Non-RL: only the winner can mark paid, and only in the paid direction
-    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
-    const winner=bids[0]?.bidder;
-    if(winner!==user)return;
-    if(a.paid)return; // winner can't undo paid
-    update(runRef(`/auctions/${id}`),{paid:true}).then(()=>{if(panelOpen)renderPanel();});
-    return;
-  }
   update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>{if(panelOpen)renderPanel();});
 }
 

@@ -637,9 +637,9 @@
   .loot-display-cat-btn:hover{border-color:rgba(201,168,76,0.55);color:rgba(201,168,76,0.85);}
   .loot-display-cat-btn.active{background:rgba(201,168,76,0.14);border-color:rgba(201,168,76,0.65);color:var(--gold-light);}
   .loot-display-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:1.25rem 1.5rem 2rem;min-height:0;}
-  .loot-display-grid-inner{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem;}
+  .loot-display-grid-inner{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;align-content:flex-start;}
   /* Loot gallery card — same grid and card size as live auctions */
-  .loot-card{background:rgba(30,26,16,0.95);border:1px solid rgba(201,168,76,0.28);border-radius:5px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;padding:1.25rem 1rem 1rem;text-decoration:none;min-height:220px;}
+  .loot-card{background:rgba(30,26,16,0.95);border:1px solid rgba(201,168,76,0.28);border-radius:5px;display:flex;flex-direction:column;align-items:stretch;cursor:pointer;transition:border-color .18s,background .18s,box-shadow .18s;animation:lootIn .3s ease-out both;padding:1.25rem 1rem 1rem;text-decoration:none;min-height:220px;width:260px;flex-shrink:0;}
   .loot-card:hover{border-color:rgba(201,168,76,0.7);background:rgba(40,32,12,0.98);box-shadow:0 0 22px rgba(201,168,76,0.1);}
   .loot-card-icon-wrap{display:flex;justify-content:center;}
   .loot-card-name{font-family:'Cinzel',serif;font-size:1rem;text-align:center;line-height:1.4;letter-spacing:.03em;word-break:break-word;flex:1;margin-top:.6rem;}

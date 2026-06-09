@@ -1063,7 +1063,7 @@ function getIconImg(itemId,icon,size=24){
 function getRaiderLoot(name){
   const won=[];
   auctionList().filter(a=>a.status==='sold').forEach(a=>{
-    const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
     if(bids[0]&&bids[0].bidder===name){
       won.push({name:a.name,price:a.currentBid,icon:a.itemIcon||null,quality:a.quality||'common',itemId:a.itemId||null,paid:a.paid||false});
     }
@@ -1074,7 +1074,7 @@ function getRaiderLoot(name){
 function getAllRaiderLoot(){
   const map={};
   auctionList().filter(a=>a.status==='sold').forEach(a=>{
-    const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+    const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
     if(!bids[0])return;
     const winner=bids[0].bidder;
     if(!map[winner])map[winner]=[];

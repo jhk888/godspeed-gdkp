@@ -2841,6 +2841,13 @@ function rolloutMarkAll(ids,name){
   if(Object.keys(updates).length)update(runRef(),updates).then(()=>renderRollout());
 }
 
+function closeArchiveDisplay(){
+  localStorage.removeItem('gdkp_archive_display');
+  update(runRef(),{archiveDisplay:null,lootDisplay:false});
+  document.getElementById('loot-display-overlay')?.remove();
+  delete window._archiveSwitchCat;
+}
+
 function renderRaiderSummary(){
   if(!user||isRL)return;
   document.getElementById('raider-summary-overlay')?.remove();
@@ -4368,12 +4375,7 @@ function startLootDisplayFromArchive(runKey){
     };
     window._archiveSwitchCat=(cat)=>{activeCat=cat;rebuildGrid(cat);};
 
-    const _clearArchiveDisplay=()=>{
-      localStorage.removeItem('gdkp_archive_display');
-      if(isRL)update(runRef(),{archiveDisplay:null,lootDisplay:false});
-      overlay.remove();
-      delete window._archiveSwitchCat;
-    };
+    const _clearArchiveDisplay=()=>closeArchiveDisplay();
 
     // Build sidebar from archive items
     const allItems=Object.values(data.auctions||{}).sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
@@ -4397,8 +4399,7 @@ function startLootDisplayFromArchive(runKey){
             <div class="loot-display-title">${title}</div>
             <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold${isRL?` &middot; ${pot.toLocaleString()}g pot`:''}</div>
           </div>
-          ${isRL?`<button class="loot-display-close-btn" onclick="(function(){localStorage.removeItem('gdkp_archive_display');update(runRef(),{archiveDisplay:null,lootDisplay:false});document.getElementById('loot-display-overlay')?.remove();delete window._archiveSwitchCat;})()">&#x2715; Close</button>`:''}
-        </div>
+          ${isRL?`<button class="loot-display-close-btn" onclick="closeArchiveDisplay()">&#x2715; Close</button>`:''}        </div>
         ${cats.length>1?`<div class="loot-display-cats">${buildCatBtns('All')}</div>`:''}
         <div class="loot-display-body">
           <div class="loot-display-grid-inner">
@@ -4905,7 +4906,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

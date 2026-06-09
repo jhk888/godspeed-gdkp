@@ -2885,7 +2885,12 @@ function renderRaiderSummary(){
 
 
 function toggleLootDisplay(){
-  update(runRef(),{lootDisplay:!lootDisplayMode});
+  const turningOff=lootDisplayMode;
+  update(runRef(),{lootDisplay:!lootDisplayMode, archiveDisplay:turningOff?null:undefined});
+  if(turningOff){
+    localStorage.removeItem('gdkp_archive_display');
+    document.getElementById('loot-display-overlay')?.remove();
+  }
 }
 const _suppressedDialogs=JSON.parse(localStorage.getItem('gdkp_suppressed')||'{}');
 function _saveSuppress(){localStorage.setItem('gdkp_suppressed',JSON.stringify(_suppressedDialogs));}
@@ -4365,7 +4370,7 @@ function startLootDisplayFromArchive(runKey){
 
     const _clearArchiveDisplay=()=>{
       localStorage.removeItem('gdkp_archive_display');
-      if(isRL)update(runRef(),{archiveDisplay:null});
+      if(isRL)update(runRef(),{archiveDisplay:null,lootDisplay:false});
       overlay.remove();
       delete window._archiveSwitchCat;
     };
@@ -4392,7 +4397,7 @@ function startLootDisplayFromArchive(runKey){
             <div class="loot-display-title">${title}</div>
             <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold${isRL?` &middot; ${pot.toLocaleString()}g pot`:''}</div>
           </div>
-          ${isRL?`<button class="loot-display-close-btn" onclick="(function(){localStorage.removeItem('gdkp_archive_display');if(typeof update!=='undefined')update(runRef(),{archiveDisplay:null});document.getElementById('loot-display-overlay')?.remove();delete window._archiveSwitchCat;})()">&#x2715; Close</button>`:''}
+          ${isRL?`<button class="loot-display-close-btn" onclick="(function(){localStorage.removeItem('gdkp_archive_display');update(runRef(),{archiveDisplay:null,lootDisplay:false});document.getElementById('loot-display-overlay')?.remove();delete window._archiveSwitchCat;})()">&#x2715; Close</button>`:''}
         </div>
         ${cats.length>1?`<div class="loot-display-cats">${buildCatBtns('All')}</div>`:''}
         <div class="loot-display-body">

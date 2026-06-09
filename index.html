@@ -1909,7 +1909,7 @@ function subscribeToRun(){
       }
     } else if(user) {
       const structKey=obj=>JSON.stringify(Object.fromEntries(
-        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,paid:a.paid,category:a.category}])
+        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,paid:a.paid,category:a.category,currentBid:a.currentBid}])
       ));
       const presenceOnly=structKey(auctions)===structKey(prevAuctions);
       if(presenceOnly){
@@ -2007,9 +2007,44 @@ function subscribeToRun(){
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
       } else {
-        const _sc=_saveScroll();
-        render();
-        _restoreScroll(_sc);
+        // sold / expired tabs — update changed cards in-place
+        renderHdr();renderTabCounts();
+        const currentStatus=tab==='sold'?'sold':tab==='expired'?'expired':null;
+        const changedIds=Object.keys(auctions).filter(id=>{
+          const prev=prevAuctions[id];
+          const a=auctions[id];
+          if(!prev||!a)return false;
+          return a.currentBid!==prev.currentBid||a.paid!==prev.paid||a.name!==prev.name||a.status!==prev.status;
+        });
+        const statusChanged=Object.keys(auctions).some(id=>auctions[id]?.status!==prevAuctions[id]?.status)||Object.keys(auctions).length!==Object.keys(prevAuctions).length;
+        if(!statusChanged&&changedIds.length>0&&changedIds.length<8){
+          // Surgical: replace only changed cards
+          changedIds.forEach(id=>{
+            const a=auctions[id];if(!a)return;
+            const wrap=document.getElementById('wrap-'+id);
+            const oldCard=document.getElementById('card-'+id);
+            if(wrap&&oldCard){
+              const mode=a.status==='sold'?'sold':a.status==='expired'?'expired':'open';
+              const t=document.createElement('div');
+              t.innerHTML=renderCard(a,mode);
+              if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
+            }
+          });
+          refreshWowheadLinks();
+        } else {
+          // Full grid rebuild needed (status change, item added/removed)
+          const grid=document.getElementById('auction-grid-bg');
+          if(grid&&currentStatus){
+            const all=auctionList();
+            const items=all.filter(a=>a.status===currentStatus);
+            grid.innerHTML=currentStatus==='sold'
+              ?renderCategoryFilterBar(items)+renderGrid(items,'sold')
+              :renderGrid(items,'expired');
+            refreshWowheadLinks();
+          } else {
+            render();
+          }
+        }
         if(panelOpen&&panelTab==='raiders')renderPanel();
         if(panelOpen&&panelTab==='audit')renderAuditPanel();
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
@@ -2140,9 +2175,7 @@ function _saveScroll(){const m=document.getElementById('main');return{doc:docume
 function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
 function render(){
   if(!user){renderLogin();return;}
-  const _s=_saveScroll();
   renderHdr();renderMain();
-  _restoreScroll(_s);
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
@@ -2468,6 +2501,7 @@ function buildModal(title,a,fn){
 }
 
 function renderMain(){
+  const _scroll=_saveScroll();
   const all=auctionList();
   const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999)),active=all.filter(a=>a.status==='open'),sold=all.filter(a=>a.status==='sold'),expired=all.filter(a=>a.status==='expired');
   const p=pot();
@@ -2567,6 +2601,7 @@ function renderMain(){
     ${tab!=='splits'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
+  _restoreScroll(_scroll);
   refreshWowheadLinks();
   setTimeout(retryMissingIcons,800);setTimeout(retryMissingIcons,2000);
   renderLootTracker();

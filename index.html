@@ -2140,7 +2140,9 @@ function _saveScroll(){const m=document.getElementById('main');return{doc:docume
 function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
 function render(){
   if(!user){renderLogin();return;}
+  const _s=_saveScroll();
   renderHdr();renderMain();
+  _restoreScroll(_s);
   const fab=document.getElementById('fab');
   if(fab) fab.style.display=(isRL&&!modal)?'flex':'none';
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();

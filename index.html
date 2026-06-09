@@ -3940,12 +3940,21 @@ function togglePaidFromOverlay(id,btn){
   update(runRef(`/auctions/${id}`),{paid:true}).then(()=>{
     const row=btn.closest('.unpaid-row');
     if(row){row.style.opacity='.35';btn.disabled=true;btn.textContent='Paid';}
-    // Remove row after brief delay, close overlay if empty
     setTimeout(()=>{
       if(row)row.remove();
       const body=document.querySelector('.unpaid-overlay-body');
       if(body&&!body.children.length)document.querySelectorAll('.unpaid-overlay').forEach(e=>e.remove());
-      renderMain();
+      // Update the card's paid button surgically
+      const card=document.getElementById('card-'+id);
+      if(card){
+        const paidBtn=card.querySelector('[onclick^="togglePaid"]');
+        if(paidBtn){
+          const div=document.createElement('div');
+          div.style.cssText='margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:\'Cinzel\',serif;';
+          div.textContent='✓ Paid';
+          paidBtn.replaceWith(div);
+        }
+      }
     },600);
   });
 }
@@ -3960,7 +3969,29 @@ function markAllPaid(ids){
 function togglePaid(id){
   if(!isRL)return;
   const a=auctions[id];if(!a)return;
-  update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>{if(panelOpen)renderPanel();});
+  const newPaid=!a.paid;
+  update(runRef(`/auctions/${id}`),{paid:newPaid}).then(()=>{
+    // Surgical DOM update — swap just the paid button without re-rendering
+    const card=document.getElementById('card-'+id);
+    if(card){
+      const btn=card.querySelector('[onclick^="togglePaid"]');
+      if(btn){
+        if(newPaid){
+          const div=document.createElement('div');
+          div.style.cssText='margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:\'Cinzel\',serif;';
+          div.textContent='✓ Paid';
+          btn.replaceWith(div);
+        } else {
+          const newBtn=document.createElement('button');
+          newBtn.setAttribute('onclick',`togglePaid('${id}')`);
+          newBtn.style.cssText='width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:\'Cinzel\',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:1px solid rgba(226,96,96,0.4);background:rgba(226,96,96,0.12);color:#ff8080;';
+          newBtn.textContent='● Unpaid — tap to confirm';
+          btn.replaceWith(newBtn);
+        }
+      }
+    }
+    if(panelOpen)renderPanel();
+  });
 }
 
 // ── Presence & Members ────────────────────────────────────────────────────

@@ -107,10 +107,14 @@
   .btn-clone:hover{background:#2a1d4a;border-color:#7a52cc;color:#ccaaff;}
   .btn-green{background:#1a6b30;color:#6aff8a;border:1px solid #2ecc52;font-weight:600;}
   .btn-green:hover{background:#236b33;border-color:#40ff66;}
-  .btn-amber{background:#b87010;color:#fff;border:2px solid #e8900a;font-weight:600;letter-spacing:.1em;}
-  .btn-amber:hover{background:#d08318;border-color:#f0a020;}
-  .btn-amber-resume{background:#1a6b30;color:#fff;border:2px solid #28a048;font-weight:600;letter-spacing:.1em;}
-  .btn-amber-resume:hover{background:#236b33;border-color:#40ff66;}
+  .btn-amber{background:#3d2806;color:#f0a838;border:1px solid #c87818;font-weight:600;letter-spacing:.1em;}
+  .btn-amber:hover{background:#54370a;border-color:#e8900a;color:#ffc060;}
+  .btn-amber-resume{background:#0d2e14;color:#6aff8a;border:1px solid #2ecc52;font-weight:600;letter-spacing:.1em;}
+  .btn-amber-resume:hover{background:#16401f;border-color:#40ff66;}
+  .btn-gold-soft{background:#3a2d08;color:#f5d060;border:1px solid #c9a84c;font-weight:600;}
+  .btn-gold-soft:hover{background:#4e3d0c;border-color:#f0cc6a;color:#ffe28a;}
+  .btn-neutral{background:#28241e;color:#c2b8a8;border:1px solid #6a6055;font-weight:600;}
+  .btn-neutral:hover{background:#363026;border-color:#8a7f70;color:#e0d6c6;}
   .qb-custom{background:#1a5c2a !important;color:#6aff8a !important;border:1px solid #2ecc52 !important;border-style:solid !important;font-weight:600;}
   .qb-custom:hover{background:#236b33 !important;border-color:#40ff66 !important;}
   .qb-custom.active-custom{background:#0e3d1c !important;color:#4dff70 !important;border-color:#28cc44 !important;}
@@ -496,8 +500,8 @@
   .search-preview-name.uncommon{color:var(--uncommon) !important;}
   .search-preview-name.legendary{color:#ff8000 !important;}
   .search-preview-name.common{color:var(--text-bright) !important;}
-  .search-preview-clear{margin-left:auto;cursor:pointer;color:var(--text-muted);font-size:.75rem;background:none;border:none;font-family:'Cinzel',serif;letter-spacing:.05em;}
-  .search-preview-clear:hover{color:var(--red);}
+  .search-preview-clear{margin-left:auto;cursor:pointer;color:#c2b8a8;font-size:.7rem;background:#28241e;border:1px solid #6a6055;border-radius:3px;padding:.25rem .6rem;font-family:'Cinzel',serif;letter-spacing:.05em;}
+  .search-preview-clear:hover{background:#363026;border-color:#8a7f70;color:#e0d6c6;}
   .dropdown{position:absolute;top:100%;left:0;right:0;background:#1a1612;border:1px solid var(--border-gold-strong);border-radius:3px;z-index:300;max-height:320px;overflow-y:auto;overscroll-behavior:contain;margin-top:2px;box-shadow:0 4px 16px rgba(0,0,0,0.7);}
   .dropdown-item{display:flex;align-items:center;gap:.6rem;padding:.45rem .65rem;cursor:pointer;transition:background .1s;outline:none;}
   .dropdown-item:hover,.dropdown-item:focus{background:rgba(201,168,76,0.15);outline:none;}
@@ -2672,10 +2676,10 @@ function renderMain(){
 
   let secActions='';
   if(isRL&&tab!=='splits'){
-    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _bs='font-weight:600;font-size:.8rem;width:100%;text-align:center;white-space:nowrap;';const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="${_bs}" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';const _cancelAllBtn=_live.length?`<button class="btn btn-danger btn-sm" style="${_bs}" onclick="cancelAll()">Cancel All</button>`:'';const _closeAllBtn=_live.length?`<button class="btn btn-sm" style="${_bs}background:#0d2e14;color:#6aff8a;border:2px solid #2ecc52;" onclick="closeAll()">Close All</button>`:'';secActions=_live.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;width:100%;max-width:300px;">${_pauseAllBtn}${_cancelAllBtn}${_closeAllBtn}<button class="btn btn-gold btn-sm" style="${_bs}" onclick="openModal()">+ Add Item</button></div>`:`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;}
-    else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
-    else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
-    else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn btn-gold btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
+    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _bs='font-weight:600;font-size:.8rem;width:100%;text-align:center;white-space:nowrap;';const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="${_bs}" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';const _cancelAllBtn=_live.length?`<button class="btn btn-danger btn-sm" style="${_bs}" onclick="cancelAll()">Cancel All</button>`:'';const _closeAllBtn=_live.length?`<button class="btn btn-sm" style="${_bs}background:#0d2e14;color:#6aff8a;border:1px solid #2ecc52;" onclick="closeAll()">Close All</button>`:'';secActions=_live.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;width:100%;max-width:300px;">${_pauseAllBtn}${_cancelAllBtn}${_closeAllBtn}<button class="btn btn-gold-soft btn-sm" style="${_bs}" onclick="openModal()">+ Add Item</button></div>`:`<div class="rl-controls"><button class="btn btn-gold-soft btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;}
+    else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn btn-gold-soft btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
+    else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn btn-gold-soft btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
+    else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn btn-gold-soft btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="openModal()">+ Add Item</button></div>`;
   }
 
   let content='';
@@ -3312,6 +3316,17 @@ function currentModeList(mode){
 
 function selectedList(){return auctionList().filter(a=>selectedItems.has(a.id));}
 
+function bulkExtend(){
+  const ids=[...selectedItems].filter(id=>auctions[id]&&auctions[id].status==='open');
+  if(!ids.length)return;
+  ids.forEach(id=>{
+    const a=auctions[id];
+    if(a.paused){update(runRef(`/auctions/${id}`),{remaining:(a.remaining||0)+30});}
+    else{update(runRef(`/auctions/${id}`),{endsAt:(a.endsAt||Date.now())+30000});}
+  });
+  toast(`+30s added to ${ids.length} auction${ids.length!==1?'s':''}`);
+  // Selection kept on purpose — extending repeatedly is the common case
+}
 function bulkRestart(){
   const items=selectedList().filter(a=>a.status==='expired');
   items.forEach(a=>restartAuction(a.id,true));
@@ -3397,14 +3412,14 @@ function renderBulkBar(list,mode){
     if(mode==='expired')actions=`<button class="btn btn-green btn-sm" onclick="event.stopPropagation();bulkRestart()">&#9654; Restart ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
     else if(mode==='queued')actions=`<button class="btn btn-green btn-sm" onclick="event.stopPropagation();bulkStart()">&#9654; Start ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
     else if(mode==='sold')actions=`<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkRemove('${mode}')">Remove ${n}</button>`;
-    else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkClose()">Close ${n}</button>`;
+    else if(mode==='open')actions=`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();bulkPause()">&#10073;&#10073; Pause ${n}</button><button class="btn btn-amber btn-sm" onclick="event.stopPropagation();bulkExtend()">+30s &times;${n}</button><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();bulkClose()">Close ${n}</button>`;
   }
   return`<div class="bulk-bar bar-clickable" onclick="toggleSelectAll('${mode}')">
     <div class="card-check bulk-all ${allSelected?'checked':''}" onclick="event.stopPropagation();toggleSelectAll('${mode}')" title="Select all">${allSelected?'✓':''}</div>
     <span style="font-size:.7rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${n>0?`${n} selected`:'Select all'}</span>
     <div style="flex:1;"></div>
     ${actions}
-    ${n>0?`<button class="btn btn-outline btn-sm" onclick="event.stopPropagation();clearSelection()">Clear</button>`:''}
+    ${n>0&&mode!=='open'?`<button class="btn btn-neutral btn-sm" onclick="event.stopPropagation();clearSelection()">Clear</button>`:''}
   </div>`;
 }
 
@@ -5100,7 +5115,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,openUserSettings,closeUserSettings,saveUserSettings});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

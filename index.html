@@ -359,6 +359,10 @@
   .card.won-card{border-color:rgba(212,169,60,0.85) !important;box-shadow:0 0 0 1px rgba(212,169,60,0.3),0 0 18px rgba(212,169,60,0.2),inset 0 0 24px rgba(212,169,60,0.06) !important;}
   .card.expiring{border-color:rgba(255,96,96,0.6);}
   .card.queued{border-color:rgba(212,169,60,0.18);opacity:.88;}
+  .card.card-previewing{border-color:rgba(240,204,106,0.85) !important;box-shadow:0 0 0 1px rgba(240,204,106,0.3),0 0 18px rgba(212,169,60,0.28),inset 0 0 24px rgba(212,169,60,0.07) !important;}
+  .bid-preview{color:var(--gold-light);animation:previewPulse 1s ease-in-out infinite;}
+  .bid-preview-note{font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.05em;animation:previewPulse 1s ease-in-out infinite;}
+  @keyframes previewPulse{0%,100%{opacity:1;}50%{opacity:.45;}}
   .card.paused{border-color:rgba(240,168,48,0.55);}
   .card.quality-epic{border-color:rgba(180,74,255,0.5);box-shadow:0 0 12px rgba(180,74,255,0.18);}
   .card.quality-legendary{border-color:rgba(255,128,0,0.6);box-shadow:0 0 16px rgba(255,128,0,0.22);}
@@ -1687,6 +1691,22 @@ function startTick(){
     const now=Date.now();
     auctionList().forEach(a=>{
       if(a.status!=='open'||a.paused||!a.endsAt)return;
+      // Orphaned price preview (RL paused or disconnected mid-edit) — expire it
+      if(a.previewBid!=null&&(now-(a.previewAt||0))>=8000){
+        if(isRL&&editId!==a.id){
+          update(runRef(`/auctions/${a.id}`),{previewBid:null,previewAt:null});
+        } else {
+          const oldCard=document.getElementById('card-'+a.id);
+          if(oldCard&&oldCard.querySelector('.bid-preview')){
+            const wrap=document.getElementById('wrap-'+a.id);
+            if(wrap){
+              const t=document.createElement('div');
+              t.innerHTML=renderCard(a,'open');
+              if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
+            }
+          }
+        }
+      }
       const r=Math.max(0,Math.floor((a.endsAt-now)/1000));
       const pct=Math.round((r/(a.duration||120))*100),urgent=r<=15;
       const fe=document.getElementById('tfill-'+a.id),te=document.getElementById('ttext-'+a.id);
@@ -1814,6 +1834,8 @@ function subscribeToRun(){
           }
           // If non-bid fields changed (timer, pause, retraction) need full render
           if(prev&&(a.paused!==prev.paused||a.status!==prev.status)) bidOnlyUpdate=false;
+          // Price preview broadcast from RL edit modal
+          if(prev&&a.previewBid!==prev.previewBid) bidOnlyUpdate=false;
           // Detect retraction — any bid now has retracted=true that didn't before
           if(prev?.bids&&a.bids){
             const prevRetractedCount=Object.values(prev.bids).filter(b=>b.retracted).length;
@@ -1936,7 +1958,7 @@ function subscribeToRun(){
       }
     } else if(user) {
       const structKey=obj=>JSON.stringify(Object.fromEntries(
-        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,paid:a.paid,category:a.category,currentBid:a.currentBid}])
+        Object.entries(obj).map(([id,a])=>[id,{status:a.status,name:a.name,order:a.order,paid:a.paid,category:a.category,currentBid:a.currentBid,previewBid:a.previewBid}])
       ));
       const presenceOnly=structKey(auctions)===structKey(prevAuctions);
       if(presenceOnly){
@@ -1972,7 +1994,7 @@ function subscribeToRun(){
           if(!prev||!a||a.status!=='open')return false;
           const prevRetracted=Object.values(prev.bids||{}).filter(b=>b.retracted).length;
           const newRetracted=Object.values(a.bids||{}).filter(b=>b.retracted).length;
-          return newRetracted>prevRetracted||a.currentBid!==prev.currentBid||a.paused!==prev.paused;
+          return newRetracted>prevRetracted||a.currentBid!==prev.currentBid||a.paused!==prev.paused||a.previewBid!==prev.previewBid;
         });
         if(changedIds.length>0&&changedIds.length<5){
           // Small targeted update — replace only changed cards
@@ -2483,6 +2505,31 @@ function catRowHTML(selected){
   }).join('');
 }
 
+let _previewTimer=null;
+function previewStartBid(v){
+  // Live preview while typing in the edit modal. Local card updates instantly;
+  // a debounced display-only previewBid field broadcasts to raiders so they see
+  // the price ticking, without committing anything until Save.
+  if(!editId)return;
+  const a=auctions[editId];
+  if(!a||a.status!=='open')return;
+  const val=parseInt(v);
+  if(!val||val<1)return;
+  const id=editId;
+  const wrap=document.getElementById('wrap-'+id);
+  const oldCard=document.getElementById('card-'+id);
+  if(wrap&&oldCard){
+    const t=document.createElement('div');
+    t.innerHTML=renderCard({...a,previewBid:val,previewAt:Date.now()},'open');
+    if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
+  }
+  clearTimeout(_previewTimer);
+  _previewTimer=setTimeout(()=>{
+    if(editId!==id)return; // modal closed or moved on — don't write a ghost preview
+    update(runRef(`/auctions/${id}`),{previewBid:val,previewAt:Date.now()});
+  },350);
+}
+
 function buildModal(title,a,fn){
   const isEdit=!!a;
   const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:raidSettings.defaultBidButtons||[250,500,1000];
@@ -2502,7 +2549,7 @@ function buildModal(title,a,fn){
     <div class="fg"><div class="lbl">Quality</div><div class="q-row">${qRowHTML(isEdit?a.quality:modalQuality)}</div></div>
     <div class="modal-divider"></div>
     <div class="three-col">
-      <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a?a.currentBid:1000}" min="1" step="100" /></div>
+      <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a?a.currentBid:1000}" min="1" step="100"${isEdit&&a.status==='open'?' oninput="previewStartBid(this.value)"':''} /></div>
       <div class="fg"><div class="lbl">Timer (s)</div><input type="number" id="m-timer" value="${a?a.duration:raidSettings.defaultTimer}" min="10" max="600" step="10" /></div>
       ${!isEdit?`<div class="fg"><div class="lbl">Qty</div><input type="number" id="m-qty" value="1" min="1" max="20" step="1" /></div>`:''}
     </div>
@@ -3372,6 +3419,7 @@ function renderCard(a,mode){
   const pct=a.status==='open'?Math.round((rem/(a.duration||120))*100):0;
   const urgent=rem<=15&&a.status==='open'&&!a.paused;
   const minNext=(a.currentBid||0)+(a.minIncrement||250);
+  const previewActive=mode==='open'&&a.previewBid!=null&&(Date.now()-(a.previewAt||0))<8000;
   const showCustom=!!customOpen[a.id];
   const activeBids=allBids.filter(([,b])=>!b.retracted).slice(0,5);
   const retractedBids=allBids.filter(([,b])=>b.retracted);
@@ -3424,6 +3472,11 @@ function renderCard(a,mode){
       }
     </div>`:'' ;
     bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
+    if(previewActive){
+      bidSection=`<div class="bid-section">${noteHTML}
+        <div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt bid-preview">${(a.previewBid||0).toLocaleString()}g</div><div class="bid-preview-note">&#9998; Price being adjusted&hellip;</div></div>${bidRightBtns}</div>
+        <div class="quick-bids" style="opacity:.3;pointer-events:none;">${qbtns}</div></div>`;
+    }
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
@@ -3472,7 +3525,7 @@ function renderCard(a,mode){
   bidSection=bidSection.replace('<div class="bid-section">','<div class="bid-section">'+slotBadgeRow);
   // Involvement badge removed — card border/glow handles leading/behind/won states
   const wonClass=mode==='sold'&&top&&top.bidder===user?'won-card':'';
-  return`<div class="card ${[cc,wonClass].filter(Boolean).join(' ')}" id="card-${a.id}" style="position:relative;">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
+  return`<div class="card ${[cc,wonClass,previewActive?'card-previewing':''].filter(Boolean).join(' ')}" id="card-${a.id}" style="position:relative;">${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────
@@ -3530,14 +3583,17 @@ function saveEdit(){
   const btn1=Math.max(1,parseInt(document.getElementById('m-btn1')?.value)||250);
   const btn2=Math.max(1,parseInt(document.getElementById('m-btn2')?.value)||500);
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
-  const updates={name,slot:selectedItem?.slot||'',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3]};
+  const updates={name,slot:selectedItem?.slot||'',quality:modalQuality,currentBid:parseInt(document.getElementById('m-start')?.value)||1000,startBid:parseInt(document.getElementById('m-start')?.value)||1000,minIncrement:btn1,duration:Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer),bidButtons:[btn1,btn2,btn3],previewBid:null,previewAt:null};
   updates.category=modalCategory||'Other';
   updates.note=document.getElementById('m-note')?.value?.trim()||'';
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
-  update(runRef(`/auctions/${editId}`),updates);
-  const _sc=_saveScroll();
-  modal=false;editId=null;selectedItem=null;searchQuery='';toast(name+' updated');
-  _restoreScroll(_sc);
+  const id=editId;
+  clearTimeout(_previewTimer);
+  _removeModalFocusTrap();
+  modal=false;editId=null;selectedItem=null;searchQuery='';
+  update(runRef(`/auctions/${id}`),updates);
+  render();
+  toast(name+' updated');
   setTimeout(()=>refreshWowheadLinks(),300);
 }
 function saveEditAndStart(){
@@ -3552,9 +3608,11 @@ function saveEditAndStart(){
   const endsAt=Date.now()+dur*1000;
   const id=editId;
   const prevStatus=auctions[id]?.status;
-  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'open',paused:false,endsAt,remaining:dur};
+  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'open',paused:false,endsAt,remaining:dur,previewBid:null,previewAt:null};
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
   const _sc=_saveScroll();
+  clearTimeout(_previewTimer);
+  _removeModalFocusTrap();
   modal=false;editId=null;selectedItem=null;searchQuery='';
   // Only switch to active tab if coming from a non-live state
   if(prevStatus!=='open')tab='active';
@@ -3562,6 +3620,7 @@ function saveEditAndStart(){
   update(runRef(`/auctions/${id}`),updates).then(()=>{
     remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
   });
+  render();
   _restoreScroll(_sc);
   setTimeout(()=>refreshWowheadLinks(),300);
 }
@@ -3575,13 +3634,16 @@ function saveEditAndQueue(){
   const dur=Math.max(10,parseInt(document.getElementById('m-timer')?.value)||raidSettings.defaultTimer);
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
   const id=editId;
-  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'queued',paused:false,endsAt:null,remaining:dur};
+  const updates={name,slot:selectedItem?.slot||auctions[id]?.slot||'',quality:modalQuality,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',status:'queued',paused:false,endsAt:null,remaining:dur,previewBid:null,previewAt:null};
   if(selectedItem){updates.itemId=selectedItem.id;updates.itemIcon=selectedItem.icon||null;}
   const _sc=_saveScroll();
+  clearTimeout(_previewTimer);
+  _removeModalFocusTrap();
   modal=false;editId=null;selectedItem=null;searchQuery='';
   update(runRef(`/auctions/${id}`),updates).then(()=>{
     remove(runRef(`/auctions/${id}/bids`)).catch(()=>{});
   });
+  render();
   toast(name+' moved to queue');
   _restoreScroll(_sc);
 }
@@ -4935,6 +4997,10 @@ function renderSoldFilterBar(list){
 
 function closeModal(){
   _removeModalFocusTrap();
+  clearTimeout(_previewTimer);
+  if(editId&&auctions[editId]&&auctions[editId].previewBid!=null){
+    update(runRef(`/auctions/${editId}`),{previewBid:null,previewAt:null});
+  }
   const wasAdding=modal&&!editId;
   modal=false;editId=null;selectedItem=null;searchQuery='';
   if(wasAdding)tab='queued';
@@ -5034,7 +5100,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,openUserSettings,closeUserSettings,saveUserSettings});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

@@ -1849,6 +1849,23 @@ function subscribeToRun(){
       bidOnlyUpdate=false;
     }
 
+    // Did anything change that affects the pot bar or my-loot panel?
+    const potLootChanged=(()=>{
+      const ids=new Set([...Object.keys(prevAuctions),...Object.keys(auctions)]);
+      for(const id of ids){
+        const p=prevAuctions[id],a=auctions[id];
+        if(!p||!a){if((p||a)?.status==='sold')return true;continue;}
+        if(p.status!==a.status||p.paid!==a.paid)return true;
+        if(a.status==='sold'&&p.currentBid!==a.currentBid)return true;
+        if(a.status==='sold'){
+          const pr=Object.values(p.bids||{}).filter(b=>b.retracted).length;
+          const nr=Object.values(a.bids||{}).filter(b=>b.retracted).length;
+          if(pr!==nr)return true;
+        }
+      }
+      return false;
+    })();
+
     // Always fire explosions regardless of modal state
     const explodeNow=(rects)=>pendingExplosions.forEach(({id,amount,rect})=>{
       const r=rect||rects[id];
@@ -1889,6 +1906,7 @@ function subscribeToRun(){
       });
       explodeNow(bgRects);
       renderHdr();
+      if(potLootChanged)refreshPotAndLoot();
       return;
     }
 
@@ -2059,6 +2077,9 @@ function subscribeToRun(){
         if(panelOpen&&panelTab==='runs')renderPastRunsPanel();
       }
     }
+
+    // Keep pot bar and my-loot panel in sync after in-place updates
+    if(user&&potLootChanged)refreshPotAndLoot();
 
     // Apply glows AFTER card update
     pendingGlows.forEach(({id})=>{
@@ -2509,13 +2530,7 @@ function buildModal(title,a,fn){
   </div></div>`;
 }
 
-function renderMain(){
-  const _scroll=_saveScroll();
-  const all=auctionList();
-  const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999)),active=all.filter(a=>a.status==='open'),sold=all.filter(a=>a.status==='sold'),expired=all.filter(a=>a.status==='expired');
-  const p=pot();
-
-  // My loot (raider view)
+function buildMyLootHTML(){
   const myWon=getRaiderLoot(user);
   const myTotal=myWon.reduce((s,i)=>s+i.price,0);
   const myPaid=myWon.filter(i=>i.paid).reduce((s,i)=>s+i.price,0);
@@ -2539,9 +2554,13 @@ function renderMain(){
       ${myOwed>0?`<span style="color:var(--red);">Owed: ${myOwed.toLocaleString()}g</span>`:`<span style="color:var(--green);">All paid &#10003;</span>`}
     </div>
   </div>`:'';
+  return myLootHTML;
+}
 
-  const membersBar = renderMembersBar(presenceData);
-  const potBar=isRL?`<div class="pot-bar">
+function buildPotBarHTML(){
+  const sold=auctionList().filter(a=>a.status==='sold');
+  const p=pot();
+  return isRL?`<div class="pot-bar">
     <div class="pot-bar-stat">
       <div class="pot-lbl">Total Pot</div>
       <div class="pot-val">${p.toLocaleString()}g</div>
@@ -2560,6 +2579,38 @@ function renderMain(){
   </div>`:sold.length?`<div class="pot-bar" style="justify-content:center;padding:.75rem 1.5rem;">
     <div style="font-size:.8rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.06em;">${sold.length} item${sold.length!==1?'s':''} sold this run</div>
   </div>`:'';
+}
+
+function refreshPotAndLoot(){
+  const main=document.getElementById('main');
+  if(!main||!user)return;
+  if(!main.querySelector(':scope > .tabs'))return; // renderMain hasn't run yet
+  const swap=(cls,html,anchorCls)=>{
+    const el=main.querySelector(':scope > .'+cls);
+    if(el){
+      if(html){const t=document.createElement('div');t.innerHTML=html;if(t.firstElementChild)el.replaceWith(t.firstElementChild);}
+      else el.remove();
+    } else if(html){
+      const t=document.createElement('div');t.innerHTML=html;
+      const node=t.firstElementChild;
+      if(!node)return;
+      const anchor=anchorCls?main.querySelector(':scope > .'+anchorCls):null;
+      if(anchor)anchor.after(node);
+      else main.insertBefore(node,main.querySelector(':scope > .tabs'));
+    }
+  };
+  swap('pot-bar',buildPotBarHTML(),null);
+  swap('my-loot',buildMyLootHTML(),'pot-bar');
+  refreshWowheadLinks();
+}
+
+function renderMain(){
+  const _scroll=_saveScroll();
+  const all=auctionList();
+  const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999)),active=all.filter(a=>a.status==='open'),sold=all.filter(a=>a.status==='sold'),expired=all.filter(a=>a.status==='expired');
+  const membersBar = renderMembersBar(presenceData);
+  const myLootHTML=buildMyLootHTML();
+  const potBar=buildPotBarHTML();
 
   const settingsBar='';
 

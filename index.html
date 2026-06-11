@@ -846,6 +846,9 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 
 let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab=localStorage.getItem('gdkp_tab')||'active';
+let nickMap={};
+function sanitizeNick(s){return String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,20);}
+function displayName(n){const k=n&&nickMap[n]?sanitizeNick(nickMap[n]):'';return k||n;}
 let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
@@ -1736,7 +1739,7 @@ function startTick(){
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
         if(bids.length>0){
           update(runRef(`/auctions/${a.id}`),{status:'sold',remaining:0});auditLog('sold',{auctionId:a.id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'timer'});
-          toast(a.name+' sold to '+bids[0].bidder+' for '+(a.currentBid||0).toLocaleString()+'g');
+          toast(a.name+' sold to '+displayName(bids[0].bidder)+' for '+(a.currentBid||0).toLocaleString()+'g');
         } else {
           update(runRef(`/auctions/${a.id}`),{status:'expired',remaining:0});
           toast(a.name+' expired — no bids placed');
@@ -1765,6 +1768,9 @@ function subscribeToRun(){
     const prevAuctions={...auctions};
     auctions=data.auctions||{};
     presenceData=data.presence||{};
+    const _prevNicks=JSON.stringify(nickMap);
+    nickMap=data.nicks||{};
+    const nicksChanged=_prevNicks!==JSON.stringify(nickMap);
     updateOnlineCounter();
     if(isRL&&!window._backfillDone){window._backfillDone=true;setTimeout(backfillItemIds,1200);}
     if(data.settings){
@@ -2106,6 +2112,8 @@ function subscribeToRun(){
 
     // Keep pot bar and my-loot panel in sync after in-place updates
     if(user&&potLootChanged)refreshPotAndLoot();
+    // Nickname changed somewhere — refresh displayed names without losing scroll
+    if(user&&nicksChanged){const _sc=_saveScroll();render();_restoreScroll(_sc);}
 
     // Apply glows AFTER card update
     pendingGlows.forEach(({id})=>{
@@ -2443,6 +2451,11 @@ function openUserSettings(){
       <div class="user-settings-wrap">
         ${discordSection}
         <div class="user-settings-sec">
+          <div class="user-settings-sec-label">Nickname</div>
+          <input type="text" id="us-nick" maxlength="20" value="${sanitizeNick(nickMap[user]||'')}" placeholder="Character name" autocomplete="off" />
+          <div style="font-size:.68rem;color:var(--text-muted);margin-top:.35rem;">Shown on your bids and loot instead of your Discord name. Use your character name so the raid leader knows who to trade.</div>
+        </div>
+        <div class="user-settings-sec">
           <div class="user-settings-sec-label">Preferences</div>
           <div class="settings-toggle-row">
             <div><div class="settings-toggle-label">Sound Effects</div><div class="settings-toggle-sub">Bid sounds and warnings</div></div>
@@ -2480,6 +2493,15 @@ function saveUserSettings(){
     localStorage.setItem('gdkp_muted',soundMuted?'1':'0');
     const mb=document.getElementById('mute-btn');
     if(mb)mb.textContent=soundMuted?'🔇':'🔊';
+  }
+  const nickInput=document.getElementById('us-nick');
+  if(nickInput&&user&&runId){
+    const nick=sanitizeNick(nickInput.value);
+    const current=sanitizeNick(nickMap[user]||'');
+    if(nick!==current){
+      try{update(runRef('/nicks'),{[user]:nick||null});}catch(e){toast('Could not save nickname');}
+      // Local echo updates nickMap via onValue; that path triggers a scroll-preserving render
+    }
   }
   closeUserSettings();
   toast('Settings saved');
@@ -2882,21 +2904,21 @@ function renderPanel(){
     const owed=items.filter(i=>!i.paid).reduce((s,i)=>s+i.price,0);
     const allPaid=owed===0;
     const unpaidIds=items.filter(i=>!i.paid).map(i=>i.auctionId);
-    const selectAllBtn=!allPaid?`<button onclick="markAllPaid([${unpaidIds.map(id=>`'${id}'`).join(',')}])" style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--green);border:1px solid rgba(96,204,128,0.4);padding:.2rem .55rem;border-radius:3px;margin-bottom:.35rem;">Mark All Paid</button>`:'';
+    const selectAllBtn=(isRL&&!allPaid)?`<button onclick="markAllPaid([${unpaidIds.map(id=>`'${id}'`).join(',')}])" style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--green);border:1px solid rgba(96,204,128,0.4);padding:.2rem .55rem;border-radius:3px;margin-bottom:.35rem;">Mark All Paid</button>`:'';
     const statusLine=allPaid
       ?`<div style="font-size:.75rem;color:var(--green);margin-bottom:.4rem;font-family:'Cinzel',serif;letter-spacing:.05em;">&#10003; Settled</div>`
       :`<div style="font-size:.75rem;color:var(--red);margin-bottom:.4rem;">Owed: ${owed.toLocaleString()}g</div>`;
     const rowBorder=allPaid?'var(--border-gold)':'rgba(226,96,96,0.4)';
     const itemRows=items.map(i=>`
       <div class="raider-item" style="gap:.5rem;">
-        <input type="checkbox" ${i.paid?'checked':''} onchange="togglePaid('${i.auctionId}')"
-          style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--green);" />
+        <input type="checkbox" ${i.paid?'checked':''} ${isRL?`onchange="togglePaid('${i.auctionId}')"`:'disabled'}
+          style="width:15px;height:15px;flex-shrink:0;cursor:${isRL?'pointer':'default'};accent-color:var(--green);" />
         ${i.icon?`<img loading="lazy" decoding="async" src="${iconUrl(i.icon)}" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:''}
         <span class="raider-item-name item-name ${i.quality}" style="font-size:.78rem;flex:1;">${i.name}</span>
         <span class="raider-item-price" style="${i.paid?'color:var(--text-muted);text-decoration:line-through;':''}">${i.price.toLocaleString()}g</span>
       </div>`).join('');
     return`<div class="raider-row" style="border-color:${rowBorder};">
-      <div class="raider-name" style="margin-bottom:.25rem;"><span>${name}</span><span class="raider-total">${total.toLocaleString()}g total</span></div>
+      <div class="raider-name" style="margin-bottom:.25rem;"><span>${displayName(name)}</span><span class="raider-total">${total.toLocaleString()}g total</span></div>
       ${statusLine}${selectAllBtn}
       ${itemRows}
     </div>`;
@@ -2948,7 +2970,7 @@ function renderRollout(){
         const unpaidIds=items.filter(i=>!i.paid).map(i=>`'${i.auctionId}'`);
         return`<div class="rollout-card${allPaid?' all-paid':''}" id="rollout-card-${name.replace(/\s/g,'_')}">
           <div class="rollout-card-hdr">
-            <span class="rollout-card-name">${name}</span>
+            <span class="rollout-card-name">${displayName(name)}</span>
             <div class="rollout-card-right">
               <span class="rollout-card-total">${total.toLocaleString()}g total</span>
               ${allPaid
@@ -3096,7 +3118,7 @@ function renderLootTracker(){
       const price=a.currentBid?`${a.currentBid.toLocaleString()}g`:'';
       const badge=`<span style="font-size:.58rem;padding:.1rem .35rem;border-radius:2px;${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||a.status}</span>`;
       const iconHtml=getIconImg(a.itemId,a.itemIcon,24);
-      const winner=a.status==='sold'?Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'':'';
+      const winner=a.status==='sold'?displayName(Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder)||'':'';
       return`<div class="loot-tracker-item"><a href="https://www.wowhead.com/tbc/item=${a.itemId||0}" data-wowhead="item=${a.itemId||0}&domain=tbc" target="_blank" style="display:flex;align-items:center;gap:.35rem;text-decoration:none;width:100%;min-width:0;">${iconHtml}<div style="flex:1;min-width:0;"><div class="loot-tracker-name ${a.quality||'common'}">${a.name||'Unknown'}</div><div style="display:flex;align-items:center;gap:.3rem;margin-top:.1rem;">${badge}${winner?`<span style="font-size:.62rem;color:rgba(201,168,76,0.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${winner}</span>`:''}</div></div><div class="loot-tracker-right"><span id="tracker-timer-${a.id}" style="font-size:.62rem;color:rgba(201,168,76,0.5);"></span>${price?`<span style="font-size:.72rem;color:var(--gold);font-family:'Cinzel',serif;">${price}</span>`:''}</div></a></div>`;
     }).join('');
     tracker.innerHTML=`
@@ -3147,7 +3169,7 @@ function renderLootDisplay(activeCat){
 
   const cards=filtered.map((a,i)=>{
     const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
-    const winner=bids[0]?.bidder||'Unknown';
+    const winner=displayName(bids[0]?.bidder)||'Unknown';
     const qColor=qualityColors[a.quality]||'#c590ff';
     const icon=getIconImg(a.itemId,a.itemIcon,80);
     const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#" onclick="return false;"';
@@ -3441,7 +3463,7 @@ function renderCard(a,mode){
   const histEntries=[...activeBids,...retractedBids];
   const histItems=histEntries.map(([key,b])=>{
     const isRetracted=!!b.retracted;
-    const name=b.bidder===user?'You':b.bidder;
+    const name=b.bidder===user?'You':displayName(b.bidder);
     const rlX=isRL&&!isRetracted?`<button onclick="rlRetractBid('${a.id}','${key}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.65rem;padding:0 .2rem;opacity:.5;flex-shrink:0;" title="Retract this bid">✕</button>`:'';
     return`<div class="hist-row" style="${isRetracted?'opacity:.4;':''}">
       <span class="${b.bidder===user&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''};">${name}${isRetracted?' ↩':''}</span>
@@ -3486,7 +3508,7 @@ function renderCard(a,mode){
         :`<button onclick="setAutoBid('${a.id}')" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);color:var(--gold);cursor:pointer;font-size:.7rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.3rem .7rem;border-radius:3px;">&#9654; Set Limit Bid</button>`
       }
     </div>`:'' ;
-    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':top.bidder+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':displayName(top.bidder)+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
     if(previewActive){
       bidSection=`<div class="bid-section">${noteHTML}
         <div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt bid-preview">${(a.previewBid||0).toLocaleString()}g</div><div class="bid-preview-note">&#9998; Price being adjusted&hellip;</div></div>${bidRightBtns}</div>
@@ -3502,15 +3524,13 @@ function renderCard(a,mode){
   }
   else if(mode==='sold'){
     const isWinner=top&&top.bidder===user;
-    const canToggle=isRL||isWinner;
-    const paidBtn=canToggle
-      ?(isRL
-        ?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;transition:background .15s;${a.paid?'background:rgba(46,180,80,0.15);color:#4dff70;border:1px solid rgba(46,180,80,0.4);':'background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);'}">${a.paid?'&#10003; Paid — tap to undo':'&#9679; Unpaid — tap to confirm'}</button>`
-        :(!a.paid?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);">&#9679; Unpaid — tap to confirm</button>`
-          :`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`))
-      :(a.paid?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`:'');
+    const paidBtn=isRL
+      ?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;transition:background .15s;${a.paid?'background:rgba(46,180,80,0.15);color:#4dff70;border:1px solid rgba(46,180,80,0.4);':'background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);'}">${a.paid?'&#10003; Paid &mdash; tap to undo':'&#9679; Unpaid &mdash; tap to confirm'}</button>`
+      :(a.paid
+        ?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`
+        :(isWinner?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--red);font-family:'Cinzel',serif;">&#9679; Unpaid &mdash; trade the raid leader</div>`:''));
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-top:.2rem;">&#128203; ${a.note}</div>`:'';
-    bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div class="bid-ldr">Won by ${top?top.bidder:'&mdash;'}</div>${noteHTML}${paidBtn}</div>`;
+    bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div class="bid-ldr">Won by ${top?displayName(top.bidder):'&mdash;'}</div>${noteHTML}${paidBtn}</div>`;
   }
   else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
@@ -3605,9 +3625,11 @@ function saveEdit(){
   const id=editId;
   clearTimeout(_previewTimer);
   _removeModalFocusTrap();
+  const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';
   update(runRef(`/auctions/${id}`),updates);
   render();
+  _restoreScroll(_sc);
   toast(name+' updated');
   setTimeout(()=>refreshWowheadLinks(),300);
 }
@@ -4059,6 +4081,7 @@ function duplicateItem(id){
     duration:a.duration||raidSettings.defaultTimer,
     bidButtons:a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000],
     note:a.note||'',
+    category:a.category||'Other',
     bids:{},
     status:'queued',
     order:queuedCount,
@@ -4067,7 +4090,6 @@ function duplicateItem(id){
     endsAt:null
   });
   toast(a.name+' duplicated to queue');
-  tab='queued';
 }
 function showUnpaidOverlay(){
   document.querySelectorAll('.unpaid-overlay').forEach(e=>e.remove());
@@ -4097,7 +4119,7 @@ function showUnpaidOverlay(){
       }).map(([winner,items])=>{
         const owed=items.reduce((s,a)=>s+(a.currentBid||0),0);
         return items.map((a,i)=>`<div class="unpaid-row">
-          <span class="unpaid-row-name">${i===0?winner:''}</span>
+          <span class="unpaid-row-name">${i===0?displayName(winner):''}</span>
           <span class="unpaid-row-item">${a.name}</span>
           <span class="unpaid-row-price">${(a.currentBid||0).toLocaleString()}g</span>
           <button class="unpaid-pay-btn" onclick="togglePaidFromOverlay('${a.id}',this)">&#10003; Paid</button>
@@ -4432,7 +4454,7 @@ function renderMembersSidebar(presenceData){
     return`<div class="member-row" onmouseenter="cancelHide(this);showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)" onclick="mentionMember('${m.name}')" title="Click to mention in chat">
       ${avatarEl}
       <div class="member-row-info">
-        <div class="member-row-name">${m.name}${rlBadge}</div>
+        <div class="member-row-name">${displayName(m.name)}${rlBadge}</div>
         ${spendStr?`<div class="member-row-spend">${spendStr}</div>`:''}
       </div>
       ${kickBtn}
@@ -4549,7 +4571,7 @@ function startLootDisplayFromArchive(runKey){
 
     const buildCards=(filtered)=>filtered.map((a,i)=>{
       const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
-      const winner=bids[0]?.bidder||'Unknown';
+      const winner=displayName(bids[0]?.bidder)||'Unknown';
       const qColor=qualityColors[a.quality]||'#c590ff';
       const icon=getIconImg(a.itemId,a.itemIcon,80);
       const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
@@ -4707,7 +4729,7 @@ async function renderPastRunsPanel(){
       const title=(run.settings?.raidTitle||'Untitled Run').replace(/[\r\n]+/g,' ').trim();
       const itemRows=sold.map(([aId,a])=>{
         const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
-        const winner=bids[0]?.bidder||'Unknown';
+        const winner=displayName(bids[0]?.bidder)||'Unknown';
         const nameStyle='flex:1;min-width:0;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
         const nameEl=a.itemId
           ?`<a class="item-name ${a.quality||'common'}" href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" style="${nameStyle}text-decoration:none;">${a.name}</a>`
@@ -5017,9 +5039,11 @@ function closeModal(){
     update(runRef(`/auctions/${editId}`),{previewBid:null,previewAt:null});
   }
   const wasAdding=modal&&!editId;
+  const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';
   if(wasAdding)tab='queued';
   render();
+  if(!wasAdding)_restoreScroll(_sc);
 }
 let _dragId=null,_dragEl=null;
 function dragStart(e,id){

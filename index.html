@@ -1789,6 +1789,7 @@ function subscribeToRun(){
     if(_archKey&&!document.getElementById('loot-display-overlay')&&!newLootDisplay){
       setTimeout(()=>{if(!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archKey);},400);
     } else if(!_archKey&&!newLootDisplay){
+      localStorage.removeItem('gdkp_archive_display');
       const _ov=document.getElementById('loot-display-overlay');
       if(_ov&&!lootDisplayMode)_ov.remove();
     }
@@ -2766,9 +2767,13 @@ function renderMain(){
   // Restore archive display if it was open when tab was closed/reloaded
   if(!window._archiveRestored){
     window._archiveRestored=true;
-    const _archiveKey=localStorage.getItem('gdkp_archive_display');
-    if(_archiveKey&&!lootDisplayMode){
-      setTimeout(()=>{if(!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
+    if(isRL){
+      const _archiveKey=localStorage.getItem('gdkp_archive_display');
+      if(_archiveKey&&!lootDisplayMode){
+        setTimeout(()=>{if(!document.getElementById('loot-display-overlay'))startLootDisplayFromArchive(_archiveKey);},600);
+      }
+    } else {
+      localStorage.removeItem('gdkp_archive_display');
     }
   }
 }
@@ -4598,8 +4603,10 @@ let _deleteUndoTimer=null;
 
 function startLootDisplayFromArchive(runKey){
   console.log('[archive-display] called with runKey:',runKey,'isRL:',isRL);
-  localStorage.setItem('gdkp_archive_display',runKey);
-  if(isRL)update(runRef(),{archiveDisplay:runKey});
+  if(isRL){
+    localStorage.setItem('gdkp_archive_display',runKey);
+    update(runRef(),{archiveDisplay:runKey});
+  }
   get(ref(db,'runs/'+runKey)).then(snap=>{
     console.log('[archive-display] Firebase snap received, exists:',snap.exists());
     const data=snap.val()||{};

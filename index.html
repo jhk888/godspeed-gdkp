@@ -3742,7 +3742,6 @@ function startAll(){
   auctionList().filter(a=>a.status==='queued').forEach(a=>{
     update(runRef(`/auctions/${a.id}`),{status:'open',paused:false,endsAt:now+a.duration*1000,remaining:a.duration});
   });
-  toast('All auctions started!');
 }
 function startOne(id){
   if(_startOneCooldown[id])return;

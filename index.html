@@ -3732,6 +3732,13 @@ function clearAutoBid(id){
   render();
 }
 const _startOneCooldown={};
+function startAll(){
+  const now=Date.now();
+  auctionList().filter(a=>a.status==='queued').forEach(a=>{
+    update(runRef(`/auctions/${a.id}`),{status:'open',paused:false,endsAt:now+a.duration*1000,remaining:a.duration});
+  });
+  toast('All auctions started!');
+}
 function startOne(id){
   if(_startOneCooldown[id])return;
   const a=auctions[id];if(!a||a.status!=='queued')return;

@@ -737,6 +737,8 @@
   .rollout-pay-btn:hover{background:rgba(46,180,80,0.2);}
   .rollout-markall{width:100%;padding:.42rem;font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.07em;cursor:pointer;background:rgba(46,180,80,0.06);color:#4dff70;border:none;border-top:1px solid rgba(46,180,80,0.12);}
   .rollout-markall:hover{background:rgba(46,180,80,0.15);}
+  .rollout-trade-btn{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.07em;cursor:pointer;background:rgba(46,180,80,0.08);color:#4dff70;border:1px solid rgba(46,180,80,0.3);border-radius:3px;padding:.2rem .55rem;white-space:nowrap;}
+  .rollout-trade-btn:hover{background:rgba(46,180,80,0.2);border-color:rgba(46,180,80,0.6);}
 </style>
 </head>
 <body>
@@ -1740,10 +1742,11 @@ function startTick(){
         }catch(e){}
       }
       if(r===0&&isRL){
-        const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+        const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
         if(bids.length>0){
-          update(runRef(`/auctions/${a.id}`),{status:'sold',remaining:0});auditLog('sold',{auctionId:a.id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:a.currentBid||0,closedBy:'timer'});
-          toast(a.name+' sold to '+displayName(bids[0].bidder)+' for '+(a.currentBid||0).toLocaleString()+'g');
+          const winPrice=bids[0].amount;
+          update(runRef(`/auctions/${a.id}`),{status:'sold',remaining:0,currentBid:winPrice});auditLog('sold',{auctionId:a.id,item:a.name,winner:bids[0]?bids[0].bidder:null,price:winPrice,closedBy:'timer'});
+          toast(a.name+' sold to '+displayName(bids[0].bidder)+' for '+winPrice.toLocaleString()+'g');
         } else {
           update(runRef(`/auctions/${a.id}`),{status:'expired',remaining:0});
           toast(a.name+' expired — no bids placed');
@@ -1947,7 +1950,10 @@ function subscribeToRun(){
       });
       explodeNow(bgRects);
       renderHdr();
-      if(potLootChanged)refreshPotAndLoot();
+      if(potLootChanged){
+        refreshPotAndLoot();
+        if(rolloutMode&&document.querySelector('.rollout-overlay'))renderRollout();
+      }
       return;
     }
 
@@ -2114,7 +2120,10 @@ function subscribeToRun(){
     }
 
     // Keep pot bar and my-loot panel in sync after in-place updates
-    if(user&&potLootChanged)refreshPotAndLoot();
+    if(user&&potLootChanged){
+      refreshPotAndLoot();
+      if(rolloutMode&&document.querySelector('.rollout-overlay'))renderRollout();
+    }
     // Nickname changed somewhere — refresh displayed names without losing scroll
     if(user&&nicksChanged){const _sc=_saveScroll();render();_restoreScroll(_sc);}
 
@@ -3007,7 +3016,7 @@ function renderRollout(){
               <span class="rollout-card-total">${total.toLocaleString()}g total</span>
               ${allPaid
                 ?`<span class="rollout-card-settled">&#10003; Settled</span>`
-                :`<span class="rollout-card-owed">${owed.toLocaleString()}g owed</span>`}
+                :`<button class="rollout-trade-btn" onclick="rolloutMarkAll([${unpaidIds.join(',')}],'${name}')" title="Mark all paid">Loot Traded</button><span class="rollout-card-owed">${owed.toLocaleString()}g owed</span>`}
             </div>
           </div>
           <div class="rollout-items">
@@ -3024,7 +3033,6 @@ function renderRollout(){
                          :`<span style="font-size:.65rem;color:rgba(46,180,80,0.5);font-family:'Cinzel',serif;">Paid</span>`}
               </div>`;}).join('')}
           </div>
-          ${!allPaid?`<button class="rollout-markall" onclick="rolloutMarkAll([${unpaidIds.join(',')}],'${name}')">Mark All Paid</button>`:''}
         </div>`;
       }).join(''):`<div style="color:var(--text-muted);font-size:.85rem;padding:2rem;text-align:center;">No sold items yet</div>`}
     </div>`;
@@ -3034,13 +3042,15 @@ function renderRollout(){
 function rolloutTogglePaid(id,name){
   if(!isRL)return;
   const a=auctions[id];if(!a)return;
-  update(runRef(`/auctions/${id}`),{paid:!a.paid}).then(()=>renderRollout());
+  update(runRef(`/auctions/${id}`),{paid:!a.paid});
+  // renderRollout fires via sync handler potLootChanged path
 }
 function rolloutMarkAll(ids,name){
   if(!isRL)return;
   const updates={};
   ids.forEach(id=>{updates[`auctions/${id}/paid`]=true;});
-  if(Object.keys(updates).length)update(runRef(),updates).then(()=>renderRollout());
+  if(Object.keys(updates).length)update(runRef(),updates);
+  toast(displayName(name)+' marked settled');
 }
 
 function closeArchiveDisplay(){
@@ -3839,7 +3849,7 @@ function coinExplosion(auctionId, goldAmount, preRect){
   coinExplosionAt(goldAmount, rect);
 }
 
-function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);const wrap=document.getElementById("wrap-"+id);if(wrap)wrap.classList.add("card-exiting");if(bids.length>0){update(runRef(`/auctions/${id}`),{status:"sold",remaining:0,paused:false});auditLog("sold",{auctionId:id,item:a.name,winner:bids[0].bidder,price:a.currentBid||0,closedBy:"manual"});toast(a.name+' closed — '+bids[0].bidder+' wins for '+(a.currentBid||0).toLocaleString()+'g');}else{update(runRef(`/auctions/${id}`),{status:"expired",remaining:0,paused:false});auditLog("expired",{auctionId:id,item:a.name,closedBy:"manual"});toast(a.name+' closed — no bids, moved to expired');}}
+function closeAuction(id){const a=auctions[id];if(!a)return;const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);const wrap=document.getElementById("wrap-"+id);if(wrap)wrap.classList.add("card-exiting");if(bids.length>0){const winPrice=bids[0].amount;update(runRef(`/auctions/${id}`),{status:"sold",remaining:0,paused:false,currentBid:winPrice});auditLog("sold",{auctionId:id,item:a.name,winner:bids[0].bidder,price:winPrice,closedBy:"manual"});toast(a.name+' closed — '+bids[0].bidder+' wins for '+winPrice.toLocaleString()+'g');}else{update(runRef(`/auctions/${id}`),{status:"expired",remaining:0,paused:false});auditLog("expired",{auctionId:id,item:a.name,closedBy:"manual"});toast(a.name+' closed — no bids, moved to expired');}}
 function restartFromSold(id){
   const a=auctions[id];if(!a||!isRL)return;
   const sb=a.startBid||a.currentBid||1000;

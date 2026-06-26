@@ -2261,8 +2261,43 @@ function renderTabCounts(){
     else if(txt.startsWith('Expired'))el.childNodes[0].textContent=`Expired (${expired.length})`;
   });
 }
-function _saveScroll(){const m=document.getElementById('main');return{doc:document.documentElement.scrollTop||document.body.scrollTop,main:m?m.scrollTop:0};}
-function _restoreScroll(s){requestAnimationFrame(()=>{document.documentElement.scrollTop=s.doc;document.body.scrollTop=s.doc;const m=document.getElementById('main');if(m)m.scrollTop=s.main;});}
+// Scroll preservation across grid rebuilds.
+// The grid uses content-visibility:auto with a contain-intrinsic-size estimate,
+// so right after a rebuild the off-screen cards are sized to the estimate and the
+// document is briefly shorter than the saved offset — a raw scrollTop restore then
+// gets clamped toward the top. To avoid that we anchor to an actual card that is at
+// the top of the viewport and re-align it to the same offset after the rebuild,
+// which doesn't depend on the estimated document height. A few candidate anchors are
+// stored in case the topmost one is the card that just got removed (e.g. on close).
+function _saveScroll(){
+  const m=document.getElementById('main');
+  const y=window.scrollY||document.documentElement.scrollTop||document.body.scrollTop||0;
+  const anchors=[];
+  const wraps=document.querySelectorAll('#auction-grid-bg .card-wrap');
+  for(const w of wraps){
+    if(!w.id)continue;
+    const r=w.getBoundingClientRect();
+    if(r.bottom>0){ anchors.push({id:w.id,offset:r.top}); if(anchors.length>=4)break; }
+  }
+  return {y,main:m?m.scrollTop:0,anchors};
+}
+function _restoreScroll(s){
+  if(!s)return;
+  const apply=()=>{
+    if(s.anchors&&s.anchors.length){
+      for(const a of s.anchors){
+        const el=document.getElementById(a.id);
+        if(el){ window.scrollBy(0,el.getBoundingClientRect().top-a.offset); return; }
+      }
+    }
+    window.scrollTo(0,s.y); // fallback: the anchored card(s) were removed
+  };
+  apply();                                                  // before paint
+  requestAnimationFrame(apply);                             // after layout
+  requestAnimationFrame(()=>requestAnimationFrame(apply));  // after content-visibility settles
+  const m=document.getElementById('main');
+  if(m&&s.main)requestAnimationFrame(()=>{const mm=document.getElementById('main');if(mm)mm.scrollTop=s.main;});
+}
 function render(){
   if(!user){renderLogin();return;}
   renderHdr();renderMain();

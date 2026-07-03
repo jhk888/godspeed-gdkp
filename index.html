@@ -2306,7 +2306,7 @@ function render(){
   if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
   // Focus the active tab on page load if nothing else is focused
   if(!modal&&(document.activeElement===document.body||!document.activeElement)){
-    setTimeout(()=>{const activeTab=document.querySelector('.tabs .tab.active');if(activeTab)activeTab.focus();},100);
+    setTimeout(()=>{const activeTab=document.querySelector('.tabs .tab.active');if(activeTab)activeTab.focus({preventScroll:true});},100);
   }
 }
 

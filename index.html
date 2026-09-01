@@ -917,6 +917,8 @@ let panelOpen=false,panelTab='raiders';
 let splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
 let splitsLoaded=false;
 let settlement=JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT));
+let attendance={};
+let attendanceSettings={enabled:false,open:false,code:''};
 
 function toast(msg){
   const el=document.getElementById('toast');
@@ -1014,7 +1016,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
 function fmtTime(s){if(s==null||s<0)return'0s';if(s>=60)return Math.floor(s/60)+'m '+(s%60).toString().padStart(2,'0')+'s';return s+'s';}
 function auctionList(){return Object.values(auctions||{});}
 function pot(){return auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).some(b=>!b.retracted)).reduce((s,a)=>s+(a.currentBid||0),0);}
-function raiderCount(){const n=new Set(auctionList().flatMap(a=>Object.values(a.bids||{}).map(b=>b.bidder)));if(user)n.add(user);return Math.max(n.size,1);}
+function raiderCount(){const checked=Object.values(attendance||{}).filter(a=>a?.approved).length;if(checked)return checked;const n=new Set(auctionList().flatMap(a=>Object.values(a.bids||{}).map(b=>b.bidder)));if(user)n.add(user);return Math.max(n.size,1);}
 function runRef(p=''){return ref(db,`runs/${runId}${p}`);}
 function auditLog(type,data){
   if(!runId)return;
@@ -1954,6 +1956,7 @@ function subscribeToRun(){
     const data=snap.val()||{};
     const prevAuctions={...auctions};
     const prevSettlementState=JSON.stringify(settlement);
+    const prevAttendanceState=JSON.stringify([attendance,attendanceSettings]);
     auctions=data.auctions||{};
     presenceData=data.presence||{};
     const _prevNicks=JSON.stringify(nickMap);
@@ -1973,9 +1976,15 @@ function subscribeToRun(){
       mutators:data.settlement?.mutators||{},
       raiders:data.settlement?.raiders||{}
     };
+    attendance=data.attendance||{};
+    attendanceSettings={enabled:false,open:false,code:'',...(data.attendanceSettings||{})};
     const settlementChanged=prevSettlementState!==JSON.stringify(settlement);
+    const attendanceChanged=prevAttendanceState!==JSON.stringify([attendance,attendanceSettings]);
     if(settlementChanged&&tab==='settlement'&&isRL){
       requestAnimationFrame(()=>{if(tab==='settlement'&&isRL)renderMain();});
+    }
+    if(attendanceChanged){
+      requestAnimationFrame(()=>{if(user)renderMain();if(document.getElementById('attendance-overlay'))renderAttendanceManager();});
     }
     // Sync loot display mode for all clients
     const newLootDisplay=!!data.lootDisplay;
@@ -2364,7 +2373,7 @@ async function getOrCreateRun(){
   const runs=snap.val()||{};
   const keys=Object.keys(runs).filter(k=>!runs[k].archived).sort().reverse();
   if(keys.length>0){runId=keys[0];}
-  else{const nr=push(ref(db,'runs'));runId=nr.key;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement});}
+  else{const nr=push(ref(db,'runs'));runId=nr.key;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
   splitsLoaded=false;
   subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
   render();
@@ -2401,6 +2410,8 @@ async function getOrCreateRun(){
 }
 
 function joinDiscord(){
+  const inviteCode=new URLSearchParams(window.location.search).get('raid');
+  if(inviteCode)localStorage.setItem('gdkp_pending_raid_code',inviteCode.trim().toUpperCase());
   window.location.href = DISCORD_AUTH_URL;
 }
 
@@ -2515,6 +2526,61 @@ function updateOnlineCounter(){
   onlineEl.style.display='flex';
 }
 
+function attendanceKeyForCurrentUser(){return discordUser?.id?'discord_'+String(discordUser.id):'';}
+function currentAttendanceRecord(){const key=attendanceKeyForCurrentUser();return key?attendance[key]||null:null;}
+function attendanceIsRequired(){return !!attendanceSettings.enabled;}
+function attendanceCanBid(){return isRL||!attendanceIsRequired()||!!currentAttendanceRecord()?.approved;}
+function attendanceList(){return Object.entries(attendance||{}).map(([key,a])=>({key,...a})).sort((a,b)=>(a.checkedInAt||0)-(b.checkedInAt||0));}
+function attendanceCodeFromInvite(){return (new URLSearchParams(window.location.search).get('raid')||localStorage.getItem('gdkp_pending_raid_code')||'').trim().toUpperCase();}
+function generateAttendanceCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code;}
+function buildAttendanceBanner(){
+  if(isRL||!attendanceIsRequired())return'';
+  const record=currentAttendanceRecord();
+  if(record?.approved)return`<div style="margin:.6rem 0;padding:.65rem .9rem;border:1px solid rgba(96,204,128,.35);background:rgba(96,204,128,.08);border-radius:4px;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;"><div><span style="font-family:'Cinzel',serif;color:var(--green);font-size:.72rem;letter-spacing:.07em;">CHECKED IN</span><span style="color:var(--text-muted);font-size:.72rem;margin-left:.55rem;">${settlementEsc(record.character||user)}</span></div><button class="btn btn-outline btn-sm" onclick="leaveAttendance()">Undo Check-In</button></div>`;
+  if(!attendanceSettings.open)return`<div style="margin:.6rem 0;padding:.8rem 1rem;border:1px solid rgba(255,96,96,.35);background:rgba(255,96,96,.08);border-radius:4px;color:var(--red);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.05em;text-align:center;">ATTENDANCE CHECK-IN IS CLOSED. ASK THE RAID LEADER TO REOPEN IT.</div>`;
+  const code=attendanceCodeFromInvite(),character=sanitizeNick(nickMap[user]||user);
+  return`<div style="margin:.6rem 0;padding:.85rem 1rem;border:1px solid var(--border-gold-strong);background:rgba(30,26,16,.94);border-radius:4px;display:flex;align-items:flex-end;gap:.65rem;flex-wrap:wrap;"><div style="flex:1;min-width:190px;"><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:.78rem;letter-spacing:.08em;">RAID CHECK-IN REQUIRED</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">Check in before bidding.</div></div><div class="fg"><div class="lbl">Raid code</div><input id="attendance-code" maxlength="6" value="${settlementEsc(code)}" placeholder="6-digit code" style="width:125px;text-transform:uppercase;" /></div><div class="fg"><div class="lbl">Character attending</div><input id="attendance-character" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:170px;" onkeydown="if(event.key==='Enter')checkInAttendance()" /></div><button class="btn btn-gold btn-sm" onclick="checkInAttendance()">Check In</button></div>`;
+}
+async function checkInAttendance(){
+  if(!discordUser?.id){toast('Discord login is required for attendance');return;}
+  if(!attendanceSettings.open){toast('Check-in is closed');return;}
+  const code=(document.getElementById('attendance-code')?.value||attendanceCodeFromInvite()).trim().toUpperCase();
+  if(code!==String(attendanceSettings.code||'').toUpperCase()){toast('Raid code does not match');return;}
+  const character=sanitizeNick(document.getElementById('attendance-character')?.value||nickMap[user]||user);
+  if(!character){toast('Enter the character attending');return;}
+  const key=attendanceKeyForCurrentUser();
+  await set(runRef(`/attendance/${key}`),{discordId:String(discordUser.id),discordName:discordUser.username||user,personName:discordUser.displayName||discordUser.username||user,character,avatar:discordUser.avatar||null,approved:true,checkedInAt:Date.now()});
+  localStorage.removeItem('gdkp_pending_raid_code');
+  toast('Checked in as '+character);
+}
+function leaveAttendance(){const key=attendanceKeyForCurrentUser();if(key)remove(runRef(`/attendance/${key}`));}
+function toggleAttendanceCheckIn(open){
+  if(!isRL)return;
+  const code=attendanceSettings.code||generateAttendanceCode();
+  update(runRef('/attendanceSettings'),{enabled:true,open:!!open,code,updatedAt:Date.now()});
+  toast(open?'Check-in opened':'Check-in closed');
+}
+function copyAttendanceInvite(){
+  if(!isRL||!attendanceSettings.code)return;
+  const url=new URL(window.location.href);url.search='';url.hash='';url.searchParams.set('raid',attendanceSettings.code);
+  const text=url.toString();
+  if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Raid check-in link copied')).catch(()=>toast(text));else toast(text);
+}
+function removeAttendanceMember(key){if(!isRL)return;remove(runRef(`/attendance/${key}`));}
+function closeAttendanceManager(){document.getElementById('attendance-overlay')?.remove();}
+function openAttendanceManager(){
+  if(!isRL)return;
+  let overlay=document.getElementById('attendance-overlay');
+  if(!overlay){overlay=document.createElement('div');overlay.id='attendance-overlay';overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:260;display:flex;align-items:center;justify-content:center;padding:1rem;';overlay.addEventListener('mousedown',e=>{if(e.target===overlay)closeAttendanceManager();});document.body.appendChild(overlay);}
+  renderAttendanceManager();
+}
+function renderAttendanceManager(){
+  const overlay=document.getElementById('attendance-overlay');if(!overlay||!isRL)return;
+  const list=attendanceList(),open=!!attendanceSettings.open;
+  const rows=list.map(a=>`<div style="display:flex;align-items:center;gap:.65rem;padding:.55rem .2rem;border-top:1px solid rgba(212,169,60,.1);"><div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;color:var(--gold-light);font-size:.78rem;">${settlementEsc(a.character||'Unknown')}</div><div style="font-size:.66rem;color:var(--text-muted);margin-top:.12rem;">${settlementEsc(a.personName||a.discordName||'Discord user')} · ${a.checkedInAt?new Date(a.checkedInAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''}</div></div><span class="settlement-status ok">Checked In</span><button class="mutator-mini" onclick="removeAttendanceMember('${a.key}')">Remove</button></div>`).join('');
+  overlay.innerHTML=`<div style="background:rgba(22,19,12,.99);border:1px solid var(--border-gold-strong);border-radius:5px;padding:1.3rem;width:100%;max-width:620px;max-height:86vh;overflow:auto;"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;"><div><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;letter-spacing:.1em;">RAID ATTENDANCE</div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;">${list.length} player${list.length===1?'':'s'} checked in</div></div><button onclick="closeAttendanceManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;">&#10005;</button></div><div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.75rem;background:rgba(212,169,60,.05);border:1px solid rgba(212,169,60,.16);border-radius:4px;margin-bottom:.9rem;"><div style="flex:1;min-width:150px;"><div class="lbl">Raid code</div><div style="font-family:'Cinzel',serif;font-size:1.15rem;letter-spacing:.18em;color:var(--gold-light);">${attendanceSettings.code||'Not opened'}</div></div><button class="btn ${open?'btn-danger':'btn-gold'} btn-sm" onclick="toggleAttendanceCheckIn(${open?'false':'true'})">${open?'Close Check-In':'Open Check-In'}</button><button class="btn btn-outline btn-sm" onclick="copyAttendanceInvite()" ${!attendanceSettings.code?'disabled':''}>Copy Invite Link</button></div><div style="font-size:.68rem;color:${open?'var(--green)':'var(--text-muted)'};margin-bottom:.65rem;">${open?'Players can check in now.':'Check-in is closed. Existing attendance remains saved.'}</div>${rows||'<div class="settlement-empty">No players have checked in yet.</div>'}</div>`;
+}
+
 function renderHdr(){
   // Show audit tab only to RL
   const auditBtn=document.getElementById('panel-tab-audit');
@@ -2545,7 +2611,7 @@ function renderHdr(){
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
     ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
-    ${isRL?`<button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button><button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
+    ${isRL?`<button class="btn ${attendanceSettings.open?'btn-green':'btn-outline'} btn-sm" onclick="openAttendanceManager()">Attendance (${attendanceList().length})</button><button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button><button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
     <button id="mute-btn" class="btn btn-outline btn-sm" onclick="toggleMute()" title="Toggle sound">${soundMuted?'🔇':'🔊'}</button>
     <button class="btn btn-outline btn-sm" onclick="openUserSettings()" title="Settings" style="padding:.3rem .55rem;">&#9881;</button>
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
@@ -2940,6 +3006,7 @@ function renderMain(){
   const membersBar = renderMembersBar(presenceData);
   const myLootHTML=buildMyLootHTML();
   const potBar=buildPotBarHTML();
+  const attendanceBanner=buildAttendanceBanner();
 
   const settingsBar='';
 
@@ -2988,7 +3055,7 @@ function renderMain(){
   const mHTML=modal?(editId?buildModal('Edit Item',auctions[editId],'saveEdit'):buildModal('Add Item to Queue',null,'addToQueue')):'';
 
   document.getElementById('main').innerHTML=`
-    ${membersBar}${potBar}${myLootHTML}${settingsBar}${tabs}
+    ${membersBar}${potBar}${myLootHTML}${settingsBar}${attendanceBanner}${tabs}
     ${tab!=='splits'&&tab!=='settlement'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
@@ -3152,9 +3219,9 @@ function renderSettlement(){
   const mutatorHeaders=mutators.map(([,m])=>`<th><div class="raider-mutator-head"><span>${settlementEsc(m.name)}</span></div></th>`).join(''),paidTotal=raiders.reduce((s,r)=>s+(r.paid?(calc.cuts[r.key]||0):0),0),unpaidTotal=calc.totalPayout-paidTotal;
   return`<div class="settlement-wrap">
     <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Gross Sold</div><div class="settlement-stat-val">${settlementGold(collections.sold)}</div><div class="settlement-stat-sub">${sold.length} sold item${sold.length===1?'':'s'}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">AH Fees</div><div class="settlement-stat-val settlement-negative">${settlementGold(collections.fee)}</div><div class="settlement-stat-sub">${settlementNum(settlement.ahFeePct)}% of AH-paid gold</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Expected Net Pot</div><div class="settlement-stat-val">${settlementGold(collections.credited)}</div><div class="settlement-stat-sub">Used to calculate management and payouts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Still To Collect</div><div class="settlement-stat-val ${remaining<.01?'settlement-positive':'settlement-negative'}">${settlementGold(remaining)}</div><div class="settlement-stat-sub">${collections.settled} of ${sold.length} payments completed</div></div></div>
-    <div class="settlement-section"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Payment Collection</div><div class="settlement-section-note">AH Gold uses the recorded sale price and deducts the ${settlementNum(settlement.ahFeePct)}% fee automatically. USD and Covered automatically supply the item's gold value to the pot.</div></div><div class="settlement-toolbar">${duplicateCount?`<button class="btn btn-danger btn-sm" onclick="cleanSettlementDuplicates()">Remove ${duplicateCount} Duplicate${duplicateCount===1?'':'s'}</button>`:''}<div class="fg"><div class="lbl">AH fee %</div><input type="number" min="0" max="100" step=".01" value="${settlementNum(settlement.ahFeePct)}" onchange="saveSettlementSetting('ahFeePct',this.value)" style="width:90px;" /></div></div></div><div class="settlement-table-wrap"><table class="settlement-table" style="min-width:820px;"><thead><tr><th>Item / Winner</th><th>Price</th><th>Method</th><th>Payment</th><th>Pot Credit</th><th>Collection</th><th>Note</th></tr></thead><tbody>${paymentRows||`<tr><td colspan="7" class="settlement-empty">Sold items will appear here.</td></tr>`}</tbody></table></div></div>
+    <div class="settlement-section"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Payment Collection</div><div class="settlement-section-note">AH Gold uses the recorded sale price and deducts the ${settlementNum(settlement.ahFeePct)}% fee automatically. USD and Covered automatically supply the item's gold value to the pot.</div></div><div class="settlement-toolbar"><button class="btn btn-green btn-sm" onclick="setAllSettlementCollections(true)" ${!sold.length||collections.settled===sold.length?'disabled':''}>Mark All Collected</button><button class="btn btn-outline btn-sm" onclick="setAllSettlementCollections(false)" ${!collections.settled?'disabled':''}>Clear All</button>${duplicateCount?`<button class="btn btn-danger btn-sm" onclick="cleanSettlementDuplicates()">Remove ${duplicateCount} Duplicate${duplicateCount===1?'':'s'}</button>`:''}<div class="fg"><div class="lbl">AH fee %</div><input type="number" min="0" max="100" step=".01" value="${settlementNum(settlement.ahFeePct)}" onchange="saveSettlementSetting('ahFeePct',this.value)" style="width:90px;" /></div></div></div><div class="settlement-table-wrap"><table class="settlement-table" style="min-width:820px;"><thead><tr><th>Item / Winner</th><th>Price</th><th>Method</th><th>Payment</th><th>Pot Credit</th><th>Collection</th><th>Note</th></tr></thead><tbody>${paymentRows||`<tr><td colspan="7" class="settlement-empty">Sold items will appear here.</td></tr>`}</tbody></table></div></div>
     <div class="settlement-section"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Cut Setup</div><div class="settlement-section-note">Management cut first, equal base cuts second, selected mutators and manual adjustments last.</div></div><button class="btn ${locked?'btn-amber-resume':'btn-gold'} btn-sm" onclick="toggleSettlementLock()">${locked?'Unlock Setup':'Start Payouts'}</button></div>
-      <div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Management cut %</div><input type="number" id="settlement-management-cut" min="0" max="100" step=".01" value="${calc.managementPct}" ${locked?'disabled':''} onchange="saveSettlementSetting('managementCut',this.value)" /></div><div class="fg"><div class="lbl">Raider name</div><input type="text" id="settlement-raider-name" placeholder="Character name" ${locked?'disabled':''} /></div><button class="btn btn-outline btn-sm" onclick="addSettlementRaider()" ${locked?'disabled':''}>Add Raider</button><button class="btn btn-outline btn-sm" onclick="syncSettlementRaiders()" ${locked?'disabled':''}>Sync Online + Winners</button></div>
+      <div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Management cut %</div><input type="number" id="settlement-management-cut" min="0" max="100" step=".01" value="${calc.managementPct}" ${locked?'disabled':''} onchange="saveSettlementSetting('managementCut',this.value)" /></div><div class="fg"><div class="lbl">Raider name</div><input type="text" id="settlement-raider-name" placeholder="Character name" ${locked?'disabled':''} /></div><button class="btn btn-outline btn-sm" onclick="addSettlementRaider()" ${locked?'disabled':''}>Add Raider</button><button class="btn btn-outline btn-sm" onclick="syncSettlementRaiders()" ${locked?'disabled':''}>Import Attendance</button></div>
       <div class="mutator-grid">${mutatorCards||'<div class="settlement-empty">No saved mutators yet.</div>'}</div><div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Mutator name</div><input type="text" id="mutator-name" placeholder="Example: Tanks" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Pool %</div><input type="number" id="mutator-pct" step=".01" placeholder="0" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Flat gold</div><input type="number" id="mutator-flat" step="1" placeholder="0" ${locked?'disabled':''} /></div><button class="btn btn-gold-soft btn-sm" onclick="addSettlementMutator()" ${locked?'disabled':''}>Save Mutator</button></div>
       <div class="settlement-table-wrap"><table class="settlement-table"><thead><tr><th></th><th>Raider</th><th>Base</th>${mutatorHeaders}<th>Adjust g</th><th>Adjust %</th><th>Calculated Cut</th><th>Paid</th></tr></thead><tbody>${raiderRows||`<tr><td colspan="${8+mutators.length}" class="settlement-empty">Add raiders or sync the current run roster.</td></tr>`}</tbody></table></div></div>
     <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Management · ${calc.managementPct}%</div><div class="settlement-stat-val">${settlementGold(calc.managementCut)}</div><div class="settlement-stat-sub">Calculated from the expected net pot</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">To Distribute</div><div class="settlement-stat-val">${settlementGold(calc.distributable)}</div><div class="settlement-stat-sub">Base cut ${settlementGold(calc.base)}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Payouts Completed</div><div class="settlement-stat-val settlement-positive">${settlementGold(paidTotal)}</div><div class="settlement-stat-sub">${settlementGold(unpaidTotal)} still unpaid</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Distribution Balance</div><div class="settlement-stat-val ${Math.abs(calc.balance)<=raiders.length?'settlement-positive':'settlement-negative'}">${settlementGold(calc.balance)}</div><div class="settlement-stat-sub">Small differences can come from rounding</div></div></div>
@@ -3162,6 +3229,13 @@ function renderSettlement(){
 }
 function saveSettlementSetting(field,value){if(!isRL)return;let val=settlementNum(value);if(field==='managementCut'||field==='ahFeePct')val=Math.max(0,Math.min(100,val));if(field==='managementCut')localStorage.setItem('gdkp_management_cut',String(val));update(runRef('/settlement'),{[field]:val});}
 function savePaymentField(auctionId,field,value){if(!isRL)return;const val=(field==='settled')?!!value:(['ahGross','usdReceived','usdGold'].includes(field)?Math.max(0,settlementNum(value)):String(value||'').slice(0,80));update(runRef(`/settlement/payments/${auctionId}`),{[field]:val});}
+function setAllSettlementCollections(done){
+  if(!isRL)return;
+  const soldIds=Object.entries(auctions||{}).filter(([,a])=>a?.status==='sold').map(([id])=>id);
+  if(!soldIds.length){toast('No sold items to update');return;}
+  const writes={};soldIds.forEach(id=>{writes[`settlement/payments/${id}/settled`]=!!done;});
+  update(runRef(),writes).then(()=>toast(done?'All payments marked collected':'All collection checks cleared'));
+}
 function cleanSettlementDuplicates(){
   if(!isRL)return;
   const ids=findSettlementDuplicateIds();
@@ -3170,7 +3244,7 @@ function cleanSettlementDuplicates(){
 }
 function addSettlementRaiderName(name){name=String(name||'').trim().slice(0,30);if(!name)return false;const key=settlementRaiderKey(name),existing=settlement.raiders?.[key];if(existing)return false;set(runRef(`/settlement/raiders/${key}`),{name,base:true,adjustGold:0,adjustPct:0,mutators:{},paid:false});return true;}
 function addSettlementRaider(){const inp=document.getElementById('settlement-raider-name');if(!inp||!addSettlementRaiderName(inp.value)){toast('Enter a new raider name');return;}inp.value='';toast('Raider added');}
-function syncSettlementRaiders(){if(!isRL||settlement.payoutStarted)return;const names=new Set(getActiveMembers(presenceData).map(p=>p.name).filter(Boolean));auctionList().filter(a=>a.status==='sold').forEach(a=>{const w=settlementWinner(a);if(w)names.add(w);});let added=0;names.forEach(n=>{if(addSettlementRaiderName(n))added++;});toast(added?`${added} raider${added===1?'':'s'} added`:'Roster already synced');}
+function syncSettlementRaiders(){if(!isRL||settlement.payoutStarted)return;const checked=attendanceList().filter(a=>a.approved&&a.character),names=new Set(checked.map(a=>a.character));if(!checked.length){getActiveMembers(presenceData).map(p=>p.name).filter(Boolean).forEach(n=>names.add(n));auctionList().filter(a=>a.status==='sold').forEach(a=>{const w=settlementWinner(a);if(w)names.add(w);});}let added=0;names.forEach(n=>{if(addSettlementRaiderName(n))added++;});toast(added?`${added} attendee${added===1?'':'s'} imported`:checked.length?'Attendance already imported':'No new attendees found');}
 function removeSettlementRaider(key){if(!isRL||settlement.payoutStarted)return;remove(runRef(`/settlement/raiders/${key}`));}
 function saveRaiderField(key,field,value){if(!isRL)return;if(settlement.payoutStarted&&field!=='paid')return;const val=(field==='base'||field==='paid')?!!value:settlementNum(value);update(runRef(`/settlement/raiders/${key}`),{[field]:val});}
 function toggleRaiderMutator(key,id,on){if(!isRL||settlement.payoutStarted)return;set(runRef(`/settlement/raiders/${key}/mutators/${id}`),!!on);}
@@ -3595,12 +3669,14 @@ async function resetRun(){
   const nextCut=Number.isFinite(parseFloat(settlement.managementCut))?parseFloat(settlement.managementCut):DEFAULT_SETTLEMENT.managementCut;
   const savedMutators=JSON.parse(JSON.stringify(settlement.mutators||{}));
   settlement={...JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT)),managementCut:nextCut,ahFeePct:settlementNum(settlement.ahFeePct)||5,mutators:savedMutators};
+  attendance={};
+  attendanceSettings={enabled:false,open:false,code:''};
   // Clear local state immediately so UI doesn't show stale pot/title
   auctions={};
   raidSettings={...raidSettings,raidTitle:''};
   tab='active';
   render();
-  await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement});
+  await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement,attendance:{},attendanceSettings});
   subscribeToRun();
   toast('New run started — previous run archived');
 }
@@ -3836,8 +3912,12 @@ function renderCard(a,mode){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
     const hasBids=bids.length>0;
     const isGuest=!discordUser&&!isRL;
+    const attendanceBlocked=!isRL&&!isGuest&&!attendanceCanBid();
+    const bidBlocked=isGuest||attendanceBlocked;
     const qbtns=isGuest
       ?`<div style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--text-muted);font-family:'Cinzel',serif;letter-spacing:.05em;">&#128274; <a onclick="joinDiscord()" style="color:var(--gold);cursor:pointer;text-decoration:underline;">Login with Discord</a> to bid</div>`
+      :attendanceBlocked
+      ?`<div style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.05em;">Check in to this raid before bidding</div>`
       :(hasBids
         ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
         : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`);
@@ -3846,10 +3926,10 @@ function renderCard(a,mode){
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
       <button class="btn btn-danger btn-sm" style="padding:.2rem .55rem;font-size:.65rem;margin-top:.15rem;" onclick="cancelAuction('${a.id}')">Cancel</button>
     </div>`:'' ;
-    const cbtn=isGuest?'':`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
-    const crow=(!isGuest&&showCustom)?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
+    const cbtn=bidBlocked?'':`<button class="qb qb-custom ${showCustom?'active-custom':''}" style="width:100%;text-align:center;padding:.6rem .7rem;font-size:.85rem;font-weight:600;border-width:2px;margin-top:.35rem;" onclick="toggleCustom('${a.id}')">${showCustom?'&#x2715; Hide Custom':'Custom Bid'}</button>`;
+    const crow=(!bidBlocked&&showCustom)?`<div class="custom-bid-row"><input type="number" id="bid-${a.id}" placeholder="Enter amount..." min="${minNext}" step="${a.minIncrement||250}" onkeydown="if(event.key==='Enter')placeBid('${a.id}',event)" /><button class="btn btn-outline btn-sm" onclick="placeBid('${a.id}',event)">Bid</button></div>`:'';
     const autoBidSet=autoBids[a.id];
-    const autoBidBtn=!isRL?`<div style="margin-top:.3rem;display:flex;align-items:center;gap:.4rem;">
+    const autoBidBtn=!isRL&&!bidBlocked?`<div style="margin-top:.3rem;display:flex;align-items:center;gap:.4rem;">
       ${autoBidSet
         ?`<span style="font-size:.7rem;color:var(--amber);font-family:'Cinzel',serif;">Auto: up to ${autoBidSet.toLocaleString()}g</span>
            <button onclick="clearAutoBid('${a.id}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:0;">✕</button>`
@@ -4285,6 +4365,7 @@ function spawnCoin(e){
 }
 function submitBid(id,val,_evt){
   if(!discordUser&&!isRL){toast('Login with Discord to place bids');return;}
+  if(!attendanceCanBid()){toast(attendanceSettings.open?'Check in to this raid before bidding':'Attendance check-in is closed. Ask the raid leader.');return;}
   const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){_searchFocusIdx=-1;searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){searchResults=[];const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}// Show local results immediately
@@ -5549,7 +5630,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,saveSettlementSetting,savePaymentField,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,toggleSettlementLock,markAllPayoutsPaid,copyUnpaidPayouts});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,checkInAttendance,leaveAttendance,removeAttendanceMember,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,toggleSettlementLock,markAllPayoutsPaid,copyUnpaidPayouts});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

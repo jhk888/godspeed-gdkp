@@ -140,6 +140,18 @@
   .login-brand .wordmark{font-family:'Cinzel',serif;font-size:3rem;font-weight:600;color:var(--gold);letter-spacing:.15em;text-align:center;text-shadow:0 0 40px rgba(212,169,60,0.5);}
   .login-brand .wordmark-sub{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.35em;color:var(--text-muted);margin-top:.3rem;text-align:center;}
   .login-box{background:rgba(22,19,12,0.96);border:1px solid var(--border-gold);padding:2.25rem 2.5rem;border-radius:4px;width:100%;max-width:400px;display:flex;flex-direction:column;gap:1rem;backdrop-filter:blur(10px);}
+  body.signed-out{overflow:hidden;}
+  body.signed-out .hdr,
+  body.signed-out #loot-tracker,
+  body.signed-out .members-sidebar,
+  body.signed-out .sidebar-toggle-tab,
+  body.signed-out .panel-hover-zone,
+  body.signed-out .side-panel,
+  body.signed-out .fab{display:none !important;}
+  body.signed-out .main{max-width:none;min-height:100vh;min-height:100dvh;padding:clamp(1rem,4vw,3rem) !important;display:flex;align-items:center;justify-content:center;}
+  body.signed-out .login-wrap{width:100%;min-height:0;gap:1.4rem;}
+  body.signed-out .login-box{max-width:360px;padding:1.5rem;}
+  body.signed-out .login-brand .wordmark{font-size:clamp(2rem,4vw,3rem);}
   .login-box.wide{max-width:720px;}
   .login-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem 1.5rem;}
   .login-grid .fg.full{grid-column:1/-1;}
@@ -2519,6 +2531,7 @@ function _restoreScroll(s){
   if(m&&s.main)requestAnimationFrame(()=>{const mm=document.getElementById('main');if(mm)mm.scrollTop=s.main;});
 }
 function render(){
+  document.body.classList.toggle('signed-out',!user);
   if(!user){renderLogin();return;}
   renderHdr();renderMain();
   const fab=document.getElementById('fab');
@@ -2753,7 +2766,7 @@ function renderLogin(){
     <div class="login-wrap">
       <div class="login-brand"><div class="wordmark">Godspeed GDKP</div><div class="wordmark-sub">Gold DKP Run</div></div>
       <div class="login-box">
-        <div style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-align:center;text-transform:uppercase;margin-bottom:.25rem;">Sign in to enter the bidding floor</div>
+        <div style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-align:center;text-transform:uppercase;margin-bottom:.25rem;">Prepare Thy Shekels</div>
         <button class="discord-btn" onclick="joinDiscord()" style="width:100%;justify-content:center;font-size:.9rem;padding:.8rem 1rem;">
           <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.7a40 40 0 0 0-1.8 3.6 54 54 0 0 0-16.4 0A38.4 38.4 0 0 0 25.4.7 58.4 58.4 0 0 0 10.8 5C1.6 18.7-1 32.1.3 45.3a59 59 0 0 0 17.9 9.1 43 43 0 0 0 3.7-6.1 38.3 38.3 0 0 1-5.9-2.8l1.4-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38.2 38.2 0 0 1-5.9 2.9 43 43 0 0 0 3.7 6A58.7 58.7 0 0 0 70.6 45C72.2 29.7 68 16.4 60.1 4.9ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Zm23.5 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Z" fill="currentColor"/></svg>
           Continue with Discord

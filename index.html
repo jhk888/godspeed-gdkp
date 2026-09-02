@@ -918,6 +918,7 @@ let settlement=JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT));
 let settlementFocusTarget=null;
 let attendance={};
 let attendanceSettings={enabled:false,open:false,code:''};
+let discordCharacters=[];
 
 function toast(msg){
   const el=document.getElementById('toast');
@@ -964,7 +965,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-corners"></div>
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
-      ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="number" placeholder="${input.placeholder||''}" min="${input.min||0}" step="${input.step||1}" />`:''}
+      ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="${input.type||'number'}" placeholder="${input.placeholder||''}" ${input.type==='text'?`value="${settlementEsc(input.value||'')}" maxlength="${input.maxlength||30}"`:`min="${input.min||0}" step="${input.step||1}"`} />`:''}
       ${suppressKey?`<label style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;cursor:pointer;"><input type="checkbox" id="wow-suppress" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;" /><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);">Don't show this again</span></label>`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
@@ -985,6 +986,12 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
   confirmBtn.onclick=()=>{
     if(suppressKey&&document.getElementById('wow-suppress')?.checked){_suppressedDialogs[suppressKey]=true;_saveSuppress();}
     if(input&&inp){
+      if(input.type==='text'){
+        const val=inp.value.trim();
+        if(!val){toast(input.errorMsg||'Enter a value');return;}
+        close();onConfirm(val);
+        return;
+      }
       const val=parseInt(inp.value);
       if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
       close();onConfirm(val);
@@ -1908,7 +1915,7 @@ function startTick(){
       if(te){te.textContent=fmtTime(r);te.style.color=urgent?'var(--red)':'var(--text-muted)';}
       // 10s warning — only for users involved in this auction
       const _activeBids=Object.values(a.bids||{}).filter(b=>!b.retracted);
-      const _userInvolved=_activeBids.some(b=>b.bidder===user);
+      const _userInvolved=_activeBids.some(b=>b.bidder===currentRaiderName());
       if(r===10&&!soundMuted&&_userInvolved){
         try{
           const ctx=new(window.AudioContext||window.webkitAudioContext)();
@@ -2043,8 +2050,8 @@ function subscribeToRun(){
             pendingGlows.push({id});
             const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
             const topBid=bids[0];
-            const isMine=topBid?.bidder===user;
-            if(!isMine&&bids.some(b=>b.bidder===user)) playCoinSound();
+            const isMine=topBid?.bidder===currentRaiderName();
+            if(!isMine&&bids.some(b=>b.bidder===currentRaiderName())) playCoinSound();
             // Auto-bid: if outbid and user has a limit set
             if(!isMine&&autoBids[id]){
               const maxBid=autoBids[id];
@@ -2259,7 +2266,7 @@ function subscribeToRun(){
             const active=all.filter(a=>a.status==='open');
             let liveList=active;
             if(watchOnly) liveList=active.filter(a=>favs.has(a.id));
-            else if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+            else if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===currentRaiderName()));
             else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
             grid.innerHTML=renderLiveFilterBar(active)+renderGrid(liveList,'open');
             refreshWowheadLinks();
@@ -2375,6 +2382,7 @@ async function getOrCreateRun(){
     return;
   }
   const runs=snap.val()||{};
+  loadDiscordCharacters(runs);
   const keys=Object.keys(runs).filter(k=>!runs[k].archived).sort().reverse();
   if(keys.length>0){runId=keys[0];}
   else{const nr=push(ref(db,'runs'));runId=nr.key;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
@@ -2533,28 +2541,61 @@ function updateOnlineCounter(){
 
 function attendanceKeyForCurrentUser(){return discordUser?.id?'discord_'+String(discordUser.id):'';}
 function currentAttendanceRecord(){const key=attendanceKeyForCurrentUser();return key?attendance[key]||null:null;}
+function currentRaiderName(){return currentAttendanceRecord()?.character||user;}
 function attendanceIsRequired(){return !!attendanceSettings.enabled;}
-function attendanceCanBid(){return isRL||!attendanceIsRequired()||!!currentAttendanceRecord()?.approved;}
+function attendanceCanBid(){const record=currentAttendanceRecord();return isRL||!attendanceIsRequired()||!!(record?.approved&&record?.character);}
 function attendanceList(){return Object.entries(attendance||{}).map(([key,a])=>({key,...a})).sort((a,b)=>(a.checkedInAt||0)-(b.checkedInAt||0));}
 function attendanceCodeFromInvite(){return (new URLSearchParams(window.location.search).get('raid')||localStorage.getItem('gdkp_pending_raid_code')||'').trim().toUpperCase();}
 function generateAttendanceCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code;}
+function attendanceCharacterIdentity(name){return sanitizeNick(name||'').trim().toLowerCase();}
+function discordCharacterStorageKey(){return discordUser?.id?'gdkp_characters_'+String(discordUser.id):'';}
+function addDiscordCharacterOption(name,front=false){
+  name=sanitizeNick(name||'');if(!name)return;
+  const identity=attendanceCharacterIdentity(name),existing=discordCharacters.findIndex(n=>attendanceCharacterIdentity(n)===identity);
+  if(existing>=0)discordCharacters.splice(existing,1);
+  if(front)discordCharacters.unshift(name);else discordCharacters.push(name);
+}
+function loadDiscordCharacters(runs={}){
+  discordCharacters=[];
+  const storageKey=discordCharacterStorageKey();
+  if(storageKey){try{const saved=JSON.parse(localStorage.getItem(storageKey)||'[]');if(Array.isArray(saved))saved.forEach(n=>addDiscordCharacterOption(n));}catch(e){}}
+  const historical=[];
+  Object.values(runs||{}).forEach(run=>Object.values(run?.attendance||{}).forEach(a=>{if(String(a?.discordId||'')===String(discordUser?.id||'')&&a.character)historical.push({name:a.character,ts:a.checkedInAt||0});}));
+  historical.sort((a,b)=>b.ts-a.ts).forEach(a=>addDiscordCharacterOption(a.name));
+  if(!discordUser?.id)return;
+  get(ref(db,`discordProfiles/${discordUser.id}/characters`)).then(snap=>{
+    Object.values(snap.val()||{}).sort((a,b)=>(b.lastUsedAt||0)-(a.lastUsedAt||0)).forEach(a=>addDiscordCharacterOption(a.name));
+    if(storageKey)localStorage.setItem(storageKey,JSON.stringify(discordCharacters.slice(0,20)));
+    if(user&&attendanceIsRequired()&&!currentAttendanceRecord())renderMain();
+  }).catch(()=>{});
+}
+function rememberDiscordCharacter(name){
+  name=sanitizeNick(name||'');if(!name||!discordUser?.id)return;
+  addDiscordCharacterOption(name,true);
+  const storageKey=discordCharacterStorageKey();if(storageKey)localStorage.setItem(storageKey,JSON.stringify(discordCharacters.slice(0,20)));
+  const profileKey=encodeURIComponent(attendanceCharacterIdentity(name)).replace(/\./g,'%2E');
+  set(ref(db,`discordProfiles/${discordUser.id}/characters/${profileKey}`),{name,lastUsedAt:Date.now()}).catch(()=>{});
+}
+function attendanceCharacterTaken(name,exceptKey=''){const identity=attendanceCharacterIdentity(name);return attendanceList().find(a=>a.key!==exceptKey&&a.approved&&attendanceCharacterIdentity(a.character)===identity);}
 function buildAttendanceBanner(){
   if(isRL||!attendanceIsRequired())return'';
   const record=currentAttendanceRecord();
   if(record?.approved)return`<div style="margin:.6rem 0;padding:.65rem .9rem;border:1px solid rgba(96,204,128,.35);background:rgba(96,204,128,.08);border-radius:4px;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;"><div><span style="font-family:'Cinzel',serif;color:var(--green);font-size:.72rem;letter-spacing:.07em;">CHECKED IN</span><span style="color:var(--text-muted);font-size:.72rem;margin-left:.55rem;">${settlementEsc(record.character||user)}</span></div>${attendanceSettings.open?'<button class="btn btn-outline btn-sm" onclick="leaveAttendance()">Change Check-In</button>':''}</div>`;
   if(!attendanceSettings.open)return`<div style="margin:.6rem 0;padding:.8rem 1rem;border:1px solid rgba(255,96,96,.35);background:rgba(255,96,96,.08);border-radius:4px;color:var(--red);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.05em;text-align:center;">ATTENDANCE CHECK-IN IS CLOSED. ASK THE RAID LEADER TO REOPEN IT.</div>`;
-  const code=attendanceCodeFromInvite(),character=sanitizeNick(nickMap[user]||user);
-  return`<div style="margin:.6rem 0;padding:.85rem 1rem;border:1px solid var(--border-gold-strong);background:rgba(30,26,16,.94);border-radius:4px;display:flex;align-items:flex-end;gap:.65rem;flex-wrap:wrap;"><div style="flex:1;min-width:190px;"><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:.78rem;letter-spacing:.08em;">RAID CHECK-IN REQUIRED</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">Check in before bidding.</div></div><div class="fg"><div class="lbl">Raid code</div><input id="attendance-code" maxlength="6" value="${settlementEsc(code)}" placeholder="6-digit code" style="width:125px;text-transform:uppercase;" /></div><div class="fg"><div class="lbl">Character attending</div><input id="attendance-character" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:170px;" onkeydown="if(event.key==='Enter')checkInAttendance()" /></div><button class="btn btn-gold btn-sm" onclick="checkInAttendance()">Check In</button></div>`;
+  const code=attendanceCodeFromInvite(),character=discordCharacters[0]||'',characterOptions=discordCharacters.map(n=>`<option value="${settlementEsc(n)}"></option>`).join('');
+  return`<div style="margin:.6rem 0;padding:.85rem 1rem;border:1px solid var(--border-gold-strong);background:rgba(30,26,16,.94);border-radius:4px;display:flex;align-items:flex-end;gap:.65rem;flex-wrap:wrap;"><div style="flex:1;min-width:190px;"><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:.78rem;letter-spacing:.08em;">RAID CHECK-IN REQUIRED</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">Choose the character participating in this run.</div></div><div class="fg"><div class="lbl">Raid code</div><input id="attendance-code" maxlength="6" value="${settlementEsc(code)}" placeholder="6-digit code" style="width:125px;text-transform:uppercase;" /></div><div class="fg"><div class="lbl">Character attending *</div><input id="attendance-character" type="text" required autocomplete="off" list="attendance-character-list" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:190px;" onkeydown="if(event.key==='Enter'){event.preventDefault();checkInAttendance();}" /><datalist id="attendance-character-list">${characterOptions}</datalist><div style="font-size:.58rem;color:var(--text-muted);max-width:190px;">${discordCharacters.length?'Choose a saved character or enter another.':'Enter the character used for this raid.'}</div></div><button class="btn btn-gold btn-sm" onclick="checkInAttendance()">Check In</button></div>`;
 }
 async function checkInAttendance(){
   if(!discordUser?.id){toast('Discord login is required for attendance');return;}
   if(!attendanceSettings.open){toast('Check-in is closed');return;}
   const code=(document.getElementById('attendance-code')?.value||attendanceCodeFromInvite()).trim().toUpperCase();
   if(code!==String(attendanceSettings.code||'').toUpperCase()){toast('Raid code does not match');return;}
-  const character=sanitizeNick(document.getElementById('attendance-character')?.value||nickMap[user]||user);
+  const character=sanitizeNick(document.getElementById('attendance-character')?.value||'');
   if(!character){toast('Enter the character attending');return;}
   const key=attendanceKeyForCurrentUser();
+  if(attendanceCharacterTaken(character,key)){toast(character+' is already checked in');return;}
   await set(runRef(`/attendance/${key}`),{discordId:String(discordUser.id),discordName:discordUser.username||user,personName:discordUser.displayName||discordUser.username||user,character,avatar:discordUser.avatar||null,approved:true,checkedInAt:Date.now()});
+  rememberDiscordCharacter(character);
   localStorage.removeItem('gdkp_pending_raid_code');
   toast('Checked in as '+character);
 }
@@ -2572,6 +2613,10 @@ function copyAttendanceInvite(){
   if(navigator.clipboard?.writeText)navigator.clipboard.writeText(text).then(()=>toast('Raid check-in link copied')).catch(()=>toast(text));else toast(text);
 }
 function removeAttendanceMember(key){if(!isRL)return;const member=attendance[key];wowConfirm({title:'Remove attendee?',msg:`Remove ${settlementEsc(member?.character||member?.personName||'this player')} from the raid attendance list.`,confirmLabel:'Remove',danger:true,onConfirm:()=>remove(runRef(`/attendance/${key}`))});}
+function editAttendanceCharacter(key){
+  if(!isRL)return;const member=attendance[key];if(!member)return;
+  wowConfirm({title:'Change Attending Character',msg:`Discord: ${settlementEsc(member.personName||member.discordName||'Unknown')}`,confirmLabel:'Save',input:{type:'text',value:member.character||'',placeholder:'Character name',maxlength:20,errorMsg:'Enter a character name'},onConfirm:value=>{const character=sanitizeNick(value);if(!character){toast('Enter a character name');return;}if(attendanceCharacterTaken(character,key)){toast(character+' is already checked in');return;}update(runRef(`/attendance/${key}`),{character,correctedAt:Date.now(),correctedBy:user});toast('Attendance changed to '+character);}});
+}
 function closeAttendanceManager(){document.getElementById('attendance-overlay')?.remove();}
 function openAttendanceManager(){
   if(!isRL)return;
@@ -2582,7 +2627,7 @@ function openAttendanceManager(){
 function renderAttendanceManager(){
   const overlay=document.getElementById('attendance-overlay');if(!overlay||!isRL)return;
   const list=attendanceList(),open=!!attendanceSettings.open;
-  const rows=list.map(a=>`<div style="display:flex;align-items:center;gap:.65rem;padding:.55rem .2rem;border-top:1px solid rgba(212,169,60,.1);"><div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;color:var(--gold-light);font-size:.78rem;">${settlementEsc(a.character||'Unknown')}</div><div style="font-size:.66rem;color:var(--text-muted);margin-top:.12rem;">${settlementEsc(a.personName||a.discordName||'Discord user')} · ${a.checkedInAt?new Date(a.checkedInAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''}</div></div><span class="settlement-status ok">Checked In</span><button class="mutator-mini" onclick="removeAttendanceMember('${a.key}')">Remove</button></div>`).join('');
+  const rows=list.map(a=>{const person=a.personName||a.discordName||'Unknown',discordLabel=a.discordName&&a.discordName.toLowerCase()!==person.toLowerCase()?`${person} (@${a.discordName})`:person;return`<div style="display:flex;align-items:center;gap:.65rem;padding:.55rem .2rem;border-top:1px solid rgba(212,169,60,.1);"><div style="flex:1;min-width:0;"><div style="font-family:'Cinzel',serif;color:var(--gold-light);font-size:.78rem;">${settlementEsc(a.character||'Unknown')}</div><div style="font-size:.66rem;color:var(--text-muted);margin-top:.12rem;">Discord: ${settlementEsc(discordLabel)} · ${a.checkedInAt?new Date(a.checkedInAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):''}</div></div><span class="settlement-status ok">Checked In</span><button class="mutator-mini" onclick="editAttendanceCharacter('${a.key}')">Change</button><button class="mutator-mini" onclick="removeAttendanceMember('${a.key}')">Remove</button></div>`;}).join('');
   overlay.innerHTML=`<div style="background:rgba(22,19,12,.99);border:1px solid var(--border-gold-strong);border-radius:5px;padding:1.3rem;width:100%;max-width:620px;max-height:86vh;overflow:auto;"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1rem;"><div><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;letter-spacing:.1em;">RAID ATTENDANCE</div><div style="font-size:.7rem;color:var(--text-muted);margin-top:.2rem;">${list.length} player${list.length===1?'':'s'} checked in</div></div><button onclick="closeAttendanceManager()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;">&#10005;</button></div><div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;padding:.75rem;background:rgba(212,169,60,.05);border:1px solid rgba(212,169,60,.16);border-radius:4px;margin-bottom:.9rem;"><div style="flex:1;min-width:150px;"><div class="lbl">Raid code</div><div style="font-family:'Cinzel',serif;font-size:1.15rem;letter-spacing:.18em;color:var(--gold-light);">${attendanceSettings.code||'Not opened'}</div></div><button class="btn ${open?'btn-danger':'btn-gold'} btn-sm" onclick="toggleAttendanceCheckIn(${open?'false':'true'})">${open?'Close Check-In':'Open Check-In'}</button><button class="btn btn-outline btn-sm" onclick="copyAttendanceInvite()" ${!attendanceSettings.code?'disabled':''}>Copy Invite Link</button></div><div style="font-size:.68rem;color:${open?'var(--green)':'var(--text-muted)'};margin-bottom:.65rem;">${open?'Players can check in now.':'Check-in is closed. Existing attendance remains saved.'}</div>${rows||'<div class="settlement-empty">No players have checked in yet.</div>'}</div>`;
 }
 
@@ -3039,7 +3084,7 @@ function renderMain(){
     // My Bids filter
     let liveList=active;
     if(watchOnly) liveList=active.filter(a=>favs.has(a.id));
-              else if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user));
+              else if(myBidsOnly) liveList=active.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===currentRaiderName()));
     else if(liveCatFilter!=='all') liveList=active.filter(a=>(a.category||'Other')===liveCatFilter);
     const liveBar=renderLiveFilterBar(active);
     content=liveBar+renderGrid(liveList,'open');
@@ -3052,7 +3097,7 @@ function renderMain(){
   else{
     // My Items filter for sold tab
     let soldList=sold;
-    if(myItemsOnly) soldList=sold.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===user);
+    if(myItemsOnly) soldList=sold.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===currentRaiderName());
     const soldBar=renderSoldFilterBar(sold);
     content=soldBar+renderGrid(soldList,'sold');
   }
@@ -3472,7 +3517,7 @@ function closeArchiveDisplay(){
 function renderRaiderSummary(){
   if(!user||isRL)return;
   document.getElementById('raider-summary-overlay')?.remove();
-  const won=auctionList().filter(a=>a.status==='sold'&&(()=>{const b=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);return b[0]?.bidder===user;})());
+  const won=auctionList().filter(a=>a.status==='sold'&&(()=>{const b=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);return b[0]?.bidder===currentRaiderName();})());
   const totalSpent=won.reduce((s,a)=>s+a.currentBid,0);
   const ol=document.createElement('div');
   ol.id='raider-summary-overlay';
@@ -3904,8 +3949,8 @@ function renderBulkBar(list,mode){
 function renderCard(a,mode){
   const allBids=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
   const bids=allBids.map(([,b])=>b).filter(b=>!b.retracted);
-  const top=bids[0]||null,isLeading=top&&top.bidder===user;
-  const hasMyBid=bids.some(b=>b.bidder===user);
+  const top=bids[0]||null,isLeading=top&&top.bidder===currentRaiderName();
+  const hasMyBid=bids.some(b=>b.bidder===currentRaiderName());
   const isBehind=hasMyBid&&!isLeading;
   const now=Date.now();
   const rem=a.status==='open'&&!a.paused&&a.endsAt?Math.max(0,Math.floor((a.endsAt-now)/1000)):(a.remaining||0);
@@ -3919,10 +3964,10 @@ function renderCard(a,mode){
   const histEntries=[...activeBids,...retractedBids];
   const histItems=histEntries.map(([key,b])=>{
     const isRetracted=!!b.retracted;
-    const name=b.bidder===user?'You':displayName(b.bidder);
+    const name=b.bidder===currentRaiderName()?'You':displayName(b.bidder);
     const rlX=isRL&&!isRetracted?`<button onclick="rlRetractBid('${a.id}','${key}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.65rem;padding:0 .2rem;opacity:.5;flex-shrink:0;" title="Retract this bid">✕</button>`:'';
     return`<div class="hist-row" style="${isRetracted?'opacity:.4;':''}">
-      <span class="${b.bidder===user&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''};">${name}${isRetracted?' ↩':''}</span>
+      <span class="${b.bidder===currentRaiderName()&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''};">${name}${isRetracted?' ↩':''}</span>
       <span style="margin-left:auto;${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${b.amount.toLocaleString()}g</span>
       ${rlX}
     </div>`;
@@ -3968,7 +4013,7 @@ function renderCard(a,mode){
         :`<button onclick="setAutoBid('${a.id}')" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);color:var(--gold);cursor:pointer;font-size:.7rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.3rem .7rem;border-radius:3px;">&#9654; Set Limit Bid</button>`
       }
     </div>`:'' ;
-    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===user?'You are leading':displayName(top.bidder)+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===currentRaiderName()?'You are leading':displayName(top.bidder)+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
     if(previewActive){
       bidSection=`<div class="bid-section">${noteHTML}
         <div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt bid-preview">${(a.previewBid||0).toLocaleString()}g</div><div class="bid-preview-note">&#9998; Price being adjusted&hellip;</div></div>${bidRightBtns}</div>
@@ -3983,7 +4028,7 @@ function renderCard(a,mode){
     bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div>${noteHTML}</div>`;
   }
   else if(mode==='sold'){
-    const isWinner=top&&top.bidder===user;
+    const isWinner=top&&top.bidder===currentRaiderName();
     const paidBtn=isRL
       ?`<button onclick="togglePaid('${a.id}')" style="width:100%;margin-top:.5rem;padding:.55rem;border-radius:4px;font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.07em;font-weight:600;cursor:pointer;border:none;transition:background .15s;${a.paid?'background:rgba(46,180,80,0.15);color:#4dff70;border:1px solid rgba(46,180,80,0.4);':'background:rgba(226,96,96,0.12);color:#ff8080;border:1px solid rgba(226,96,96,0.4);'}">${a.paid?'&#10003; Paid &mdash; tap to undo':'&#9679; Unpaid &mdash; tap to confirm'}</button>`
       :(a.paid
@@ -4019,7 +4064,7 @@ function renderCard(a,mode){
   const slotBadgeRow=`<div style="display:flex;align-items:center;gap:.35rem;margin-bottom:.25rem;">${catBadge}${a.slot?`<span class="item-slot">${a.slot}</span>`:''}<span style="margin-left:auto;">${statusBadge}</span></div>`;
   bidSection=bidSection.replace('<div class="bid-section">','<div class="bid-section">'+slotBadgeRow);
   // Involvement badge removed — card border/glow handles leading/behind/won states
-  const wonClass=mode==='sold'&&top&&top.bidder===user?'won-card':'';
+  const wonClass=mode==='sold'&&top&&top.bidder===currentRaiderName()?'won-card':'';
   const favBtn=(mode==='open'||mode==='queued')?`<button class="fav-btn ${favs.has(a.id)?'faved':''}" onclick="event.stopPropagation();toggleFav('${a.id}')" title="${favs.has(a.id)?'Remove from watchlist':'Add to watchlist'}">${favs.has(a.id)?'\u2605':'\u2606'}</button>`:'';
   return`<div class="card ${[cc,wonClass,previewActive?'card-previewing':''].filter(Boolean).join(' ')}" id="card-${a.id}" style="position:relative;">${favBtn}${badge}${itemHeader}${timerSection}${bidSection}${bids.length||retractedBids.length?`<div class="hist">${histItems}</div>`:''}${rlControls}</div>`;
 }
@@ -4398,7 +4443,7 @@ function spawnCoin(e){
 function submitBid(id,val,_evt){
   if(!discordUser&&!isRL){toast('Login with Discord to place bids');return;}
   if(!attendanceCanBid()){toast(attendanceSettings.open?'Check in to this raid before bidding':'Attendance check-in is closed. Ask the raid leader.');return;}
-  const a=auctions[id];if(!a)return;playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder:user,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder:user,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
+  const a=auctions[id];if(!a)return;const bidder=currentRaiderName();playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder,discordId:discordUser?.id||null,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){_searchFocusIdx=-1;searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){searchResults=[];const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}// Show local results immediately
 const local=searchLocal(val);console.log('[search] query:',val,'local results:',local.length,local.map(i=>i.name));searchResults=local;isSearching=false;refreshDropdown();
@@ -4500,9 +4545,9 @@ function modalOverlayMouseup(e){if(_modalMousedownOnOverlay&&e.target===e.curren
 function retractBid(id){
   const a=auctions[id];if(!a||a.status!=='open')return;
   const bidEntries=Object.entries(a.bids||{}).sort((x,y)=>y[1].amount-x[1].amount);
-  const myTopEntry=bidEntries.find(([,b])=>b.bidder===user);
+  const myTopEntry=bidEntries.find(([,b])=>b.bidder===currentRaiderName());
   if(!myTopEntry){toast('No bid to retract');return;}
-  if(bidEntries[0][1].bidder!==user){toast('You are not the current leader');return;}
+  if(bidEntries[0][1].bidder!==currentRaiderName()){toast('You are not the current leader');return;}
   const [topKey]=myTopEntry;
   // Mark as retracted rather than delete so history shows it
   const prevBid=bidEntries[1]?.[1]?.amount||0;
@@ -5528,7 +5573,7 @@ function renderLiveFilterBar(list){
     'Other':    {on:'border-color:#ccc;background:#ccc;color:#1a1208;font-weight:600;',        off:'border-color:rgba(180,180,180,0.5);background:rgba(180,180,180,0.12);color:#bbb;'},
   };
   // My Bids button
-  const myBidCount=list.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===user)).length;
+  const myBidCount=list.filter(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&b.bidder===currentRaiderName())).length;
   const myBidsBtn=!isRL&&myBidCount>0?`<button class="cat-filter-btn" style="${myBidsOnly?'border-color:#a855f7;background:#a855f7;color:#fff;font-weight:600;':'border-color:rgba(168,85,247,0.5);background:rgba(168,85,247,0.12);color:#c084fc;'}" onclick="toggleMyBids()">My Bids${myBidCount?` <span style="opacity:.7;font-size:.6em;">(${myBidCount})</span>`:''}
   </button>`:'';
   const allActive=!myBidsOnly&&!watchOnly&&liveCatFilter==='all';
@@ -5547,7 +5592,7 @@ function renderLiveFilterBar(list){
 
 function renderSoldFilterBar(list){
   if(!list.length)return'';
-  const myCount=list.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===user).length;
+  const myCount=list.filter(a=>Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder===currentRaiderName()).length;
   if(!myCount)return'';
   const allActive=!myItemsOnly;
   return`<div class="cat-filter-bar">
@@ -5663,7 +5708,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,checkInAttendance,leaveAttendance,removeAttendanceMember,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

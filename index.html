@@ -178,11 +178,6 @@
   .tab.active{color:#1a1208;background:var(--gold);border-color:var(--gold);font-weight:600;}
   .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
   .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
-  /* Wide desktop — offset content for tracker */
-  @media(min-width:1101px){
-    .main{padding-left:260px;}
-  }
-
   /* Standard desktop+ — cap content and fit up to 5 auction cards per row */
   @media(min-width:1101px){
     .main{max-width:1760px;}
@@ -197,7 +192,6 @@
 
   /* Narrow desktop / vertical monitor (601px–1100px) */
   @media(min-width:601px) and (max-width:1100px){
-    .main{padding-left:260px;}
     .pot-bar{flex-direction:column;padding:.85rem 1.25rem;gap:.5rem;}
     .pot-bar-actions{width:100%;justify-content:center;}
     .pot-val{font-size:1.75rem;}
@@ -821,7 +815,6 @@
     </div>
     <div id="hdr-user" style="display:flex;align-items:center;gap:.6rem;margin-left:auto;"></div>
   </div>
-  <div id="loot-tracker" class="loot-tracker"></div>
 <div class="main" id="main">
     <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:1rem;">
       <div style="width:32px;height:32px;border:2px solid var(--border-gold);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;"></div>
@@ -858,24 +851,6 @@
 
 <!-- Floating Add Item button (mobile RL only) -->
 <button class="fab" id="fab" onclick="openModal()" title="Add Item">+</button>
-
-<!-- Chat Box -->
-<div class="chat-box collapsed" id="chat-box">
-  <div class="chat-hdr" onclick="toggleChat()" style="cursor:pointer;">
-    <span class="chat-hdr-title" id="chat-hdr-title">Raid Chat</span>
-    <div style="display:flex;align-items:center;gap:.4rem;">
-      <span id="chat-unread" class="chat-unread" style="display:none;">0</span>
-      <span id="chat-toggle-icon" style="font-size:.7rem;color:var(--text-muted);">▲</span>
-    </div>
-  </div>
-  <div class="chat-tabs" id="chat-tabs" style="display:none;"></div>
-  <div class="chat-messages" id="chat-messages"></div>
-  <div class="chat-input-row" id="chat-input-row" style="display:none;">
-    <input class="chat-input" id="chat-input" placeholder="Message..." maxlength="200"
-      onkeydown="if(event.key==='Enter')sendChat()" />
-    <button class="chat-send" onclick="sendChat()">Send</button>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -2404,7 +2379,7 @@ async function getOrCreateRun(){
   if(keys.length>0){runId=keys[0];}
   else{const nr=push(ref(db,'runs'));runId=nr.key;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
   splitsLoaded=false;
-  subscribeToRun();startTick();startPresence();subscribeToBans();subscribeToChat();
+  subscribeToRun();startTick();startPresence();subscribeToBans();
   render();
   // Single global handler for loot display dismiss (set once, never re-added)
   if(!window._lootDisplayHandlerSet){
@@ -2769,7 +2744,7 @@ function renderLogin(){
         <div style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.1em;color:var(--text-muted);text-align:center;text-transform:uppercase;margin-bottom:.25rem;">Prepare Thy Shekels</div>
         <button class="discord-btn" onclick="joinDiscord()" style="width:100%;justify-content:center;font-size:.9rem;padding:.8rem 1rem;">
           <svg width="20" height="20" viewBox="0 0 71 55" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M60.1 4.9A58.5 58.5 0 0 0 45.5.7a40 40 0 0 0-1.8 3.6 54 54 0 0 0-16.4 0A38.4 38.4 0 0 0 25.4.7 58.4 58.4 0 0 0 10.8 5C1.6 18.7-1 32.1.3 45.3a59 59 0 0 0 17.9 9.1 43 43 0 0 0 3.7-6.1 38.3 38.3 0 0 1-5.9-2.8l1.4-1.1a42 42 0 0 0 35.9 0l1.5 1.1a38.2 38.2 0 0 1-5.9 2.9 43 43 0 0 0 3.7 6A58.7 58.7 0 0 0 70.6 45C72.2 29.7 68 16.4 60.1 4.9ZM23.7 37.3c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Zm23.5 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2c3.5 0 6.4 3.2 6.3 7.2 0 4-2.8 7.2-6.3 7.2Z" fill="currentColor"/></svg>
-          Continue with Discord
+          Discord Login
         </button>
       </div>
     </div>`;
@@ -3098,7 +3073,6 @@ function renderMain(){
   _restoreScroll(_scroll);
   refreshWowheadLinks();
   setTimeout(retryMissingIcons,800);setTimeout(retryMissingIcons,2000);
-  renderLootTracker();
   // Restore archive display if it was open when tab was closed/reloaded
   if(!window._archiveRestored){
     window._archiveRestored=true;
@@ -4974,7 +4948,7 @@ function renderMembersSidebar(presenceData){
     const spendStr=spend>0?spend.toLocaleString()+'g':'';
     const rlBadge=m.isRL?`<span style="color:var(--gold);font-size:.6rem;margin-left:.2rem;">★</span>`:'';
     const kickBtn=isRL&&!m.isRL?`<button onclick="kickBan(${JSON.stringify(m).replace(/"/g,'&quot;')})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.75rem;padding:.1rem .2rem;opacity:.5;flex-shrink:0;" title="Kick">✕</button>`:'';
-    return`<div class="member-row" onmouseenter="cancelHide(this);showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)" onclick="mentionMember('${m.name}')" title="Click to mention in chat">
+    return`<div class="member-row" onmouseenter="cancelHide(this);showMemberTooltipFixed(event,'${m.name}')" onmouseleave="hideMemberTooltip(this)">
       ${avatarEl}
       <div class="member-row-info">
         <div class="member-row-name">${displayName(m.name)}${rlBadge}</div>

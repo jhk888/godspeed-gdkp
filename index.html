@@ -162,6 +162,14 @@
   .user-settings-sec{display:flex;flex-direction:column;gap:.75rem;}
   .user-settings-sec-label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.18em;color:var(--text-muted);text-transform:uppercase;border-bottom:1px solid var(--border-gold);padding-bottom:.35rem;}
   .user-settings-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .account-card{background:rgba(212,169,60,.035);border:1px solid rgba(212,169,60,.16);border-radius:4px;padding:.8rem .9rem;}
+  .account-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;}
+  .account-stat{background:rgba(9,8,5,.48);border:1px solid rgba(212,169,60,.14);border-radius:4px;padding:.65rem .7rem;min-width:0;}
+  .account-stat-value{font-family:'Cinzel',serif;color:var(--gold-light);font-size:1rem;margin-top:.18rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .account-character-list{display:flex;flex-direction:column;gap:.38rem;}
+  .account-character{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.5rem;padding:.5rem .6rem;border:1px solid rgba(212,169,60,.13);border-radius:3px;background:rgba(9,8,5,.34);}
+  .account-character-name{font-family:'Cinzel',serif;color:var(--gold-light);font-size:.76rem;overflow:hidden;text-overflow:ellipsis;}
+  .account-overlay-card{background:rgba(22,19,12,.99);border:1px solid var(--border-gold-strong);border-radius:5px;padding:1.35rem 1.5rem;width:min(820px,96vw);max-height:90vh;overflow:auto;backdrop-filter:blur(12px);}
   .settings-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.4rem 0;}
   .settings-toggle-label{font-family:'Cinzel',serif;font-size:.72rem;color:var(--text-bright);letter-spacing:.05em;}
   .settings-toggle-sub{font-size:.68rem;color:var(--text-muted);margin-top:.1rem;}
@@ -317,7 +325,7 @@
     .login-box.wide{padding:1.5rem 1.25rem;}
     .login-grid{grid-template-columns:1fr;}
     .login-grid .fg.full{grid-column:1;}
-    .user-settings-row{grid-template-columns:1fr;}
+    .user-settings-row{grid-template-columns:1fr;}.account-stats{grid-template-columns:1fr 1fr;}
   }
   .fab{position:fixed;bottom:1.5rem;right:1.5rem;z-index:40;display:none;align-items:center;justify-content:center;width:56px;height:56px;border-radius:50%;background:var(--gold);color:var(--bg-deep);font-size:1.6rem;font-weight:700;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.5);}
   .sec-title{font-family:'Cinzel',serif;font-size:1.15rem;color:var(--gold);letter-spacing:.08em;font-weight:500;}
@@ -842,7 +850,7 @@
 <!-- Members Sidebar -->
 <div class="members-sidebar" id="members-sidebar">
   <div class="members-sidebar-hdr">
-    <span class="members-sidebar-title" id="members-online-count">0 Online</span>
+    <span class="members-sidebar-title" id="members-online-count">0 Connected</span>
     <button class="members-sidebar-toggle" onclick="toggleMembersSidebar()" title="Collapse">◀</button>
   </div>
   <div class="members-sidebar-body" id="members-sidebar-body"></div>
@@ -872,7 +880,7 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, get, update, onValue, push, remove }
+import { getDatabase, ref, set, get, update, onValue, push, remove, onDisconnect }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 const firebaseConfig = {
@@ -2569,11 +2577,11 @@ function updateOnlineCounter(){
   const onlineCount=document.getElementById('hdr-online-count');
   if(!onlineEl||!onlineCount||!user) return;
   const seen={};
-  Object.values(presenceData||{}).forEach(m=>{
+  getActiveMembers(presenceData).forEach(m=>{
     if(m.name){const k=m.name.toLowerCase();if(!seen[k]||m.lastSeen>seen[k])seen[k]=m.lastSeen;}
   });
   const n=Object.keys(seen).length;
-  onlineCount.textContent=n+' Online';
+  onlineCount.textContent=n+' Connected';
   onlineEl.style.display='flex';
 }
 
@@ -2587,6 +2595,9 @@ function attendanceCodeFromInvite(){return (new URLSearchParams(window.location.
 function generateAttendanceCode(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let code='';for(let i=0;i<6;i++)code+=chars[Math.floor(Math.random()*chars.length)];return code;}
 function attendanceCharacterIdentity(name){return sanitizeNick(name||'').trim().toLowerCase();}
 function discordCharacterStorageKey(){return discordUser?.id?'gdkp_characters_'+String(discordUser.id):'';}
+function preferredCharacterStorageKey(){return discordUser?.id?'gdkp_preferred_character_'+String(discordUser.id):'';}
+function preferredCharacter(){return sanitizeNick(localStorage.getItem(preferredCharacterStorageKey())||'');}
+function sortDiscordCharacters(){const preferred=attendanceCharacterIdentity(preferredCharacter());discordCharacters.sort((a,b)=>attendanceCharacterIdentity(a)===preferred?-1:attendanceCharacterIdentity(b)===preferred?1:0);}
 function addDiscordCharacterOption(name,front=false){
   name=sanitizeNick(name||'');if(!name)return;
   const identity=attendanceCharacterIdentity(name),existing=discordCharacters.findIndex(n=>attendanceCharacterIdentity(n)===identity);
@@ -2601,15 +2612,20 @@ function loadDiscordCharacters(runs={}){
   Object.values(runs||{}).forEach(run=>Object.values(run?.attendance||{}).forEach(a=>{if(String(a?.discordId||'')===String(discordUser?.id||'')&&a.character)historical.push({name:a.character,ts:a.checkedInAt||0});}));
   historical.sort((a,b)=>b.ts-a.ts).forEach(a=>addDiscordCharacterOption(a.name));
   if(!discordUser?.id)return;
-  get(ref(db,`discordProfiles/${discordUser.id}/characters`)).then(snap=>{
-    Object.values(snap.val()||{}).sort((a,b)=>(b.lastUsedAt||0)-(a.lastUsedAt||0)).forEach(a=>addDiscordCharacterOption(a.name));
+  sortDiscordCharacters();
+  Promise.all([get(ref(db,`discordProfiles/${discordUser.id}/characters`)),get(ref(db,`discordProfiles/${discordUser.id}/preferredCharacter`))]).then(([characterSnap,preferredSnap])=>{
+    Object.values(characterSnap.val()||{}).sort((a,b)=>(b.lastUsedAt||0)-(a.lastUsedAt||0)).forEach(a=>addDiscordCharacterOption(a.name));
+    if(preferredSnap.val())localStorage.setItem(preferredCharacterStorageKey(),sanitizeNick(preferredSnap.val()));
+    sortDiscordCharacters();
     if(storageKey)localStorage.setItem(storageKey,JSON.stringify(discordCharacters.slice(0,20)));
     if(user&&attendanceIsRequired()&&!currentAttendanceRecord())renderMain();
+    if(document.getElementById('account-character-list'))renderAccountCharacters();
   }).catch(()=>{});
 }
 function rememberDiscordCharacter(name){
   name=sanitizeNick(name||'');if(!name||!discordUser?.id)return;
   addDiscordCharacterOption(name,true);
+  sortDiscordCharacters();
   const storageKey=discordCharacterStorageKey();if(storageKey)localStorage.setItem(storageKey,JSON.stringify(discordCharacters.slice(0,20)));
   const profileKey=encodeURIComponent(attendanceCharacterIdentity(name)).replace(/\./g,'%2E');
   set(ref(db,`discordProfiles/${discordUser.id}/characters/${profileKey}`),{name,lastUsedAt:Date.now()}).catch(()=>{});
@@ -2620,7 +2636,7 @@ function buildAttendanceBanner(){
   const record=currentAttendanceRecord();
   if(record?.approved)return`<div style="margin:.6rem 0;padding:.65rem .9rem;border:1px solid rgba(96,204,128,.35);background:rgba(96,204,128,.08);border-radius:4px;display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;"><div><span style="font-family:'Cinzel',serif;color:var(--green);font-size:.72rem;letter-spacing:.07em;">CHECKED IN</span><span style="color:var(--text-muted);font-size:.72rem;margin-left:.55rem;">${settlementEsc(record.character||user)}</span></div>${attendanceSettings.open?'<button class="btn btn-outline btn-sm" onclick="leaveAttendance()">Change Check-In</button>':''}</div>`;
   if(!attendanceSettings.open)return`<div style="margin:.6rem 0;padding:.8rem 1rem;border:1px solid rgba(255,96,96,.35);background:rgba(255,96,96,.08);border-radius:4px;color:var(--red);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.05em;text-align:center;">ATTENDANCE CHECK-IN IS CLOSED. ASK THE RAID LEADER TO REOPEN IT.</div>`;
-  const code=attendanceCodeFromInvite(),codeVerified=!!code&&code===String(attendanceSettings.code||'').toUpperCase(),character=discordCharacters[0]||'',characterOptions=discordCharacters.map(n=>`<option value="${settlementEsc(n)}"></option>`).join('');
+  const code=attendanceCodeFromInvite(),codeVerified=!!code&&code===String(attendanceSettings.code||'').toUpperCase(),character=preferredCharacter()||discordCharacters[0]||'',characterOptions=discordCharacters.map(n=>`<option value="${settlementEsc(n)}"></option>`).join('');
   const codeField=codeVerified?`<input id="attendance-code" type="hidden" value="${settlementEsc(code)}" /><div style="align-self:center;padding:.48rem .65rem;border:1px solid rgba(96,204,128,.35);background:rgba(96,204,128,.08);border-radius:3px;font-family:'Cinzel',serif;font-size:.65rem;color:var(--green);letter-spacing:.06em;white-space:nowrap;">RUN VERIFIED</div>`:`<div class="fg"><div class="lbl">Raid code</div><input id="attendance-code" maxlength="6" value="${settlementEsc(code)}" placeholder="6-digit code" style="width:125px;text-transform:uppercase;" /></div>`;
   return`<div style="margin:.6rem 0;padding:.85rem 1rem;border:1px solid var(--border-gold-strong);background:rgba(30,26,16,.94);border-radius:4px;display:flex;align-items:flex-end;gap:.65rem;flex-wrap:wrap;"><div style="flex:1;min-width:190px;"><div style="font-family:'Cinzel',serif;color:var(--gold);font-size:.78rem;letter-spacing:.08em;">RAID CHECK-IN REQUIRED</div><div style="font-size:.68rem;color:var(--text-muted);margin-top:.2rem;">Choose the character participating in this run.</div></div>${codeField}<div class="fg"><div class="lbl">Character attending *</div><input id="attendance-character" type="text" required autocomplete="off" list="attendance-character-list" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:190px;" onkeydown="if(event.key==='Enter'){event.preventDefault();checkInAttendance();}" /><datalist id="attendance-character-list">${characterOptions}</datalist><div style="font-size:.58rem;color:var(--text-muted);max-width:190px;">${discordCharacters.length?'Choose a saved character or enter another.':'Enter the character used for this raid.'}</div></div><button class="btn btn-gold btn-sm" onclick="checkInAttendance()">Check In</button></div>`;
 }
@@ -2703,10 +2719,10 @@ function renderHdr(){
   document.getElementById('hdr-user').innerHTML=`
     <span class="conn-dot"></span>
     ${isRL?'<span class="rl-badge">Raid Leader</span>':''}
-    ${avatarEl}<span class="usr-chip" onmouseenter="showMemberTooltipFromHeader(event)" onmouseleave="hideMemberTooltip(this)" style="cursor:pointer;">${user}</span>
+    ${avatarEl}<span class="usr-chip" onclick="openUserSettings()" title="Open My Account" style="cursor:pointer;">${user}</span>
     ${isRL?`<button class="btn ${attendanceSettings.open?'btn-green':'btn-outline'} btn-sm" onclick="openAttendanceManager()">Attendance (${attendanceList().length})</button><button class="btn btn-outline btn-sm" onclick="openPanel()">&#9776; Raiders</button><button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`:`<button class="btn btn-outline btn-sm" onclick="openPanel();setPanelTab('runs')">Archive</button>`}
     <button id="mute-btn" class="btn btn-outline btn-sm" onclick="toggleMute()" title="Toggle sound">${soundMuted?'🔇':'🔊'}</button>
-    <button class="btn btn-outline btn-sm" onclick="openUserSettings()" title="Settings" style="padding:.3rem .55rem;">&#9881;</button>
+    <button class="btn btn-outline btn-sm" onclick="openUserSettings()" title="My Account">Account</button>
     <button class="btn btn-outline btn-sm" onclick="logout()">Leave</button>`;
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
@@ -2724,9 +2740,9 @@ function _itemLink(a){
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
   if(document.querySelector('.online-tooltip')){clearTimeout(_onlineTooltipHideT);return;}
-  // Dedup case-insensitively
+  // Active within the presence window, deduplicated across browser tabs.
   const byName={};
-  Object.values(presenceData||{}).forEach(m=>{
+  getActiveMembers(presenceData).forEach(m=>{
     const k=(m.name||'').toLowerCase();
     if(!byName[k]||m.lastSeen>byName[k].lastSeen) byName[k]=m;
   });
@@ -2756,40 +2772,7 @@ function showOnlineTooltip(e){
   const origRemove=tip.remove.bind(tip);
   tip.remove=()=>{bridge.remove();origRemove();};
 
-  function renderTip(hist){
-    const sold=auctionList().filter(a=>a.status==='sold');
-    tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.6rem;">ONLINE NOW</div>`
-      +members.map(m=>{
-        const curItems=sold.filter(a=>Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount)[0]?.bidder===m.name)
-                          .sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
-        const curSpend=curItems.reduce((s,a)=>s+(a.currentBid||0),0);
-        const h=hist?.[m.name];
-        const histSpend=h?.totalSpent||0;
-        const histItems=h?.itemsWon||0;
-        const allTimeItems=(h?.items||[]).sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5);
-        const hasThisRun=curSpend>0;
-        const hasHistory=histItems>0;
-        return`<div style="padding:.4rem .35rem;border-radius:3px;border-bottom:1px solid rgba(201,168,76,0.07);margin-bottom:.1rem;" onmouseenter="this.style.background='rgba(212,169,60,0.06)'" onmouseleave="this.style.background=''">
-          <div style="display:flex;align-items:center;gap:.5rem;">
-            <span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--text-bright);flex:1;">${m.name}${m.isRL?' <span style="color:var(--gold);font-size:.62rem;">★</span>':''}</span>
-            ${hasThisRun?`<span style="font-family:'Cinzel',serif;font-size:.72rem;color:var(--gold);font-weight:600;">${curSpend.toLocaleString()}g</span>`:''}
-          </div>
-          ${hasThisRun?`<div style="display:flex;flex-direction:column;gap:.12rem;padding-left:1.2rem;margin-top:.25rem;border-left:2px solid rgba(201,168,76,0.2);margin-left:.35rem;">
-            ${curItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
-          </div>`:''}
-          ${hasHistory?`<div style="padding-left:1.2rem;margin-top:${hasThisRun?'.3rem':'.2rem'};font-size:.68rem;color:var(--text-muted);">
-            <span style="color:var(--gold);font-weight:600;">${histSpend.toLocaleString()}g</span> · ${histItems} item${histItems!==1?'s':''}
-            ${allTimeItems.length>0&&!hasThisRun?`<div style="display:flex;flex-direction:column;gap:.1rem;margin-top:.2rem;border-left:2px solid rgba(201,168,76,0.12);padding-left:.5rem;">
-              ${allTimeItems.map(a=>`<div>${_itemLink(a)}</div>`).join('')}
-            </div>`:''}
-          </div>`:''}
-        </div>`;
-      }).join('');
-    if(window.$WowheadPower) window.$WowheadPower.refreshLinks();
-  }
-
-  renderTip(crossRunCache);
+  tip.innerHTML=`<div style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--text-muted);letter-spacing:.1em;margin-bottom:.25rem;">CONNECTED</div><div style="font-size:.62rem;color:var(--text-muted);margin-bottom:.55rem;">Seen within the last 90 seconds</div>`+members.map(m=>`<div style="display:flex;align-items:center;gap:.5rem;padding:.42rem .3rem;border-top:1px solid rgba(201,168,76,.08);"><span style="width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 4px var(--green);flex-shrink:0;"></span>${m.avatar?`<img src="${m.avatar}" alt="" style="width:24px;height:24px;border-radius:50%;border:1px solid rgba(212,169,60,.22);" />`:''}<span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--text-bright);flex:1;">${settlementEsc(m.name)}${m.isRL?' <span style="color:var(--gold);font-size:.58rem;">RL</span>':''}</span><span style="font-size:.58rem;color:var(--green);">Connected</span></div>`).join('');
   document.body.appendChild(tip);
   requestAnimationFrame(()=>{
     const w=tip.offsetWidth+'px';
@@ -2797,9 +2780,6 @@ function showOnlineTooltip(e){
     const hdrOnline=document.getElementById('hdr-online');
     if(hdrOnline) hdrOnline.style.width=w;
   });
-  if(!crossRunCache){
-    fetchCrossRunStats().then(hist=>{if(document.body.contains(tip))renderTip(hist);});
-  }
 }
 function hideOnlineTooltip(ev){
   const tip=document.querySelector('.online-tooltip');
@@ -2838,58 +2818,38 @@ function renderLogin(){
     </div>`;
 }
 
+function accountOwnsBid(b){const discordId=String(discordUser?.id||''),character=attendanceCharacterIdentity(currentRaiderName());return !b.retracted&&((discordId&&String(b.discordId||'')===discordId)||(character&&attendanceCharacterIdentity(b.bidder)===character));}
+function accountRunSummary(){
+  const bidAuctions=auctionList().filter(a=>Object.values(a.bids||{}).some(accountOwnsBid)),wins=auctionList().filter(a=>{if(a.status!=='sold')return false;const winner=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0];return winner&&accountOwnsBid(winner);}),spent=wins.reduce((sum,a)=>sum+(a.currentBid||0),0),r=payoutCurrentRaider(),cut=r?(calculateSettlementCuts().cuts[r.key]||0):0;
+  return{bidAuctions:bidAuctions.length,wins:wins.length,spent,raider:r,cut};
+}
+function accountCharactersHTML(){
+  const preferred=attendanceCharacterIdentity(preferredCharacter());
+  return discordCharacters.length?discordCharacters.map(name=>{const active=attendanceCharacterIdentity(name)===preferred;return`<div class="account-character"><span class="account-character-name">${settlementEsc(name)}</span><label style="display:flex;align-items:center;gap:.3rem;font-size:.64rem;color:${active?'var(--gold-light)':'var(--text-muted)'};cursor:pointer;"><input type="radio" name="preferred-character" ${active?'checked':''} onchange="setPreferredCharacter('${settlementEsc(name)}')" /> Default</label><button class="mutator-mini" onclick="removeAccountCharacter('${settlementEsc(name)}')">Remove</button></div>`;}).join(''):'<div class="settlement-muted" style="padding:.4rem 0;">No saved characters yet.</div>';
+}
+function renderAccountCharacters(){const list=document.getElementById('account-character-list');if(list)list.innerHTML=accountCharactersHTML();}
+function addAccountCharacter(){const input=document.getElementById('account-character-input'),name=sanitizeNick(input?.value||'');if(!name){toast('Enter a character name');input?.focus();return;}rememberDiscordCharacter(name);if(!preferredCharacter())setPreferredCharacter(name,false);if(input)input.value='';renderAccountCharacters();input?.focus({preventScroll:true});toast(name+' saved');}
+function setPreferredCharacter(name,notify=true){name=sanitizeNick(name||'');if(!name||!discordUser?.id)return;localStorage.setItem(preferredCharacterStorageKey(),name);set(ref(db,`discordProfiles/${discordUser.id}/preferredCharacter`),name).catch(()=>{});sortDiscordCharacters();renderAccountCharacters();if(notify)toast(name+' set as default');}
+function removeAccountCharacter(name){name=sanitizeNick(name||'');if(!name||!discordUser?.id)return;const identity=attendanceCharacterIdentity(name),index=discordCharacters.findIndex(n=>attendanceCharacterIdentity(n)===identity);if(index>=0)discordCharacters.splice(index,1);const storageKey=discordCharacterStorageKey();if(storageKey)localStorage.setItem(storageKey,JSON.stringify(discordCharacters.slice(0,20)));const profileKey=encodeURIComponent(identity).replace(/\./g,'%2E');remove(ref(db,`discordProfiles/${discordUser.id}/characters/${profileKey}`)).catch(()=>{});if(attendanceCharacterIdentity(preferredCharacter())===identity){localStorage.removeItem(preferredCharacterStorageKey());remove(ref(db,`discordProfiles/${discordUser.id}/preferredCharacter`)).catch(()=>{});}sortDiscordCharacters();renderAccountCharacters();toast(name+' removed from saved characters');}
+function renderAccountHistory(stats){
+  const el=document.getElementById('account-history');if(!el)return;const names=new Set([currentRaiderName(),...discordCharacters].filter(Boolean).map(attendanceCharacterIdentity)),matches=Object.entries(stats||{}).filter(([name])=>names.has(attendanceCharacterIdentity(name))),spent=matches.reduce((n,[,s])=>n+(s.totalSpent||0),0),items=matches.reduce((n,[,s])=>n+(s.itemsWon||0),0);el.innerHTML=`<div class="account-stats"><div class="account-stat"><div class="settlement-stat-lbl">Recorded Spend</div><div class="account-stat-value">${settlementGold(spent)}</div></div><div class="account-stat"><div class="settlement-stat-lbl">Items Won</div><div class="account-stat-value">${items}</div></div></div><div class="settlement-muted" style="margin-top:.45rem;">Combined across your saved character names.</div>`;
+}
+function accountOpenTab(target){closeUserSettings();setTab(target);}
+function accountOpenPanel(target){closeUserSettings();openPanel();setPanelTab(target);}
 function openUserSettings(){
-  const muted=soundMuted;
-  const discordSection=discordUser?`
-    <div class="user-settings-sec">
-      <div class="user-settings-sec-label">Discord</div>
-      <div style="display:flex;align-items:center;gap:.75rem;padding:.4rem 0;">
-        ${discordUser.avatar?`<img loading="lazy" decoding="async" src="${discordUser.avatar}" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border-gold);" />`:''}
-        <div>
-          <div style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold-light);">${discordUser.username}</div>
-          <div style="font-size:.7rem;color:var(--text-muted);margin-top:.15rem;">Logged in via Discord</div>
-        </div>
-      </div>
-    </div>`:'';
-  const overlay=document.createElement('div');
-  overlay.id='user-settings-overlay';
-  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;';
-  overlay.innerHTML=`
-    <div style="background:rgba(22,19,12,0.98);border:1px solid var(--border-gold-strong);border-radius:5px;padding:2rem 2.25rem;width:100%;max-width:400px;backdrop-filter:blur(12px);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-        <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;">Settings</div>
-        <button onclick="closeUserSettings()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:.2rem .4rem;line-height:1;" title="Close">&#10005;</button>
-      </div>
-      <div class="user-settings-wrap">
-        ${discordSection}
-        <div class="user-settings-sec">
-          <div class="user-settings-sec-label">Nickname</div>
-          <input type="text" id="us-nick" maxlength="20" value="${sanitizeNick(nickMap[user]||'')}" placeholder="Character name" autocomplete="off" />
-          <div style="font-size:.68rem;color:var(--text-muted);margin-top:.35rem;">Shown on your bids and loot instead of your Discord name. Use your character name so the raid leader knows who to trade.</div>
-        </div>
-        <div class="user-settings-sec">
-          <div class="user-settings-sec-label">Preferences</div>
-          <div class="settings-toggle-row">
-            <div><div class="settings-toggle-label">Sound Effects</div><div class="settings-toggle-sub">Bid sounds and warnings</div></div>
-            <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;">
-              <input type="checkbox" id="us-sound" ${muted?'':'checked'} style="width:16px;height:16px;" />
-              <span style="font-size:.75rem;color:var(--text-muted);font-family:'Cinzel',serif;" id="us-sound-lbl">${muted?'Off':'On'}</span>
-            </label>
-          </div>
-        </div>
-        <div style="display:flex;gap:.75rem;margin-top:.5rem;">
-          <button class="btn btn-gold" onclick="saveUserSettings()" style="flex:1;">Save</button>
-          <button class="btn btn-outline" onclick="closeUserSettings()" style="flex:1;">Cancel</button>
-        </div>
-      </div>
-    </div>`;
-  overlay.addEventListener('mousedown',e=>{if(e.target===overlay)closeUserSettings();});
-  document.body.appendChild(overlay);
-  setTimeout(()=>{
-    const cb=document.getElementById('us-sound');
-    const lbl=document.getElementById('us-sound-lbl');
-    if(cb&&lbl)cb.onchange=()=>{lbl.textContent=cb.checked?'On':'Off';};
-  },50);
+  document.getElementById('user-settings-overlay')?.remove();
+  const muted=soundMuted,summary=accountRunSummary(),record=currentAttendanceRecord(),payoutStatus=summary.raider?(summary.raider.paid?'Paid':summary.raider.submission?.status==='correction'?'Correction needed':summary.raider.submission?.imageData?'Submitted':'Awaiting listing'):'No payout',overlay=document.createElement('div');
+  overlay.id='user-settings-overlay';overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.76);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;';
+  overlay.innerHTML=`<div class="account-overlay-card" data-scroll-key="my-account"><div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.15rem;"><div><div style="font-family:'Cinzel',serif;font-size:1.05rem;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;">My Account</div><div class="settlement-muted" style="margin-top:.2rem;">Profile, characters, raid activity, and preferences</div></div><button onclick="closeUserSettings()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;padding:.2rem .4rem;line-height:1;" title="Close">&#10005;</button></div><div class="user-settings-wrap">
+    <div class="account-card" style="display:flex;align-items:center;gap:.8rem;">${discordUser?.avatar?`<img loading="lazy" decoding="async" src="${discordUser.avatar}" style="width:48px;height:48px;border-radius:50%;border:1px solid var(--border-gold);" />`:''}<div style="min-width:0;flex:1;"><div style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold-light);overflow:hidden;text-overflow:ellipsis;">${settlementEsc(discordUser?.displayName||user)}</div><div class="settlement-muted" style="margin-top:.15rem;">${discordUser?.username?'@'+settlementEsc(discordUser.username):'Signed in'}${isRL?' · Raid Leader':''}</div></div><span class="settlement-status ok">Connected</span></div>
+    <div class="user-settings-sec"><div class="user-settings-sec-label">Current Run</div><div class="account-stats"><div class="account-stat"><div class="settlement-stat-lbl">Attending As</div><div class="account-stat-value">${settlementEsc(record?.character||'Not checked in')}</div></div><div class="account-stat"><div class="settlement-stat-lbl">Auctions Bid</div><div class="account-stat-value">${summary.bidAuctions}</div></div><div class="account-stat"><div class="settlement-stat-lbl">Wins / Spend</div><div class="account-stat-value">${summary.wins} · ${settlementGold(summary.spent)}</div></div><div class="account-stat"><div class="settlement-stat-lbl">Payout</div><div class="account-stat-value">${summary.raider?settlementGold(summary.cut):'--'}</div><div class="settlement-muted" style="font-size:.58rem;margin-top:.1rem;">${payoutStatus}</div></div></div>${settlement.payoutStarted&&summary.raider?`<div style="display:flex;justify-content:flex-end;margin-top:.55rem;"><button class="btn btn-outline btn-sm" onclick="accountOpenTab('payout')">Open My Payout</button></div>`:''}</div>
+    <div class="user-settings-sec"><div class="user-settings-sec-label">Saved Characters</div><div id="account-character-list" class="account-character-list">${accountCharactersHTML()}</div><div style="display:flex;gap:.45rem;align-items:flex-end;flex-wrap:wrap;"><div class="fg" style="flex:1;min-width:190px;"><div class="lbl">Add character</div><input id="account-character-input" type="text" maxlength="20" placeholder="Character name" onkeydown="if(event.key==='Enter'){event.preventDefault();addAccountCharacter();}" /></div><button class="btn btn-outline btn-sm" onclick="addAccountCharacter()">Add</button></div><div class="settlement-muted">Your default character is selected automatically during check-in.</div></div>
+    <div class="user-settings-sec"><div class="user-settings-sec-label">Past Activity</div><div id="account-history"><div class="settlement-muted">Loading account history...</div></div></div>
+    <div class="user-settings-sec"><div class="user-settings-sec-label">Preferences</div><div class="user-settings-row"><div class="fg"><div class="lbl">Display nickname</div><input type="text" id="us-nick" maxlength="20" value="${settlementEsc(sanitizeNick(nickMap[user]||''))}" placeholder="Optional nickname" autocomplete="off" /></div><div class="settings-toggle-row"><div><div class="settings-toggle-label">Sound Effects</div><div class="settings-toggle-sub">Bid sounds and warnings</div></div><label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;"><input type="checkbox" id="us-sound" ${muted?'':'checked'} style="width:16px;height:16px;" /><span style="font-size:.75rem;color:var(--text-muted);font-family:'Cinzel',serif;" id="us-sound-lbl">${muted?'Off':'On'}</span></label></div></div></div>
+    ${isRL?`<div class="user-settings-sec"><div class="user-settings-sec-label">Raid Leader</div><div style="display:flex;gap:.45rem;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="closeUserSettings();openAttendanceManager()">Attendance</button><button class="btn btn-outline btn-sm" onclick="accountOpenTab('settlement')">Settlement</button><button class="btn btn-outline btn-sm" onclick="accountOpenPanel('runs')">Archived Runs</button><button class="btn btn-outline btn-sm" onclick="pruneStalePresence();toast('Old connections cleared')">Clear Old Connections</button></div></div>`:''}
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;flex-wrap:wrap;"><button class="btn btn-outline" onclick="closeUserSettings();logout()">Leave Run</button><button class="btn btn-gold" onclick="saveUserSettings()">Save Preferences</button></div>
+  </div></div>`;
+  overlay.addEventListener('mousedown',e=>{if(e.target===overlay)closeUserSettings();});document.body.appendChild(overlay);const cb=document.getElementById('us-sound'),lbl=document.getElementById('us-sound-lbl');if(cb&&lbl)cb.onchange=()=>{lbl.textContent=cb.checked?'On':'Off';};fetchCrossRunStats().then(renderAccountHistory);
 }
 
 function closeUserSettings(){
@@ -2916,7 +2876,7 @@ function saveUserSettings(){
     }
   }
   closeUserSettings();
-  toast('Settings saved');
+  toast('Account preferences saved');
 }
 
 function qRowHTML(selected){
@@ -4851,13 +4811,19 @@ function togglePaid(id){
 
 // ── Presence & Members ────────────────────────────────────────────────────
 let presenceInterval = null;
+let presenceDisconnect = null;
+const presenceSessionId=sessionStorage.getItem('gdkp_presence_session')||((crypto.randomUUID?.()||Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,36));
+sessionStorage.setItem('gdkp_presence_session',presenceSessionId);
 
-function presenceRef(){ return ref(db, `runs/${runId}/presence/${user}`); }
+function presenceIdentity(){return discordUser?.id?'discord_'+String(discordUser.id):'name_'+encodeURIComponent(String(user||'guest').toLowerCase()).replace(/[.#$\[\]/]/g,'_');}
+function presenceRef(){ return ref(db, `runs/${runId}/presence/${presenceIdentity()}_${presenceSessionId}`); }
 
 function startPresence(){
   if(presenceInterval) clearInterval(presenceInterval);
+  try{presenceDisconnect=onDisconnect(presenceRef());presenceDisconnect.remove();}catch(e){}
   writePresence();
   presenceInterval = setInterval(writePresence, 20000);
+  if(isRL)setTimeout(pruneStalePresence,1200);
 }
 
 function writePresence(){
@@ -4874,12 +4840,24 @@ function writePresence(){
 
 function clearPresence(){
   if(presenceInterval) clearInterval(presenceInterval);
+  try{presenceDisconnect?.cancel();}catch(e){}
+  presenceDisconnect=null;
   if(user && runId) remove(presenceRef());
+}
+
+function pruneStalePresence(){
+  if(!isRL||!runId)return;const cutoff=Date.now()-5*60*1000,writes={};Object.entries(presenceData||{}).forEach(([key,p])=>{if((p.lastSeen||0)<cutoff)writes[`presence/${key}`]=null;});if(Object.keys(writes).length)update(runRef(),writes);
+}
+
+function removeMemberPresence(member){
+  const writes={};Object.entries(presenceData||{}).forEach(([key,p])=>{if((member.discordId&&String(p.discordId||'')===String(member.discordId))||(!member.discordId&&String(p.name||'').toLowerCase()===String(member.name||'').toLowerCase()))writes[`presence/${key}`]=null;});if(Object.keys(writes).length)update(runRef(),writes);
 }
 
 function getActiveMembers(presenceData){
   const now = Date.now();
-  return Object.values(presenceData||{}).filter(p => now - (p.lastSeen||0) < 90000);
+  const latest={};
+  Object.values(presenceData||{}).filter(p=>p?.name&&now-(p.lastSeen||0)<90000).forEach(p=>{const key=p.discordId?'discord_'+p.discordId:'name_'+String(p.name).toLowerCase();if(!latest[key]||(p.lastSeen||0)>(latest[key].lastSeen||0))latest[key]=p;});
+  return Object.values(latest);
 }
 
 function getMemberSpend(name){
@@ -5093,7 +5071,7 @@ function renderMembersSidebar(presenceData){
   const countEl=document.getElementById('members-online-count');
   if(!body) return;
   const members=getActiveMembers(presenceData);
-  if(countEl) countEl.textContent=members.length+' Online';
+  if(countEl) countEl.textContent=members.length+' Connected';
   const tabCount=document.getElementById('sidebar-tab-count');
   if(tabCount) tabCount.textContent=members.length;
   const sorted=[...members].sort((a,b)=>{
@@ -5184,7 +5162,7 @@ function kickBan(m){
     onConfirm:()=>{
       const key=banKey(m);
       set(ref(db,'bans/'+key),{name:m.name,discordId:m.discordId||null,discordName:m.discordName||null,bannedAt:Date.now(),bannedBy:user});
-      if(m.name)remove(ref(db,`runs/${runId}/presence/${m.name}`));
+      removeMemberPresence(m);
       writeAudit(user+' banned '+m.name);
       toast(m.name+' has been banned');
     }
@@ -5826,7 +5804,7 @@ document.addEventListener('click',e=>{
     }
   }, {passive:true});
 })();
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts,handlePayoutDrag,handlePayoutDrop,handlePayoutPaste,handlePayoutFile,rememberPayoutFields,removePayoutAttachment,openPayoutImage,submitPayoutListing,closePayoutReview,openPayoutReview,requestPayoutCorrection,setPayoutPaid});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,addAccountCharacter,setPreferredCharacter,removeAccountCharacter,accountOpenTab,accountOpenPanel,pruneStalePresence,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts,handlePayoutDrag,handlePayoutDrop,handlePayoutPaste,handlePayoutFile,rememberPayoutFields,removePayoutAttachment,openPayoutImage,submitPayoutListing,closePayoutReview,openPayoutReview,requestPayoutCorrection,setPayoutPaid});
 
 // Handle Discord OAuth callback
 const _urlParams = new URLSearchParams(window.location.search);

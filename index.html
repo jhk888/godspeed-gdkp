@@ -1193,7 +1193,8 @@ function auditLog(type,data){
   if(!runId)return;
   try{
     const entry=push(ref(db,`audit/${runId}`));
-    set(entry,{ts:Date.now(),type,actor:user||'unknown',...data}).catch(()=>{});
+    const cleanData=Object.fromEntries(Object.entries(data||{}).filter(([,value])=>value!==undefined));
+    set(entry,{ts:Date.now(),type,actor:user||'unknown',...cleanData}).catch(()=>{});
   }catch(e){}
 }
 function iconUrl(icon){return icon?`https://wow.zamimg.com/images/wow/icons/medium/${icon}.jpg`:''}
@@ -1271,8 +1272,7 @@ function backfillItemIds(){
   if(Object.keys(updates).length){
     update(runRef(),updates);
   }
-  if(unmatched.length)console.log('[backfill] no DB match for:',unmatched);
-  console.log('[backfill] matched',matched,'items');
+  if(unmatched.length&&isRL)console.debug('[backfill] unmatched items:',unmatched.length);
 }
 
 function retryMissingIcons(){
@@ -2184,13 +2184,11 @@ function subscribeToRun(){
       const _ov=document.getElementById('loot-display-overlay');
       if(_ov&&!lootDisplayMode)_ov.remove();
     }
-    console.log('[loot] Firebase lootDisplay:',newLootDisplay,'current:',lootDisplayMode,'sold:',Object.values(data.auctions||{}).filter(a=>a.status==='sold').length);
     if(newLootDisplay!==lootDisplayMode){
       lootDisplayMode=newLootDisplay;
       if(lootDisplayMode){
         setTimeout(()=>{
           const soldCount=auctionList().filter(a=>a.status==='sold').length;
-          console.log('[loot] attempting restore, sold count:',soldCount);
           if(lootDisplayMode&&!document.getElementById('loot-display-overlay'))renderLootDisplay();
         },300);
       } else {
@@ -2577,10 +2575,8 @@ async function getOrCreateRun(){
       if(dlg){const c=document.getElementById('wow-cancel');if(c)c.click();else dlg.remove();return;}
       if(modal){closeModal();return;}
       if(panelOpen){closePanel();return;}
+      if(document.getElementById('loot-display-overlay')&&isRL&&localStorage.getItem('gdkp_archive_display')){closeArchiveDisplay();return;}
       if(lootDisplayMode&&isRL){toggleLootDisplay();return;}
-    });
-    document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'&&lootDisplayMode&&isRL&&!modal&&!panelOpen) toggleLootDisplay();
     });
     document.addEventListener('click',e=>{
       if(lootDisplayMode&&isRL){
@@ -4121,12 +4117,22 @@ function renderRaiderSummary(){
 }
 
 
-function toggleLootDisplay(){
+async function toggleLootDisplay(){
+  if(!isRL||!runId)return;
   const turningOff=lootDisplayMode;
-  update(runRef(),{lootDisplay:!lootDisplayMode, archiveDisplay:turningOff?null:undefined});
-  if(turningOff){
-    localStorage.removeItem('gdkp_archive_display');
-    document.getElementById('loot-display-overlay')?.remove();
+  const soldCount=auctionList().filter(a=>a.status==='sold').length;
+  if(!turningOff&&!soldCount){toast('No items sold yet');return;}
+  const writes={lootDisplay:!turningOff};
+  if(turningOff)writes.archiveDisplay=null;
+  try{
+    await update(runRef(),writes);
+    if(turningOff){
+      localStorage.removeItem('gdkp_archive_display');
+      document.getElementById('loot-display-overlay')?.remove();
+    }
+  }catch(error){
+    console.error('Loot display update failed',error);
+    toast('Could not update the loot display');
   }
 }
 const _suppressedDialogs=JSON.parse(localStorage.getItem('gdkp_suppressed')||'{}');
@@ -4217,7 +4223,7 @@ function renderLootTracker(){
 function renderLootDisplay(activeCat){
   document.getElementById('loot-display-overlay')?.remove();
   const sold=auctionList().filter(a=>a.status==='sold').sort((a,b)=>b.currentBid-a.currentBid);
-  if(!sold.length){toast('No items sold yet');lootDisplayMode=false;update(runRef(),{lootDisplay:false});return;}
+  if(!sold.length){toast('No items sold yet');lootDisplayMode=false;if(isRL)update(runRef(),{lootDisplay:false}).catch(()=>{});return;}
   const title=raidSettings.raidTitle||'Gold DKP Run';
   const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
 
@@ -4284,8 +4290,6 @@ function renderLootDisplay(activeCat){
 
   document.body.appendChild(overlay);
   if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
-  const _escHandler=e=>{if(e.key==='Escape'&&isRL){toggleLootDisplay();document.removeEventListener('keydown',_escHandler);}};
-  document.addEventListener('keydown',_escHandler);
 }
 function confirmReset(){
   wowConfirm({
@@ -5011,7 +5015,7 @@ function submitBid(id,val,_evt){
   const a=auctions[id];if(!a)return;const bidder=currentRaiderName();playCoinSound();spawnCoin(_evt);const br=push(runRef(`/auctions/${id}/bids`));const updates={};updates[`auctions/${id}/bids/${br.key}`]={bidder,discordId:discordUser?.id||null,amount:val,ts:Date.now()};updates[`auctions/${id}/currentBid`]=val;if(!a.paused&&a.endsAt&&Math.floor((a.endsAt-Date.now())/1000)<30){updates[`auctions/${id}/endsAt`]=Date.now()+30000;updates[`auctions/${id}/remaining`]=30;update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder,amount:val,extended:true});toast('Bid: '+val.toLocaleString()+'g — timer extended to 30s');return;}update(runRef(),updates);auditLog('bid',{auctionId:id,item:a.name,bidder,amount:val});toast('Bid placed: '+val.toLocaleString()+'g');}
 function toggleCustom(id){customOpen[id]=!customOpen[id];const a=auctions[id];if(!a)return;const el=document.getElementById('card-'+id);if(el){const t=document.createElement('div');t.innerHTML=renderCard(a,a.status==='open'?'open':a.status==='queued'?'queued':'sold');el.replaceWith(t.firstElementChild);}}
 function onSearchInput(val){_searchFocusIdx=-1;searchQuery=val;if(selectedItem&&val!==selectedItem.name){selectedItem=null;const w=document.getElementById('search-preview-wrap');if(w)w.innerHTML='';}clearTimeout(searchTimer);if(val.length<2){searchResults=[];const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';return;}// Show local results immediately
-const local=searchLocal(val);console.log('[search] query:',val,'local results:',local.length,local.map(i=>i.name));searchResults=local;isSearching=false;refreshDropdown();
+const local=searchLocal(val);searchResults=local;isSearching=false;refreshDropdown();
 // Debounce network fetch
 searchTimer=setTimeout(()=>searchWowhead(val),350);}
 let _searchFocusIdx=-1;
@@ -5692,13 +5696,11 @@ let _pendingDeleteRun=null;
 let _deleteUndoTimer=null;
 
 function startLootDisplayFromArchive(runKey){
-  console.log('[archive-display] called with runKey:',runKey,'isRL:',isRL);
   if(isRL){
     localStorage.setItem('gdkp_archive_display',runKey);
     update(runRef(),{archiveDisplay:runKey});
   }
   get(ref(db,'runs/'+runKey)).then(snap=>{
-    console.log('[archive-display] Firebase snap received, exists:',snap.exists());
     const data=snap.val()||{};
     const sold=Object.values(data.auctions||{}).filter(a=>a.status==='sold').sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
     if(!sold.length){toast('No sold items in this run');return;}
@@ -5744,8 +5746,6 @@ function startLootDisplayFromArchive(runKey){
     };
     window._archiveSwitchCat=(cat)=>{activeCat=cat;rebuildGrid(cat);};
 
-    const _clearArchiveDisplay=()=>closeArchiveDisplay();
-
     // Build sidebar from archive items
     const allItems=Object.values(data.auctions||{}).sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
     const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'rgba(201,168,76,0.4)',expired:'#cc6060'};
@@ -5777,12 +5777,10 @@ function startLootDisplayFromArchive(runKey){
         </div>
       </div>`;
 
-    const _escArchive=e=>{if(e.key==='Escape'&&isRL){_clearArchiveDisplay();document.removeEventListener('keydown',_escArchive);}};
-    document.addEventListener('keydown',_escArchive);
     document.body.appendChild(overlay);
     if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
     sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});
-  });
+  }).catch(error=>{console.error('Archive display failed',error);toast('Could not open the archived loot display');});
 }
 
 function restoreArchivedRun(archiveKey){

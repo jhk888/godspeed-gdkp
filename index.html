@@ -841,6 +841,7 @@
   .performance-evidence{margin-top:.55rem;padding:.5rem .65rem;border:1px solid rgba(212,169,60,.14);border-radius:3px;background:rgba(212,169,60,.035);font-size:.68rem;}
   .settlement-status{display:inline-block;border-radius:3px;padding:.18rem .4rem;font-family:'Cinzel',serif;font-size:.58rem;white-space:nowrap;}
   .settlement-status.ok{color:var(--green);background:rgba(96,204,128,.1);border:1px solid rgba(96,204,128,.28);}
+  .settlement-status.ready{color:#79d4ff;background:rgba(31,132,190,.14);border:1px solid rgba(104,190,255,.45);}
   .settlement-status.warn{color:var(--amber);background:rgba(240,168,48,.1);border:1px solid rgba(240,168,48,.28);}
   .settlement-status.due{color:var(--red);background:rgba(255,96,96,.1);border:1px solid rgba(255,96,96,.28);}
   .settlement-empty{text-align:center;color:var(--text-muted);font-family:'Cinzel',serif;font-size:.72rem;padding:1.25rem;}
@@ -872,8 +873,8 @@
   .payout-paid-spark{position:absolute;z-index:1;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(241,207,104,.85);pointer-events:none;animation:payoutSpark var(--spark-time,1.2s) ease-out forwards;}
   @keyframes payoutSpark{0%{opacity:0;transform:translate(0,0) scale(.2)}18%{opacity:1}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1)}}
   .payout-submission-table td{vertical-align:middle;}
-  .payout-actions{display:flex;align-items:center;gap:.45rem;white-space:nowrap;}
-  .payout-action-select{width:auto;min-width:105px;padding:.3rem .45rem;font-size:.64rem;}
+  .payout-actions{display:grid;grid-template-columns:78px 170px;align-items:center;justify-content:end;gap:.45rem;white-space:nowrap;}
+  .payout-action-select{box-sizing:border-box;width:170px;min-width:170px;max-width:170px;height:40px;padding:.3rem .45rem;font-size:.64rem;}
   .payout-thumb{width:76px;height:48px;object-fit:cover;border:1px solid var(--border-gold);border-radius:3px;cursor:pointer;background:#090805;}
   .payout-review-overlay{position:fixed;inset:0;z-index:10020;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:1.2rem;}
   .payout-review-card{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#151109;border:1px solid var(--border-gold-strong);border-radius:5px;padding:1.2rem;}
@@ -893,6 +894,20 @@
   .attendance-checkin-card .attendance-note{margin-top:.28rem;color:var(--text-muted);font-size:.72rem;}
   .attendance-checkin-card .attendance-code-ok{display:inline-block;margin-top:.75rem;padding:.3rem .55rem;border:1px solid rgba(96,204,128,.38);border-radius:3px;background:rgba(96,204,128,.08);color:var(--green);font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.06em;}
   .attendance-checkin-actions{display:flex;align-items:flex-end;justify-content:center;gap:.55rem;flex-wrap:wrap;margin-top:.85rem;}
+  .attendance-payment-choice{display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap;margin-top:.8rem;}
+  .attendance-payment-choice label{display:flex;align-items:center;gap:.38rem;min-height:38px;padding:.45rem .75rem;border:1px solid var(--border-gold);border-radius:4px;background:rgba(212,169,60,.035);cursor:pointer;}
+  .purchase-collection-list{display:grid;gap:.7rem;margin-top:.8rem;}
+  .purchase-collection-card{display:grid;grid-template-columns:minmax(180px,1.15fr) repeat(5,minmax(105px,.72fr)) minmax(150px,.85fr);gap:.65rem;align-items:center;padding:.8rem;border:1px solid rgba(212,169,60,.2);border-radius:4px;background:rgba(9,8,5,.3);}
+  .purchase-collection-card>div{min-width:0;overflow-wrap:anywhere;}
+  .purchase-items{margin-top:.25rem;color:var(--text-muted);font-size:.66rem;line-height:1.45;}
+  .purchase-actions{display:flex;gap:.4rem;align-items:center;justify-content:flex-end;flex-wrap:wrap;}
+  .purchase-summary{margin-top:.8rem;padding:.75rem;border:1px solid rgba(104,190,255,.28);border-radius:4px;background:rgba(31,132,190,.07);}
+  .purchase-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem;margin:.6rem 0;}
+  .purchase-summary-cell{padding:.55rem;border:1px solid rgba(212,169,60,.15);border-radius:3px;background:rgba(9,8,5,.25);}
+  .settlement-section:has([data-site-copy-key="payment_exceptions_title"]){display:none;}
+  .settlement-footer-actions,.modal-actions{display:flex;justify-content:center;align-items:center;gap:.6rem;flex-wrap:wrap;}
+  .settlement-footer-actions .btn,.modal-actions .btn{min-height:40px;flex:0 1 180px;}
+  body.dialog-open{overflow:hidden;}
   .attendance-checked-card{position:relative;overflow:hidden;margin:.7rem 0;padding:1rem;border:1px solid rgba(96,204,128,.4);border-radius:6px;background:radial-gradient(circle at 50% 0%,rgba(212,169,60,.14),transparent 52%),rgba(17,28,19,.94);text-align:center;}
   .attendance-checked-name{font-family:'Cinzel',serif;color:var(--green);font-size:.95rem;letter-spacing:.07em;}
   .attendance-checked-line{margin-top:.25rem;color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.06em;}
@@ -922,7 +937,7 @@
   .payout-detail-body{display:grid;gap:.5rem;padding:.5rem 0;}
   .payout-destination{overflow-wrap:anywhere;font-family:Inter,sans-serif;}
   .payout-proof-button{background:none;border:none;cursor:pointer;justify-self:start;}
-  .payout-actions{flex-wrap:wrap;white-space:normal;}
+  .payout-actions{white-space:normal;}
   .payout-actions label{display:flex;align-items:center;gap:.35rem;min-height:36px;}
   .payout-action-select{max-width:100%;}
   .payout-history-totals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.7rem 0;}
@@ -935,11 +950,13 @@
     .payout-submission-table td{display:block;padding:0;border:0;min-width:0;}
     .payout-value{text-align:right;}
     .payout-state,.payout-detail,.payout-controls{grid-column:1/-1;}
-    .payout-controls .payout-actions{justify-content:space-between;}
+    .payout-controls .payout-actions{justify-content:start;}
     .payout-detail{border-top:1px solid var(--border-gold)!important;padding-top:.5rem!important;}
     .payout-controls select{min-height:40px;}
   }
   @media(max-width:600px){.payout-history-totals{grid-template-columns:repeat(2,minmax(0,1fr));}.payout-queue-filters .btn{min-height:40px;padding:.4rem .55rem;}}
+  @media(max-width:1100px){.purchase-collection-card{grid-template-columns:repeat(3,minmax(0,1fr));}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.purchase-actions{justify-content:flex-start}}
+  @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}}
 
 </style>
 </head>
@@ -1033,10 +1050,12 @@ const DEFAULT_SPLITS = {
 const DEFAULT_SETTLEMENT = {
   managementCut:35,
   ahFeePct:5,
+  usdPer1000:10,
   usdcPer1000:10,
   claimWindowHours:48,
   usdcNetwork:'Ethereum',
   payments:{},
+  purchasePayments:{},
   mutators:{},
   performanceImports:{},
   raiders:{},
@@ -1055,6 +1074,8 @@ let modal=false,editId=null,modalQuality='epic',modalCategory='Tier';
 let raidSettings={defaultTimer:120,defaultIncrement:100,defaultBidButtons:[250,500,1000]};
 let customOpen={},tickInterval=null,toastT=null,unsubRun=null;
 let soundMuted=localStorage.getItem('gdkp_muted')==='1';
+let displayCurrency=localStorage.getItem('gdkp_display_currency')||'usd';
+let notificationSoundTimer=null,activeNotificationAudio=null;
 let lootDisplayMode=false;
 let autoBids={}; // {auctionId: maxAmount} — raider's auto-bid limits
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
@@ -1130,7 +1151,7 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
       <div class="wow-dialog-corners"></div>
       <div class="wow-dialog-title">${title}</div>
       ${msg?`<div class="wow-dialog-msg">${msg}</div>`:''}
-      ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="${input.type||'number'}" placeholder="${input.placeholder||''}" ${input.type==='text'?`value="${settlementEsc(input.value||'')}" maxlength="${input.maxlength||30}"`:`min="${input.min||0}" step="${input.step||1}"`} />`:''}
+      ${input?`<input class="wow-dialog-input" id="wow-dialog-input" type="${input.type||'number'}" placeholder="${input.placeholder||''}" ${input.type==='text'?`value="${settlementEsc(input.value||'')}" maxlength="${input.maxlength||30}"`:`value="${Number.isFinite(Number(input.value))?Number(input.value):''}" min="${input.min??0}" step="${input.step||1}"`} />`:''}
       ${suppressKey?`<label style="display:flex;align-items:center;gap:.5rem;justify-content:center;margin-bottom:.75rem;cursor:pointer;"><input type="checkbox" id="wow-suppress" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer;" /><span style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--text-muted);">Don't show this again</span></label>`:''}
       <div class="wow-dialog-btns">
         <button class="wow-dialog-btn wow-dialog-btn-cancel" id="wow-cancel">Cancel</button>
@@ -1157,8 +1178,8 @@ function wowConfirm({title='Are you sure?',msg='',confirmLabel='Confirm',danger=
         close();onConfirm(val);
         return;
       }
-      const val=parseInt(inp.value);
-      if(isNaN(val)||val<(input.min||0)){toast(input.errorMsg||'Invalid value');return;}
+      const val=parseFloat(inp.value);
+      if(!Number.isFinite(val)||val<(input.min??0)){toast(input.errorMsg||'Invalid value');return;}
       close();onConfirm(val);
     }else{close();onConfirm();}
   };
@@ -2153,6 +2174,7 @@ function subscribeToRun(){
       ...DEFAULT_SETTLEMENT,
       ...(data.settlement||{}),
       payments:data.settlement?.payments||{},
+      purchasePayments:data.settlement?.purchasePayments||{},
       mutators:data.settlement?.mutators||{},
       performanceImports:data.settlement?.performanceImports||{},
       raiders:data.settlement?.raiders||{}
@@ -2543,7 +2565,7 @@ function renderConnecting(){
 
 async function getOrCreateRun(){
   renderHdr();renderConnecting();
-  let snap;
+  let snap,createdFreshRun=false;
   try{
     const timeout=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000));
     snap=await Promise.race([get(ref(db,'runs')),timeout]);
@@ -2559,10 +2581,11 @@ async function getOrCreateRun(){
   loadDiscordCharacters(runs);
   const keys=Object.keys(runs).filter(k=>!runs[k].archived).sort().reverse();
   if(keys.length>0){runId=keys[0];}
-  else{const nr=push(ref(db,'runs'));runId=nr.key;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
+  else{const nr=push(ref(db,'runs'));runId=nr.key;createdFreshRun=true;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
   splitsLoaded=false;
   subscribeToRun();subscribeSiteContent();startTick();startPresence();subscribeToBans();
   render();
+  if(createdFreshRun&&isRL)setTimeout(()=>wowConfirm({title:'Set Run Exchange Rate',msg:'Enter the USD value of 1,000 gold for this run.',confirmLabel:'Save Rate',input:{type:'number',value:10,min:.01,step:.01,errorMsg:'Enter the USD value of 1,000 gold'},onConfirm:value=>saveSettlementSetting('usdPer1000',value)}),250);
   // Single global handler for loot display dismiss (set once, never re-added)
   if(!window._lootDisplayHandlerSet){
     window._lootDisplayHandlerSet=true;
@@ -2750,7 +2773,7 @@ function ensureRaidLeaderAttendance(){
   if(!isRL||String(discordUser?.id||'')!==RAID_LEADER_DISCORD_ID||!runId||rlAttendanceEnsuredFor===runId)return;
   const character=preferredCharacter()||discordCharacters[0]||sanitizeNick(user||'Raid Leader');if(!character)return;
   const attendanceKey='discord_'+RAID_LEADER_DISCORD_ID,raiderKey=settlementRaiderKey(character),writes={};
-  if(!attendance[attendanceKey])writes[`attendance/${attendanceKey}`]={discordId:RAID_LEADER_DISCORD_ID,discordName:discordUser?.username||user||'',personName:discordUser?.displayName||discordUser?.username||user||'',character,avatar:discordUser?.avatar||null,approved:true,autoAdded:true,role:'Raid Leader',checkedInAt:Date.now()};
+  if(!attendance[attendanceKey])writes[`attendance/${attendanceKey}`]={discordId:RAID_LEADER_DISCORD_ID,discordName:discordUser?.username||user||'',personName:discordUser?.displayName||discordUser?.username||user||'',character,avatar:discordUser?.avatar||null,purchasePreference:'usd',approved:true,autoAdded:true,role:'Raid Leader',checkedInAt:Date.now()};
   if(!settlement.raiders?.[raiderKey])writes[`settlement/raiders/${raiderKey}`]={name:character,base:true,adjustGold:0,adjustPct:0,mutators:{},paid:false,autoAdded:true,role:'Raid Leader'};
   rlAttendanceEnsuredFor=runId;if(Object.keys(writes).length)update(runRef(),writes).catch(()=>{rlAttendanceEnsuredFor='';});
 }
@@ -2796,11 +2819,11 @@ function celebrateCheckInOnce(){
 function buildAttendanceBanner(){
   if(isRL||!attendanceIsRequired())return'';
   const record=currentAttendanceRecord();
-  if(record?.approved){setTimeout(celebrateCheckInOnce,0);return`<div id="attendance-checked-card" class="attendance-checked-card"><div class="attendance-checked-name">${settlementEsc(record.character||user)} is checked in</div><div class="attendance-checked-line">${siteCopy('checkin_success','Prepare thy shekels.')}</div>${attendanceSettings.open?'<button class="btn btn-outline btn-sm" onclick="leaveAttendance()" style="margin-top:.65rem;">Change Character</button>':''}</div>`;}
+  if(record?.approved){setTimeout(celebrateCheckInOnce,0);return`<div id="attendance-checked-card" class="attendance-checked-card"><div class="attendance-checked-name">${settlementEsc(record.character||user)} is checked in</div><div class="attendance-checked-line">Purchases: ${(record.purchasePreference||'usd').toUpperCase()} · ${siteCopy('checkin_success','Prepare thy shekels.')}</div>${attendanceSettings.open?'<div style="display:flex;justify-content:center;gap:.45rem;flex-wrap:wrap;margin-top:.65rem;"><button class="btn btn-outline btn-sm" onclick="changeAttendancePayment()">Change Payment</button><button class="btn btn-outline btn-sm" onclick="leaveAttendance()">Change Character</button></div>':''}</div>`;}
   if(!attendanceSettings.open)return`<div class="attendance-checkin-card"><div class="attendance-title">Check-in is closed</div><div class="attendance-note">Ask the raid leader to open it.</div></div>`;
   const code=attendanceCodeFromInvite(),codeVerified=!!code&&code===String(attendanceSettings.code||'').toUpperCase(),character=preferredCharacter()||discordCharacters[0]||'',characterOptions=discordCharacters.map(n=>`<option value="${settlementEsc(n)}"></option>`).join('');
   if(!codeVerified)return`<div class="attendance-checkin-card"><div class="attendance-title">${siteCopy('checkin_code_title','Enter Raid Code')}</div><div class="attendance-note">Use the backup code from the raid leader.</div><div class="attendance-checkin-actions"><div class="fg" style="text-align:left;"><div class="lbl">Raid code</div><input id="attendance-code" maxlength="6" value="${settlementEsc(code)}" placeholder="6-digit code" autocomplete="one-time-code" style="width:150px;text-transform:uppercase;text-align:center;letter-spacing:.12em;" onkeydown="if(event.key==='Enter'){event.preventDefault();verifyAttendanceCode();}" /></div><button class="btn btn-gold btn-sm" onclick="verifyAttendanceCode()">Continue</button></div></div>`;
-  return`<div class="attendance-checkin-card"><div class="attendance-title">${siteCopy('checkin_title','Join Tonight\'s Raid')}</div><div class="attendance-note">${siteCopy('checkin_intro','Choose the character you are playing.')}</div><input id="attendance-code" type="hidden" value="${settlementEsc(code)}" /><div class="attendance-code-ok">Raid code applied</div><div class="attendance-checkin-actions"><div class="fg" style="text-align:left;"><div class="lbl">Playing as</div><input id="attendance-character" type="text" required autocomplete="off" list="attendance-character-list" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:220px;" onkeydown="if(event.key==='Enter'){event.preventDefault();checkInAttendance();}" /><datalist id="attendance-character-list">${characterOptions}</datalist><div class="settlement-muted" style="max-width:220px;margin-top:.2rem;">${discordCharacters.length?'Choose a saved character or enter another.':'Enter the character used for this raid.'}</div></div><button class="btn btn-gold" onclick="checkInAttendance()">Join Raid</button></div></div>`;
+  return`<div class="attendance-checkin-card"><div class="attendance-title">${siteCopy('checkin_title','Join Tonight\'s Raid')}</div><div class="attendance-note">${siteCopy('checkin_intro','Choose the character you are playing.')}</div><input id="attendance-code" type="hidden" value="${settlementEsc(code)}" /><div class="attendance-code-ok">Raid code applied</div><div class="attendance-checkin-actions"><div class="fg" style="text-align:left;"><div class="lbl">Playing as</div><input id="attendance-character" type="text" required autocomplete="off" list="attendance-character-list" maxlength="20" value="${settlementEsc(character)}" placeholder="Character name" style="width:220px;" onkeydown="if(event.key==='Enter'){event.preventDefault();checkInAttendance();}" /><datalist id="attendance-character-list">${characterOptions}</datalist><div class="settlement-muted" style="max-width:220px;margin-top:.2rem;">${discordCharacters.length?'Choose a saved character or enter another.':'Enter the character used for this raid.'}</div></div></div><div class="lbl" style="margin-top:.85rem;">How will you pay for your purchases?</div><div class="attendance-payment-choice"><label><input type="radio" name="attendance-payment" value="usd" checked /> USD</label><label><input type="radio" name="attendance-payment" value="gold" /> Gold</label></div><button class="btn btn-gold" onclick="checkInAttendance()" style="margin-top:.85rem;">Join Raid</button></div>`;
 }
 function verifyAttendanceCode(){const input=document.getElementById('attendance-code'),code=String(input?.value||'').trim().toUpperCase();if(code!==String(attendanceSettings.code||'').toUpperCase()){toast('Raid code does not match');input?.focus();input?.select();return;}localStorage.setItem('gdkp_pending_raid_code',code);renderMain();}
 async function checkInAttendance(){
@@ -2812,11 +2835,13 @@ async function checkInAttendance(){
   if(!character){toast('Enter the character attending');return;}
   const key=attendanceKeyForCurrentUser();
   if(attendanceCharacterTaken(character,key)){toast(character+' is already checked in');return;}
-  await set(runRef(`/attendance/${key}`),{discordId:String(discordUser.id),discordName:discordUser.username||user,personName:discordUser.displayName||discordUser.username||user,character,avatar:discordUser.avatar||null,approved:true,checkedInAt:Date.now()});
+  const purchasePreference=document.querySelector('input[name="attendance-payment"]:checked')?.value==='gold'?'gold':'usd';
+  await set(runRef(`/attendance/${key}`),{discordId:String(discordUser.id),discordName:discordUser.username||user,personName:discordUser.displayName||discordUser.username||user,character,avatar:discordUser.avatar||null,purchasePreference,approved:true,checkedInAt:Date.now()});
   rememberDiscordCharacter(character);
   localStorage.removeItem('gdkp_pending_raid_code');
   toast('Checked in as '+character);
 }
+function changeAttendancePayment(){const record=currentAttendanceRecord(),key=attendanceKeyForCurrentUser();if(!record||!key)return;wowConfirm({title:'Change Purchase Payment',msg:'Choose the run-wide preference for all purchases in this run.',confirmLabel:'Save',input:{type:'text',value:(record.purchasePreference||'usd').toUpperCase(),placeholder:'USD or Gold',maxlength:4,errorMsg:'Enter USD or Gold'},onConfirm:value=>{const preference=String(value).trim().toLowerCase();if(!['usd','gold'].includes(preference)){toast('Enter USD or Gold');return;}update(runRef(`/attendance/${key}`),{purchasePreference:preference,paymentChangedAt:Date.now()});}});}
 function currentUserHasRaidBid(){const record=currentAttendanceRecord(),discordId=String(discordUser?.id||''),character=attendanceCharacterIdentity(record?.character);return auctionList().some(a=>Object.values(a.bids||{}).some(b=>!b.retracted&&((discordId&&String(b.discordId||'')===discordId)||(character&&attendanceCharacterIdentity(b.bidder)===character))));}
 function leaveAttendance(){const key=attendanceKeyForCurrentUser();if(!key||!attendanceSettings.open)return;if(currentUserHasRaidBid()){toast('Your character is locked after bidding. Ask the raid leader to correct it.');return;}wowConfirm({title:'Change check-in?',msg:'Remove your current attendance entry so you can check in with a different character.',confirmLabel:'Change',onConfirm:()=>remove(runRef(`/attendance/${key}`))});}
 function toggleAttendanceCheckIn(open){
@@ -2881,6 +2906,8 @@ function renderHdr(){
   updateOnlineCounter();
   document.getElementById('hdr-user').innerHTML=`
     ${avatarEl}<span class="usr-chip" onclick="openUserSettings()" title="Open My Account" style="cursor:pointer;">${settlementEsc(user)}</span>
+    <button class="btn btn-outline btn-sm" onclick="toggleDisplayCurrency()" title="Change display currency">${displayCurrency==='usd'?'USD':'Gold'}</button>
+    <button class="btn btn-outline btn-sm" onclick="toggleSound()" title="${soundMuted?'Turn sound on':'Mute sound'}">${soundMuted?'Muted':'Sound'}</button>
     <button class="btn btn-outline btn-sm header-tools-btn" onclick="openPanel();setPanelTab('${isRL?'raiders':'runs'}')">${isRL?'Raid Tools':'Runs'}</button>`;
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
@@ -2892,8 +2919,8 @@ const qualityColor={poor:'#9d9d9d',common:'#ffffff',uncommon:'#1eff00',rare:'#00
 function _itemLink(a){
   const c=qualityColor[a.quality||'common']||'#ffffff';
   const href=a.itemId?`https://www.wowhead.com/tbc/item=${a.itemId}`:'#';
-  const price=(a.currentBid||a.price||0).toLocaleString();
-  return`<span style="display:flex;align-items:baseline;gap:.35rem;"><a href="${href}" target="_blank" rel="noopener" data-wowhead="item=${a.itemId}&domain=tbc" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;white-space:nowrap;flex-shrink:0;">${price}g</span></span>`;
+  const price=displayMoney(a.currentBid||a.price||0);
+  return`<span style="display:flex;align-items:baseline;gap:.35rem;"><a href="${href}" target="_blank" rel="noopener" data-wowhead="item=${a.itemId}&domain=tbc" style="color:${c};font-size:.7rem;font-family:'Cinzel',serif;text-decoration:none;white-space:nowrap;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;" onmouseover="this.style.textDecoration='underline'" onmouseout="this.style.textDecoration='none'">${a.name}</a><span style="color:var(--gold);font-size:.68rem;white-space:nowrap;flex-shrink:0;">${price}</span></span>`;
 }
 function showOnlineTooltip(e){
   clearTimeout(_onlineTooltipHideT);
@@ -3251,18 +3278,28 @@ function buildMyLootHTML(){
         ${i.itemId?`<a class="item-name ${i.quality}" href="https://www.wowhead.com/tbc/item=${i.itemId}" data-wowhead="item=${i.itemId}&domain=tbc" style="font-size:.8rem;text-decoration:none;">${i.name}</a>`
           :`<span class="item-name ${i.quality}" style="font-size:.8rem;">${i.name}</span>`}
         <span style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
-          <span style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold-light);">${i.price.toLocaleString()}g</span>
+          <span style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--gold-light);">${displayMoney(i.price)}</span>
           ${i.paid?`<span style="font-size:.68rem;color:var(--green);background:rgba(96,204,128,0.15);border:1px solid rgba(96,204,128,0.3);padding:.1rem .35rem;border-radius:2px;font-family:'Cinzel',serif;">Paid</span>`:''}
         </span>
       </div>`).join('')}
     </div>
     <div class="my-loot-total" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.35rem;">
-      <span>Total: ${myTotal.toLocaleString()}g</span>
-      ${myOwed>0?`<span style="color:var(--red);">Owed: ${myOwed.toLocaleString()}g</span>`:`<span style="color:var(--green);">All paid &#10003;</span>`}
+      <span>Total: ${displayMoney(myTotal)}</span>
+      ${myOwed>0?`<span style="color:var(--red);">Owed: ${displayMoney(myOwed)}</span>`:`<span style="color:var(--green);">All paid &#10003;</span>`}
     </div>
   </div>`:'';
-  return myLootHTML;
+  const myIdentity=attendanceCharacterIdentity(currentRaiderName()),purchaseGroup=settlementPurchaseGroups().find(g=>attendanceCharacterIdentity(g.name)===myIdentity);
+  const purchaseSummary=purchaseGroup?renderPurchaseSummary(purchaseGroup,true):'';
+  return myLootHTML+purchaseSummary;
 }
+
+function renderPurchaseSummary(group,compact=false){const record=purchasePaymentRecord(group),c=calculatePurchasePayment(group,record),method=c.mode==='gold'?'Gold':c.mode==='split'?`Split: ${c.usdMethod==='usdc'?'USDC':'USD'} + Gold`:c.usdMethod==='usdc'?'USDC':'USD',status=c.received?'<span class="settlement-status ok">Received</span>':'<span class="settlement-status warn">Awaiting payment</span>';return`<div class="purchase-summary"><div style="display:flex;justify-content:space-between;gap:.6rem;align-items:center;flex-wrap:wrap;"><strong>${compact?'Your Purchase Payment':settlementEsc(displayName(group.name)||group.name)}</strong>${status}</div><div class="purchase-summary-grid"><div class="purchase-summary-cell"><div class="lbl">Preference</div>${String(record.preference||'usd').toUpperCase()}</div><div class="purchase-summary-cell"><div class="lbl">Method</div>${method}</div><div class="purchase-summary-cell"><div class="lbl">Original</div>${usdText(c.originalUsd)}</div><div class="purchase-summary-cell"><div class="lbl">Amount Due</div>${c.mode==='gold'?settlementGold(c.goldPortion):`${c.usdMethod==='usdc'?c.amountDue.toLocaleString()+' USDC':usdText(c.amountDue)}${c.goldPortion?` + ${settlementGold(c.goldPortion)}`:''}`}</div></div>${c.usdcDiscount?`<div class="settlement-muted">USDC discount: ${usdText(c.usdcDiscount)} · Pot credit after confirmation: ${settlementGold(c.goldCredited)}</div>`:`<div class="settlement-muted">Pot credit after confirmation: ${settlementGold(c.goldCredited)}</div>`}<div style="display:flex;justify-content:flex-end;margin-top:.55rem;"><button class="btn btn-outline btn-sm" onclick="openPurchasePaymentDialog('${group.key}')" ${c.received?'disabled':''}>Change Payment or Split Payment</button></div></div>`;}
+
+function openPurchasePaymentDialog(groupKey){const group=settlementPurchaseGroups().find(g=>g.key===groupKey);if(!group)return;const mine=attendanceCharacterIdentity(group.name)===attendanceCharacterIdentity(currentRaiderName());if(!isRL&&!mine)return;const record=purchasePaymentRecord(group),ov=document.createElement('div');ov.id='purchase-payment-dialog';ov.className='account-payment-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="account-payment-card" style="width:min(620px,96vw);"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Change or Split Payment</div><div class="settlement-section-note">${settlementEsc(group.name)} · ${settlementGold(group.totalGold)} · ${usdText(usdValue(group.totalGold))}</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('purchase-payment-dialog')?.remove()">Close</button></div><div class="payout-claim-grid" style="margin-top:.8rem;"><div class="fg"><div class="lbl">Payment plan</div><select id="purchase-payment-mode" onchange="updatePurchasePaymentPreview('${group.key}')"><option value="usd" ${record.mode==='usd'?'selected':''}>USD only</option><option value="gold" ${record.mode==='gold'?'selected':''}>Gold only</option><option value="split" ${record.mode==='split'?'selected':''}>Split USD and Gold</option></select></div><div class="fg"><div class="lbl">USD method</div><select id="purchase-usd-method" onchange="updatePurchasePaymentPreview('${group.key}')"><option value="usd" ${record.usdMethod!=='usdc'?'selected':''}>USD</option><option value="usdc" ${record.usdMethod==='usdc'?'selected':''}>USDC, 5% discount</option></select></div><div class="fg"><div class="lbl">Gold portion</div><input id="purchase-gold-portion" type="number" min="0" max="${group.totalGold}" step="1" value="${record.goldPortion||0}" oninput="updatePurchasePaymentPreview('${group.key}')" /></div></div><div id="purchase-payment-preview" class="purchase-summary"></div><div style="display:flex;justify-content:flex-end;margin-top:.8rem;"><button class="btn btn-gold btn-sm" onclick="savePurchasePayment('${group.key}')">Save Payment Plan</button></div></div>`;document.body.appendChild(ov);updatePurchasePaymentPreview(group.key);setTimeout(()=>ov.querySelector('select')?.focus(),30);}
+function purchasePaymentDraft(group){return{preference:purchasePaymentRecord(group).preference,mode:document.getElementById('purchase-payment-mode')?.value||'usd',usdMethod:document.getElementById('purchase-usd-method')?.value||'usd',goldPortion:settlementNum(document.getElementById('purchase-gold-portion')?.value)};}
+function updatePurchasePaymentPreview(groupKey){const group=settlementPurchaseGroups().find(g=>g.key===groupKey),preview=document.getElementById('purchase-payment-preview');if(!group||!preview)return;const record=purchasePaymentDraft(group),c=calculatePurchasePayment(group,record);preview.innerHTML=`<div class="purchase-summary-grid"><div class="purchase-summary-cell"><div class="lbl">Original USD</div>${usdText(c.originalUsd)}</div><div class="purchase-summary-cell"><div class="lbl">USDC Discount</div>${usdText(c.usdcDiscount)}</div><div class="purchase-summary-cell"><div class="lbl">Final USD / USDC Due</div>${c.usdMethod==='usdc'?c.amountDue.toLocaleString()+' USDC':usdText(c.amountDue)}</div><div class="purchase-summary-cell"><div class="lbl">Gold Due</div>${settlementGold(c.goldPortion)}</div></div><div class="settlement-muted">Gold credited to pot after RL confirmation: ${settlementGold(c.goldCredited)}</div>`;}
+function savePurchasePayment(groupKey){const group=settlementPurchaseGroups().find(g=>g.key===groupKey);if(!group)return;const current=purchasePaymentRecord(group);if(current.received){toast('Received payments are locked');return;}const record=purchasePaymentDraft(group);if(record.mode!=='split')record.goldPortion=record.mode==='gold'?group.totalGold:0;else record.goldPortion=Math.min(group.totalGold,Math.max(0,record.goldPortion));update(runRef(`/settlement/purchasePayments/${groupKey}`),{...record,updatedAt:Date.now(),updatedBy:user}).then(()=>{document.getElementById('purchase-payment-dialog')?.remove();toast('Payment plan saved');});}
+function markPurchaseReceived(groupKey){if(!isRL)return;const group=settlementPurchaseGroups().find(g=>g.key===groupKey);if(!group)return;const record=purchasePaymentRecord(group);if(record.received){toast('Payment already received');return;}const c=calculatePurchasePayment(group,record);wowConfirm({title:'Mark Payment Received?',msg:`Confirm ${settlementEsc(group.name)} paid ${c.mode==='gold'?settlementGold(c.goldPortion):c.usdMethod==='usdc'?c.amountDue.toLocaleString()+' USDC':usdText(c.amountDue)}${c.mode==='split'&&c.goldPortion?` plus ${settlementGold(c.goldPortion)}`:''}. This records ${settlementGold(c.goldCredited)} in the pot.`,confirmLabel:'Mark Received',onConfirm:()=>{const now=Date.now(),eventId=push(runRef(`/settlement/purchasePayments/${groupKey}/receiptHistory`)).key,receipt={...c,received:true,confirmedAt:now,confirmedBy:user,transactionCurrency:c.usdMethod==='usdc'?'USDC':c.mode==='gold'?'Gold':'USD'};const writes={};writes[`settlement/purchasePayments/${groupKey}/received`]=true;writes[`settlement/purchasePayments/${groupKey}/receipt`]=receipt;writes[`settlement/purchasePayments/${groupKey}/activeReceiptId`]=eventId;writes[`settlement/purchasePayments/${groupKey}/receiptHistory/${eventId}`]=receipt;update(runRef(),writes).then(()=>toast(`${group.name} received · ${settlementGold(c.goldCredited)} credited`));}});}
 
 function buildPotBarHTML(){
   const sold=auctionList().filter(a=>a.status==='sold');
@@ -3270,13 +3307,13 @@ function buildPotBarHTML(){
   return isRL?`<div class="pot-bar">
     <div class="pot-bar-stat">
       <div class="pot-lbl">Total Pot</div>
-      <div class="pot-val">${p.toLocaleString()}g</div>
+      <div class="pot-val">${displayMoney(p)}</div>
       <div style="font-size:.8rem;color:var(--text-muted);">${sold.length} item${sold.length!==1?'s':''} sold</div>
     </div>
     <div class="pot-bar-stat">
-      <div class="pot-lbl">Est. Raider Cut</div>
-      <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${Math.floor(p/raiderCount()).toLocaleString()}g</div>
-      <div style="font-size:.8rem;color:var(--text-muted);">${raiderCount()} raiders</div>
+      <div class="pot-lbl">Current Base Cut</div>
+      <div style="color:var(--gold-light);font-family:'Cinzel',serif;font-size:1.5rem;font-weight:500;">${displayMoney(calculateSettlementCuts().base)}</div>
+      <div style="font-size:.8rem;color:var(--text-muted);">Before individual mutators</div>
     </div>
     <div class="pot-bar-actions">
       <button class="btn btn-outline btn-sm" onclick="confirmReset()">Start New Run</button>
@@ -3512,6 +3549,11 @@ async function saveSiteTextManager(){if(!isRL||!runId)return;const manager=docum
 document.addEventListener('click',event=>{const target=event.target.closest?.('[data-site-copy-key]');if(!target||!siteEditMode||!isRL)return;event.preventDefault();event.stopPropagation();openSiteCopyEditor(target.dataset.siteCopyKey,target.dataset.siteCopyDefault||target.textContent||'');},true);
 function settlementGold(n){n=Number(n)||0;const rounded=Math.round(n*100)/100;return rounded.toLocaleString(undefined,{minimumFractionDigits:Number.isInteger(rounded)?0:2,maximumFractionDigits:2})+'g';}
 function settlementNum(v){const n=parseFloat(v);return Number.isFinite(n)?n:0;}
+function runUsdRate(){return Math.max(.01,settlementNum(settlement.usdPer1000||settlement.usdcPer1000)||10);}
+function usdValue(gold,rate=runUsdRate()){return Math.round((settlementNum(gold)*rate/1000)*100)/100;}
+function usdText(amount){return '$'+(Math.round(settlementNum(amount)*100)/100).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
+function displayMoney(gold,rate=runUsdRate()){return displayCurrency==='gold'?settlementGold(gold):usdText(usdValue(gold,rate));}
+function toggleDisplayCurrency(){displayCurrency=displayCurrency==='usd'?'gold':'usd';localStorage.setItem('gdkp_display_currency',displayCurrency);renderHdr();renderMain();toast(`Showing ${displayCurrency==='usd'?'USD':'gold'}`);}
 function settlementRaiderKey(name){return encodeURIComponent(String(name||'').trim().toLowerCase()).replace(/\./g,'%2E');}
 function settlementWinner(a){return Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount)[0]?.bidder||'';}
 function settlementPaymentFor(a){return settlement.payments?.[a.id]||{};}
@@ -3539,16 +3581,19 @@ function findSettlementDuplicateIds(){
   });
   return duplicateIds;
 }
-function calculatePayment(a,p=settlementPaymentFor(a)){
-  const price=Math.max(0,settlementNum(a.currentBid)),method=p.method||'gold',feePct=Math.max(0,settlementNum(settlement.ahFeePct));
-  const gross=method==='gold'?price:method==='split'?Math.min(price,Math.max(0,settlementNum(p.ahGross))):0;
-  const ahFee=Math.round(gross*(feePct/100)*100)/100,ahNet=Math.round((gross-ahFee)*100)/100;
-  const usd=Math.max(0,settlementNum(p.usdReceived));
-  const suppliedGold=method==='usd'||method==='covered'?price:method==='split'?Math.max(0,price-gross):0;
-  const credited=Math.round((ahNet+suppliedGold)*100)/100;
-  return{method,gross,ahFee,ahNet,usd,suppliedGold,credited,price};
+function purchaseAttendanceFor(name){const id=attendanceCharacterIdentity(name);return attendanceList().find(a=>attendanceCharacterIdentity(a.character)===id)||null;}
+function settlementPurchaseGroups(){const groups={};auctionList().filter(a=>a.status==='sold').forEach(a=>{const name=settlementWinner(a)||'Unknown',key=settlementRaiderKey(name);if(!groups[key])groups[key]={key,name,items:[],totalGold:0};groups[key].items.push(a);groups[key].totalGold+=Math.max(0,settlementNum(a.currentBid));});return Object.values(groups).sort((a,b)=>a.name.localeCompare(b.name));}
+function purchasePaymentRecord(group){const saved=settlement.purchasePayments?.[group.key]||{},attendanceRecord=purchaseAttendanceFor(group.name),preference=saved.preference||attendanceRecord?.purchasePreference||'usd',hasNewRecord=Object.keys(saved).length>0,legacyReceived=!hasNewRecord&&group.items.length>0&&group.items.every(a=>!!a.paid||!!settlementPaymentFor(a).settled);return{preference,mode:saved.mode||(preference==='gold'?'gold':'usd'),usdMethod:saved.usdMethod||'usd',goldPortion:settlementNum(saved.goldPortion),_legacyReceived:legacyReceived,...saved};}
+function calculatePurchasePayment(group,record=purchasePaymentRecord(group)){
+  if(record.received&&record.receipt)return{...record.receipt,received:true};
+  const totalGold=Math.max(0,settlementNum(group.totalGold)),rate=runUsdRate(),mode=record.mode||'usd';
+  const goldPortion=mode==='gold'?totalGold:mode==='split'?Math.min(totalGold,Math.max(0,settlementNum(record.goldPortion))):0;
+  const usdGold=Math.max(0,totalGold-goldPortion),originalUsd=usdValue(totalGold,rate),usdOriginal=usdValue(usdGold,rate),usdcDiscount=record.usdMethod==='usdc'?Math.round(usdOriginal*.05*100)/100:0,amountDue=Math.round((usdOriginal-usdcDiscount)*100)/100;
+  const ahFeePct=Math.max(0,settlementNum(settlement.ahFeePct)),goldCredit=Math.round(goldPortion*(1-ahFeePct/100)*100)/100,usdCredit=Math.round(usdGold*(record.usdMethod==='usdc'?.95:1)*100)/100,goldCredited=Math.round((goldCredit+usdCredit)*100)/100;
+  return{totalGold,rate,mode,usdMethod:record.usdMethod||'usd',goldPortion,usdGold,originalUsd,usdOriginal,usdcDiscount,amountDue,goldCredited,received:!!record._legacyReceived,legacy:!!record._legacyReceived};
 }
-function calculateSettlementCollections(){return auctionList().filter(a=>a.status==='sold').reduce((t,a)=>{const c=calculatePayment(a),done=!!a.paid||!!settlementPaymentFor(a).settled;t.sold+=c.price;t.gross+=c.gross;t.fee+=c.ahFee;t.net+=c.ahNet;t.usd+=c.usd;t.suppliedGold+=c.suppliedGold;t.credited+=c.credited;if(done){t.settled++;t.collected+=c.credited;}return t;},{sold:0,gross:0,fee:0,net:0,usd:0,suppliedGold:0,credited:0,collected:0,settled:0});}
+function calculatePayment(a,p=settlementPaymentFor(a)){const group={key:settlementRaiderKey(settlementWinner(a)),name:settlementWinner(a),items:[a],totalGold:Math.max(0,settlementNum(a.currentBid))},c=calculatePurchasePayment(group,p.method?{preference:p.method==='gold'?'gold':'usd',mode:p.method==='split'?'split':p.method==='gold'?'gold':'usd',usdMethod:'usd',goldPortion:p.ahGross,received:!!p.settled}:purchasePaymentRecord(group));return{method:c.mode,gross:c.goldPortion,ahFee:Math.round(c.goldPortion*(settlementNum(settlement.ahFeePct)/100)*100)/100,ahNet:c.goldCredited-c.usdGold,usd:c.amountDue,suppliedGold:c.usdGold,credited:c.goldCredited,price:c.totalGold};}
+function calculateSettlementCollections(){return settlementPurchaseGroups().reduce((t,g)=>{const r=purchasePaymentRecord(g),c=calculatePurchasePayment(g,r);t.sold+=g.totalGold;t.fee+=Math.max(0,g.totalGold-c.goldCredited);t.expected+=c.goldCredited;t.credited+=c.received?c.goldCredited:0;t.collected=t.credited;t.settled+=c.received?1:0;t.purchasers++;return t;},{sold:0,fee:0,expected:0,credited:0,collected:0,settled:0,purchasers:0});}
 function settlementRaiders(){return Object.entries(settlement.raiders||{}).map(([key,r])=>({key,...r})).sort((a,b)=>(a.name||'').localeCompare(b.name||''));}
 function calculateSettlementCutsFrom(state=settlement){
   const totalPot=calculateSettlementCollections().credited,managementPct=Math.max(0,Math.min(100,settlementNum(state.managementCut))),managementCut=Math.floor(totalPot*(managementPct/100)),distributable=totalPot-managementCut;
@@ -3600,17 +3645,19 @@ function requestAttachmentHTML(image,label='Supporting screenshot'){
   const src=payoutSafeImage(image?.data);if(!src)return`<div><div style="font-family:'Cinzel',serif;color:var(--gold-light);font-size:.78rem;">PASTE OR DROP SCREENSHOT</div><div class="settlement-muted" style="margin-top:.25rem;">Optional. You can also browse for an image.</div></div>`;
   return`<div class="payout-attach-preview"><img src="${src}" alt="${settlementEsc(label)}" /><div><div style="font-family:'Cinzel',serif;color:var(--gold-light);font-size:.76rem;">${settlementEsc(image.name||label)}</div><div class="settlement-muted" style="margin-top:.2rem;">Screenshot attached</div></div></div>`;
 }
+function cutDisputeEvents(r){return Object.entries(r?.cutDisputeHistory||{}).map(([id,e])=>({id,...e})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));}
+function disputeHistoryHTML(r,attachments={}){const events=cutDisputeEvents(r);if(!events.length)return'';return`<div class="cut-breakdown">${events.map(e=>{const proof=payoutSafeImage(attachments[e.id]?.data||e.attachmentData);return`<div class="cut-request-note"><div class="settlement-muted">${new Date(e.createdAt||Date.now()).toLocaleString()} · ${settlementEsc(e.actor||e.actorRole||'Update')} · ${settlementEsc(e.type||'message')}</div><div style="margin-top:.35rem;white-space:pre-wrap;">${settlementEsc(e.note||e.reason||'')}</div>${proof?`<img class="payout-review-image" src="${proof}" alt="Dispute proof" />`:''}</div>`;}).join('')}</div>`;}
 function openCutRequest(){
-  const r=payoutCurrentRaider();if(!r||payoutIsComplete(r)){toast('No active cut to dispute');return;}cutRequestDraftImage=null;document.getElementById('cut-request-overlay')?.remove();const prior=r.cutRequest||{},ov=document.createElement('div');ov.id='cut-request-overlay';ov.className='account-payment-overlay';ov.onclick=e=>{if(e.target===ov)closeCutRequest();};ov.innerHTML=`<div class="account-payment-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Dispute Cut</div><div class="settlement-section-note">Explain what should change. The raid leader will see this with your payout.</div></div><button class="btn btn-outline btn-sm" onclick="closeCutRequest()">Close</button></div><div class="fg"><div class="lbl">What should be changed?</div><textarea id="cut-request-text" class="account-note" maxlength="500" placeholder="Explain the bonus, attendance, or adjustment you want reviewed">${settlementEsc(prior.note||'')}</textarea></div><div id="cut-request-attach" class="payout-attach" tabindex="0" onclick="document.getElementById('cut-request-file')?.click()" onpaste="handleCutRequestPaste(event)" ondragover="event.preventDefault();this.classList.add('dragging')" ondragleave="this.classList.remove('dragging')" ondrop="handleCutRequestDrop(event)">${requestAttachmentHTML(null)}</div><input id="cut-request-file" type="file" accept="image/*" hidden onchange="handleCutRequestFile(this.files?.[0])" /><div style="display:flex;justify-content:flex-end;margin-top:.8rem;"><button class="btn btn-gold btn-sm" onclick="submitCutRequest()">${prior.submittedAt?'Update Dispute':'Submit Dispute'}</button></div></div>`;document.body.appendChild(ov);setTimeout(()=>document.getElementById('cut-request-text')?.focus(),30);
+  const r=payoutCurrentRaider();if(!r){toast('No cut to dispute');return;}cutRequestDraftImage=null;document.getElementById('cut-request-overlay')?.remove();const prior=r.cutRequest||{},reopening=['resolved','declined','rejected'].includes(prior.status),ov=document.createElement('div');ov.id='cut-request-overlay';ov.className='account-payment-overlay';ov.onclick=e=>{if(e.target===ov)closeCutRequest();};ov.innerHTML=`<div class="account-payment-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${reopening?'Reply and Reopen Dispute':'Dispute Cut'}</div><div class="settlement-section-note">Explain what should change and attach proof if useful.</div></div><button class="btn btn-outline btn-sm" onclick="closeCutRequest()">Close</button></div>${prior.response?`<div class="cut-request-note"><div class="lbl">Raid Leader Resolution</div>${settlementEsc(prior.response)}</div>`:''}<div class="fg"><div class="lbl">Your explanation</div><textarea id="cut-request-text" class="account-note" maxlength="500" placeholder="Explain the bonus, attendance, or adjustment you want reviewed"></textarea></div><div id="cut-request-attach" class="payout-attach" tabindex="0" onclick="document.getElementById('cut-request-file')?.click()" onpaste="handleCutRequestPaste(event)" ondragover="event.preventDefault();this.classList.add('dragging')" ondragleave="this.classList.remove('dragging')" ondrop="handleCutRequestDrop(event)">${requestAttachmentHTML(null)}</div><input id="cut-request-file" type="file" accept="image/*" hidden onchange="handleCutRequestFile(this.files?.[0])" /><div style="display:flex;justify-content:flex-end;margin-top:.8rem;"><button class="btn btn-gold btn-sm" onclick="submitCutRequest()">${reopening?'Reply and Reopen':prior.submittedAt?'Add Reply':'Submit Dispute'}</button></div></div>`;document.body.appendChild(ov);setTimeout(()=>document.getElementById('cut-request-text')?.focus(),30);
 }
 function closeCutRequest(){document.getElementById('cut-request-overlay')?.remove();cutRequestDraftImage=null;}
 function renderCutRequestAttachment(){const el=document.getElementById('cut-request-attach');if(el)el.innerHTML=requestAttachmentHTML(cutRequestDraftImage);}
 async function handleCutRequestFile(file){if(!file)return;try{cutRequestDraftImage=await compressPayoutImage(file);renderCutRequestAttachment();toast('Screenshot attached');}catch(e){toast(e.message||'Could not attach screenshot');}}
 function handleCutRequestPaste(event){const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();if(file){event.preventDefault();handleCutRequestFile(file);}}
 function handleCutRequestDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/'));if(file)handleCutRequestFile(file);}
-async function submitCutRequest(){const r=payoutCurrentRaider(),note=String(document.getElementById('cut-request-text')?.value||'').trim().slice(0,500);if(!r||payoutIsComplete(r))return;if(!note){toast('Explain the requested change');return;}const now=Date.now(),prior=r.cutRequest||{},writes={};writes[`runs/${runId}/settlement/raiders/${r.key}/cutRequest`]={note,status:'pending',submittedAt:prior.submittedAt||now,updatedAt:now,hasAttachment:!!cutRequestDraftImage||!!prior.hasAttachment,discordId:accountDiscordId(),discordName:discordUser?.username||user||''};if(cutRequestDraftImage)writes[`runAttachments/${runId}/cutDisputes/${r.key}`]=cutRequestDraftImage;try{await update(ref(db),writes);closeCutRequest();toast('Cut request sent');}catch(e){toast('Could not send the request');}}
-async function openCutRequestReview(key){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null,request=r?.cutRequest;if(!r||!request)return;let image=null;if(request.hasAttachment){try{image=(await get(ref(db,`runAttachments/${runId}/cutDisputes/${key}`))).val();}catch(e){}}const ov=document.createElement('div');ov.id='cut-request-review';ov.className='payout-review-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="payout-review-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${settlementEsc(r.name)} · Cut Dispute</div><div class="settlement-section-note">Current cut: ${settlementGold(effectiveRaiderCut(r))}</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('cut-request-review')?.remove()">Close</button></div><div class="cut-request-note">${settlementEsc(request.note)}</div>${image?.data?`<img class="payout-review-image" src="${payoutSafeImage(image.data)}" alt="Cut dispute screenshot" />`:''}<div style="display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;margin-top:.8rem;"><button class="btn btn-outline btn-sm" onclick="respondCutRequest('${key}','declined')">Decline</button><button class="btn btn-green btn-sm" onclick="respondCutRequest('${key}','resolved')">Mark Resolved</button></div></div>`;document.body.appendChild(ov);}
-function respondCutRequest(key,status){if(!isRL)return;const r=settlement.raiders?.[key];if(!r?.cutRequest)return;wowConfirm({title:status==='resolved'?'Resolve Cut Request':'Decline Cut Request',msg:'Add a response for the raider.',confirmLabel:status==='resolved'?'Resolve':'Decline',danger:status==='declined',input:{type:'text',placeholder:'Response',maxlength:180,errorMsg:'Enter a response'},onConfirm:response=>{update(runRef(`/settlement/raiders/${key}/cutRequest`),{status,response:String(response).trim().slice(0,180),respondedAt:Date.now(),respondedBy:user});document.getElementById('cut-request-review')?.remove();toast('Cut request updated');}});}
+async function submitCutRequest(){const r=payoutCurrentRaider(),note=String(document.getElementById('cut-request-text')?.value||'').trim().slice(0,500);if(!r)return;if(!note){toast('Explain the requested change');return;}const now=Date.now(),prior=r.cutRequest||{},eventId=push(runRef(`/settlement/raiders/${r.key}/cutDisputeHistory`)).key,reopening=['resolved','declined','rejected'].includes(prior.status),writes={},event={type:reopening?'reopened':prior.submittedAt?'reply':'submitted',actorRole:'raider',actor:currentRaiderName(),note,createdAt:now,hasAttachment:!!cutRequestDraftImage,attachmentName:cutRequestDraftImage?.name||'',attachmentData:cutRequestDraftImage?.data||''};writes[`runs/${runId}/settlement/raiders/${r.key}/cutRequest`]={note,status:'pending',submittedAt:prior.submittedAt||now,updatedAt:now,hasAttachment:!!cutRequestDraftImage||!!prior.hasAttachment,discordId:accountDiscordId(),discordName:discordUser?.username||user||'',response:prior.response||''};writes[`runs/${runId}/settlement/raiders/${r.key}/cutDisputeHistory/${eventId}`]=event;if(cutRequestDraftImage)writes[`runAttachments/${runId}/cutDisputes/${r.key}/${eventId}`]=cutRequestDraftImage;try{await update(ref(db),writes);closeCutRequest();toast(reopening?'Dispute reopened':'Cut request sent');}catch(e){toast('Could not send the request');}}
+async function openCutRequestReview(key){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null,request=r?.cutRequest;if(!r||!request)return;let attachments={};try{attachments=(await get(ref(db,`runAttachments/${runId}/cutDisputes/${key}`))).val()||{};}catch(e){}const legacy=attachments.data?attachments:null,ov=document.createElement('div');ov.id='cut-request-review';ov.className='payout-review-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="payout-review-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${settlementEsc(r.name)} · Cut Dispute</div><div class="settlement-section-note">Current cut: ${settlementGold(effectiveRaiderCut(r))}</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('cut-request-review')?.remove()">Close</button></div>${cutDisputeEvents(r).length?disputeHistoryHTML(r,attachments):`<div class="cut-request-note">${settlementEsc(request.note)}</div>${legacy?.data?`<img class="payout-review-image" src="${payoutSafeImage(legacy.data)}" alt="Cut dispute screenshot" />`:''}`}<div style="display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;margin-top:.8rem;"><button class="btn btn-outline btn-sm" onclick="respondCutRequest('${key}','declined')">Reject</button><button class="btn btn-green btn-sm" onclick="respondCutRequest('${key}','resolved')">Resolve</button></div></div>`;document.body.appendChild(ov);setTimeout(()=>ov.querySelector('button')?.focus(),30);}
+function respondCutRequest(key,status){if(!isRL)return;const r=settlement.raiders?.[key];if(!r?.cutRequest)return;document.getElementById('cut-request-review')?.remove();wowConfirm({title:status==='resolved'?'Resolve Cut Request':'Reject Cut Request',msg:'Enter the reason the raider will see.',confirmLabel:status==='resolved'?'Resolve':'Reject',danger:status==='declined',input:{type:'text',placeholder:'Resolution reason',maxlength:300,errorMsg:'Enter a resolution reason'},onConfirm:response=>{const now=Date.now(),eventId=push(runRef(`/settlement/raiders/${key}/cutDisputeHistory`)).key,writes={};writes[`settlement/raiders/${key}/cutRequest/status`]=status;writes[`settlement/raiders/${key}/cutRequest/response`]=String(response).trim().slice(0,300);writes[`settlement/raiders/${key}/cutRequest/respondedAt`]=now;writes[`settlement/raiders/${key}/cutRequest/respondedBy`]=user;writes[`settlement/raiders/${key}/cutDisputeHistory/${eventId}`]={type:status==='resolved'?'resolved':'rejected',actorRole:'raid leader',actor:user,reason:String(response).trim().slice(0,300),createdAt:now};update(runRef(),writes).then(()=>toast('Dispute decision saved'));}});}
 
 function openFeedbackForm(){if(!user){return;}feedbackDraftImage=null;document.getElementById('feedback-overlay')?.remove();const ov=document.createElement('div');ov.id='feedback-overlay';ov.className='account-payment-overlay';ov.onclick=e=>{if(e.target===ov)closeFeedbackForm();};ov.innerHTML=`<div class="account-payment-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Bug or Request</div><div class="settlement-section-note">Send the report through the site. Add a screenshot when it helps.</div></div><button class="btn btn-outline btn-sm" onclick="closeFeedbackForm()">Close</button></div><div class="fg"><div class="lbl">Type</div><select id="feedback-type"><option value="bug">Bug</option><option value="request">Feature request</option><option value="other">Other</option></select></div><div class="fg" style="margin-top:.7rem;"><div class="lbl">Details</div><textarea id="feedback-text" class="account-note" maxlength="800" placeholder="What happened, or what would you like changed?"></textarea></div><div id="feedback-attach" class="payout-attach" tabindex="0" onclick="document.getElementById('feedback-file')?.click()" onpaste="handleFeedbackPaste(event)" ondragover="event.preventDefault();this.classList.add('dragging')" ondragleave="this.classList.remove('dragging')" ondrop="handleFeedbackDrop(event)">${requestAttachmentHTML(null)}</div><input id="feedback-file" type="file" accept="image/*" hidden onchange="handleFeedbackFile(this.files?.[0])" /><div style="display:flex;justify-content:flex-end;margin-top:.8rem;"><button class="btn btn-gold btn-sm" onclick="submitFeedback()">Submit</button></div></div>`;document.body.appendChild(ov);setTimeout(()=>document.getElementById('feedback-text')?.focus(),30);}
 function closeFeedbackForm(){document.getElementById('feedback-overlay')?.remove();feedbackDraftImage=null;}
@@ -3623,7 +3670,7 @@ async function openFeedbackAdmin(){if(!isRL)return;let data={};try{data=(await g
 async function openFeedbackAttachment(id){if(!isRL)return;try{const image=(await get(ref(db,`siteFeedbackAttachments/${id}`))).val();if(image?.data)openAccountImage(image.data,'Report screenshot');else toast('Screenshot not found');}catch(e){toast('Could not load screenshot');}}
 async function setFeedbackDone(id,done){if(!isRL)return;await update(ref(db,`siteFeedback/${id}`),{status:done?'done':'open',updatedAt:Date.now(),updatedBy:user});openFeedbackAdmin();}
 
-function payoutUsdcAmount(cut){return Math.round((settlementNum(cut)*Math.max(.01,settlementNum(settlement.usdcPer1000)||10)/1000)*100)/100;}
+function payoutUsdcAmount(cut,rate=runUsdRate()){return Math.round((settlementNum(cut)*Math.max(.01,settlementNum(rate)||10)/1000)*100)/100;}
 function payoutBaseDeadline(){return settlementNum(settlement.claimDeadline)||((settlementNum(settlement.payoutStartedAt)||0)+(Math.max(1,settlementNum(settlement.claimWindowHours)||48)*3600000));}
 function payoutEffectiveDeadline(r){return Math.max(payoutBaseDeadline(),settlementNum(r?.claimExtensionUntil));}
 function payoutClaimExpired(r){return !!settlement.payoutStarted&&!r?.paid&&!r?.submission?.submittedAt&&Date.now()>payoutEffectiveDeadline(r);}
@@ -3643,12 +3690,12 @@ function renderMyPayout(){
   const calc=calculateSettlementCuts(),cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),claimAmount=due||cut,s=r.submission||{},method=payoutDraftMethod||s.method||'gold',attached=payoutDraftImage?.removed?null:(payoutDraftImage||((s.imageData&&payoutSafeImage(s.imageData))?{data:s.imageData,name:s.imageName||'Auction screenshot'}:null)),expired=payoutClaimExpired(r),submitted=!!s.submittedAt,paid=payoutIsComplete(r,cut),cr=r.cutRequest||{};
   const status=paid?'Paid':payoutPaidAmount(r,cut)>0?`Additional ${settlementGold(due)} due`:submitted?(s.status==='correction'?'Correction needed':'Claim submitted'):expired?'Claim window expired':'Choose payout method',statusClass=paid?'ok':payoutPaidAmount(r,cut)>0||expired||s.status==='correction'?'due':submitted?'ok':'warn',sellerValue=payoutDraftFields.dirty?payoutDraftFields.seller:(s.seller||currentRaiderName()||''),itemValue=payoutDraftFields.dirty?payoutDraftFields.item:(s.item||''),walletValue=payoutDraftFields.dirty?payoutDraftFields.wallet:(s.walletAddress||'');
   const disabled=paid||expired,characterOptions=[...new Set([currentRaiderName(),...discordCharacters].filter(Boolean))].map(n=>`<option value="${settlementEsc(n)}"></option>`).join('');
-  if(paid){const paidGold=Math.max(0,payoutPaidAmount(r,cut)||cut),paidMethod=s.method==='usdc'?'USDC':'Gold',paidDisplay=s.method==='usdc'?`${payoutUsdcAmount(paidGold).toFixed(2)} USDC`:settlementGold(paidGold),paidSub=s.method==='usdc'?`${settlementGold(paidGold)} at the locked run rate`:'Auction House payout settled',paidDate=r.paidAt?`Paid ${new Date(r.paidAt).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}`:'Payment recorded';setTimeout(()=>celebratePaidPayoutOnce(r.key),0);return`<div class="payout-claim"><div id="payout-paid-card" class="payout-paid-card"><div class="payout-paid-seal" aria-hidden="true">GS</div><div class="payout-paid-kicker">Payout complete</div><h2 class="payout-paid-title">Your cut has arrived</h2><div class="payout-paid-amount">${paidDisplay}</div><div class="payout-paid-meta">${paidMethod} · ${paidSub} · ${paidDate}</div><div class="payout-paid-thanks">${siteCopy('payout_thank_you','Thank you for coming to a Godspeed GDKP.')}</div></div><details class="settlement-section payout-instructions"><summary style="cursor:pointer;font-family:'Cinzel',serif;color:var(--gold-light);">View cut details</summary>${cutBreakdownHTML(r,calc)}${raiderPerformanceEvidenceHTML(r)}</details></div>`;}
+  if(paid){const paidGold=Math.max(0,payoutPaidAmount(r,cut)||cut),paidMethod=s.method==='usdc'?'USDC':'Gold',paidDisplay=s.method==='usdc'?`${settlementNum(s.usdcAmount||payoutUsdcAmount(paidGold,r.paidRateUsdPer1000||s.rateUsdcPer1000)).toFixed(2)} USDC`:settlementGold(paidGold),paidSub=s.method==='usdc'?`${settlementGold(paidGold)} at the saved payment rate`:'Auction House payout settled',paidDate=r.paidAt?`Paid ${new Date(r.paidAt).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}`:'Payment recorded';setTimeout(()=>celebratePaidPayoutOnce(r.key),0);return`<div class="payout-claim"><div id="payout-paid-card" class="payout-paid-card"><div class="payout-paid-seal" aria-hidden="true">GS</div><div class="payout-paid-kicker">Payout complete</div><h2 class="payout-paid-title">Your cut has arrived</h2><div class="payout-paid-amount">${paidDisplay}</div><div class="payout-paid-meta">${paidMethod} · ${paidSub} · ${paidDate}</div><div class="payout-paid-thanks">${siteCopy('payout_thank_you','Thank you for coming to a Godspeed GDKP.')}</div></div><details class="settlement-section payout-instructions"><summary style="cursor:pointer;font-family:'Cinzel',serif;color:var(--gold-light);">View cut details</summary>${cutBreakdownHTML(r,calc)}${raiderPerformanceEvidenceHTML(r)}${disputeHistoryHTML(r)}</details><div style="display:flex;justify-content:center;"><button class="btn btn-outline btn-sm" onclick="openCutRequest()">Dispute Cut</button></div></div>`;}
   return`<div class="payout-claim"><div class="settlement-section"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${siteCopy('my_payout_title','My Payout')}</div><div class="settlement-section-note">${siteCopy('my_payout_intro','Choose Gold or USDC and submit your claim within 48 hours.')}</div></div><span class="settlement-status ${statusClass}">${status}</span></div>
     <div class="payout-countdown"><span class="settlement-muted">Claim deadline · ${new Date(payoutEffectiveDeadline(r)).toLocaleString()}</span><span id="payout-claim-countdown" class="settlement-status ${submitted?'ok':expired?'due':'warn'}">${submitted?'Claim secured':formatClaimRemaining(payoutEffectiveDeadline(r)-Date.now())}</span></div>
     <div class="payout-form-stack"><div class="payout-methods"><button class="btn ${method==='gold'?'btn-gold':'btn-outline'} btn-sm" onclick="setPayoutMethod('gold')" ${paid?'disabled':''}>Gold</button><button class="btn ${method==='usdc'?'btn-gold':'btn-outline'} btn-sm" onclick="setPayoutMethod('usdc')" ${paid?'disabled':''}>USDC</button></div>
-    <div class="payout-amount"><div class="settlement-stat-lbl">${method==='gold'?'Gold Payout':'USDC Payout · Ethereum'}</div><strong>${method==='gold'?settlementGold(claimAmount):`${settlementGold(claimAmount)} = ${payoutUsdcAmount(claimAmount).toFixed(2)} USDC`}</strong><div class="settlement-stat-sub">${due&&due!==cut?`Additional amount due after ${settlementGold(payoutPaidAmount(r,cut))} already paid.`:method==='gold'?'List one separate tradeable item for this exact cut. The 5% AH fee is deducted from your proceeds.':`Locked rate: 1,000g = ${settlementNum(settlement.usdcPer1000)||10} USDC`}</div></div>
-    <div><div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;"><div class="settlement-section-title" style="font-size:.78rem;">Cut Details</div>${paid?'':`<button class="btn btn-outline btn-sm" onclick="openCutRequest()">${cr.submittedAt?'Update Dispute':'Dispute Cut'}</button>`}</div>${cutBreakdownHTML(r,calc)}${raiderPerformanceEvidenceHTML(r)}${cr.submittedAt?`<div class="cut-request-note"><span class="settlement-status ${cr.status==='resolved'?'ok':cr.status==='declined'?'due':'warn'}">Dispute · ${accountStatusLabel(cr.status||'pending')}</span><div style="margin-top:.4rem;white-space:pre-wrap;">${settlementEsc(cr.note||'')}</div>${cr.response?`<div class="settlement-muted" style="margin-top:.45rem;">Raid leader: ${settlementEsc(cr.response)}</div>`:''}</div>`:''}</div>
+    <div class="payout-amount"><div class="settlement-stat-lbl">${method==='gold'?'Gold Payout':'USDC Payout · Ethereum'}</div><strong>${method==='gold'?settlementGold(claimAmount):`${settlementGold(claimAmount)} = ${payoutUsdcAmount(claimAmount).toFixed(2)} USDC`}</strong><div class="settlement-stat-sub">${due&&due!==cut?`Additional amount due after ${settlementGold(payoutPaidAmount(r,cut))} already paid.`:method==='gold'?'List one separate tradeable item for this exact cut. The 5% AH fee is deducted from your proceeds.':`Locked rate: 1,000g = ${usdText(runUsdRate())}`}</div></div>
+    <div><div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;"><div class="settlement-section-title" style="font-size:.78rem;">Cut Details</div>${paid?'':`<button class="btn btn-outline btn-sm" onclick="openCutRequest()">${['resolved','declined','rejected'].includes(cr.status)?'Reply and Reopen':cr.submittedAt?'Add Reply':'Dispute Cut'}</button>`}</div>${cutBreakdownHTML(r,calc)}${raiderPerformanceEvidenceHTML(r)}${cr.submittedAt?`<div class="cut-request-note"><span class="settlement-status ${cr.status==='resolved'?'ok':cr.status==='declined'?'due':'warn'}">Dispute · ${accountStatusLabel(cr.status||'pending')}</span><div style="margin-top:.4rem;white-space:pre-wrap;">${settlementEsc(cr.note||'')}</div>${cr.response?`<div class="settlement-muted" style="margin-top:.45rem;">Raid leader: ${settlementEsc(cr.response)}</div>`:''}</div>${disputeHistoryHTML(r)}`:''}</div>
     ${s.status==='correction'&&!paid?`<div class="payout-status-line" style="border-color:rgba(255,96,96,.35);"><div><div class="settlement-status due">Correction needed</div><div style="font-size:.72rem;color:var(--text);margin-top:.35rem;">${settlementEsc(s.correctionNote||'Please update the claim details.')}</div></div></div>`:''}
     ${method==='gold'?`<div class="payout-section-block"><div class="payout-claim-grid"><div class="fg"><div class="lbl">Seller character *</div><input id="payout-seller" type="text" maxlength="24" list="payout-character-list" value="${settlementEsc(sellerValue)}" placeholder="Character listing the item" oninput="rememberPayoutFields()" ${disabled?'disabled':''} /><datalist id="payout-character-list">${characterOptions}</datalist></div><div class="fg"><div class="lbl">Item name *</div><input id="payout-item" type="text" maxlength="60" value="${settlementEsc(itemValue)}" placeholder="Item listed on the Auction House" oninput="rememberPayoutFields()" ${disabled?'disabled':''} /></div></div></div><div class="payout-section-block"><div class="lbl">Auction screenshot *</div><div id="payout-attach" class="payout-attach" tabindex="${disabled?'-1':'0'}" ${disabled?'':`onclick="document.getElementById('payout-file-input')?.click()" onpaste="handlePayoutPaste(event)" ondragover="handlePayoutDrag(event,true)" ondragleave="handlePayoutDrag(event,false)" ondrop="handlePayoutDrop(event)"`}>${payoutAttachmentMarkup(attached,disabled)}</div><input id="payout-file-input" type="file" accept="image/*" hidden onchange="handlePayoutFile(this.files?.[0])" ${disabled?'disabled':''} /></div>`:`<div class="payout-section-block"><div class="fg"><div class="lbl">Ethereum wallet address *</div><input id="payout-wallet" type="text" maxlength="42" value="${settlementEsc(walletValue)}" placeholder="0x..." autocomplete="off" spellcheck="false" oninput="rememberPayoutFields()" ${disabled?'disabled':''} /><div class="settlement-muted">USDC will only be sent over the Ethereum network. Check the address carefully.</div></div></div>`}
     <details class="payout-instructions payout-rules"><summary>${siteCopy('payout_rules_title','Payout Rules')}</summary><ol>${method==='gold'?`<li>${siteCopy('payout_gold_deadline','Submit within 48 hours.')}</li><li>${siteCopy('payout_gold_item','List a separate tradeable item for the exact payout amount shown above.')}</li><li>${siteCopy('payout_gold_relist','Do not relist an item you bought in this raid.')}</li><li>${siteCopy('payout_gold_fee','You absorb the 5% Auction House fee.')}</li><li>${siteCopy('payout_gold_active','Keep the listing active until purchased.')}</li>`:`<li>${siteCopy('payout_usdc_deadline','Submit within 48 hours.')}</li><li>${siteCopy('payout_usdc_network','USDC is sent only on Ethereum.')}</li><li>${siteCopy('payout_usdc_wallet','Verify the wallet address before submitting.')}</li><li>${siteCopy('payout_usdc_rate','The locked run rate is final for this payout.')}</li>`}</ol></details>
@@ -3684,11 +3731,11 @@ function openPayoutImage(key=''){
 }
 async function submitPayoutListing(){
   const r=payoutCurrentRaider();if(!r||!settlement.payoutStarted||payoutIsComplete(r)||payoutClaimExpired(r))return;const previous=r.submission||{},method=payoutDraftMethod||previous.method||'gold',now=Date.now(),cut=effectiveRaiderCut(r),claimGoldAmount=payoutStillDue(r,cut)||cut,base={method,claimGoldAmount,status:'submitted',submittedAt:previous.submittedAt||now,updatedAt:now,discordId:String(discordUser?.id||''),discordName:discordUser?.username||user||'',character:r.name,correctionNote:''};let submission;
-  if(method==='usdc'){const wallet=String(document.getElementById('payout-wallet')?.value||'').trim();if(!validEthAddress(wallet)){toast('Enter a valid Ethereum wallet address');document.getElementById('payout-wallet')?.focus();return;}submission={...base,walletAddress:wallet,network:'Ethereum',usdcAmount:payoutUsdcAmount(claimGoldAmount),rateUsdcPer1000:settlementNum(settlement.usdcPer1000)||10};}
+  if(method==='usdc'){const wallet=String(document.getElementById('payout-wallet')?.value||'').trim();if(!validEthAddress(wallet)){toast('Enter a valid Ethereum wallet address');document.getElementById('payout-wallet')?.focus();return;}submission={...base,walletAddress:wallet,network:'Ethereum',usdcAmount:payoutUsdcAmount(claimGoldAmount),rateUsdcPer1000:runUsdRate()};}
   else{const seller=sanitizeNick(document.getElementById('payout-seller')?.value||''),item=String(document.getElementById('payout-item')?.value||'').trim().slice(0,60),image=payoutDraftImage?.removed?null:(payoutDraftImage||((previous.imageData&&payoutSafeImage(previous.imageData))?{data:previous.imageData,name:previous.imageName||'Auction screenshot',bytes:previous.imageBytes||0}:null));if(!seller){toast('Enter the seller character');document.getElementById('payout-seller')?.focus();return;}if(!item){toast('Enter the item name');document.getElementById('payout-item')?.focus();return;}const itemIdentity=item.toLowerCase().replace(/[^a-z0-9]/g,'');if(auctionList().some(a=>a.status==='sold'&&attendanceCharacterIdentity(settlementWinner(a))===attendanceCharacterIdentity(r.name)&&String(a.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')===itemIdentity)){toast('Use a separate item, not an item you bought in this raid');document.getElementById('payout-item')?.focus();return;}if(!image?.data){toast('Paste or attach the auction screenshot');document.getElementById('payout-attach')?.focus();return;}submission={...base,seller,item,imageData:image.data,imageName:image.name||'auction-screenshot.jpg',imageBytes:image.bytes||Math.round(image.data.length*.75)};}
   try{await set(runRef(`/settlement/raiders/${r.key}/submission`),submission);payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';auditLog('payout_claim_submitted',{raider:r.name,method});toast(previous.submittedAt?'Claim updated':'Claim submitted');}catch(error){toast('Could not save the claim');}
 }
-function payoutStatusLabel(r,calc=calculateSettlementCuts()){const cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),paid=payoutPaidAmount(r,cut),s=r.submission||{};if(payoutIsComplete(r,cut))return['Paid','ok'];if(paid>0&&due>0)return[`Additional ${settlementGold(due)} due`,'due'];if(s.status==='correction')return['Correction needed','due'];if(s.submittedAt)return[s.method==='usdc'?'USDC ready':'Purchase ready','warn'];if(payoutClaimExpired(r))return['Claim expired','due'];return['Not submitted','warn'];}
+function payoutStatusLabel(r,calc=calculateSettlementCuts()){const cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),paid=payoutPaidAmount(r,cut),s=r.submission||{};if(payoutIsComplete(r,cut))return['Paid','ok'];if(paid>0&&due>0)return[`Additional ${settlementGold(due)} due`,'due'];if(s.status==='correction')return['Correction needed','due'];if(s.submittedAt)return[s.method==='usdc'?'USDC ready':'Purchase ready','ready'];if(payoutClaimExpired(r))return['Claim expired','due'];return['Not submitted','warn'];}
 let payoutQueueFilter='all',payoutQueueSearch='',payoutQueueRun=null;
 const PAYOUT_QUEUE_FILTERS=[['all','All'],['ready','Ready to pay'],['correction','Needs correction'],['unclaimed','No claim'],['dispute','Disputes'],['paid','Paid']];
 function payoutQueueCategory(r,calc){
@@ -3715,7 +3762,7 @@ function renderPayoutSubmissionQueue(raiders,calc){
     const s=r.submission||{},cr=r.cutRequest||{},cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),complete=payoutIsComplete(r,cut),status=cr.status==='pending'?['Dispute pending','due']:payoutStatusLabel(r,calc),src=payoutSafeImage(s.imageData),method=s.method||'';
     const destination=method==='usdc'?`<div>Ethereum</div><div class="payout-destination">${settlementEsc(s.walletAddress||'No address')}</div>${s.walletAddress?`<button class="mutator-mini" onclick="copyPayoutAddress('${r.key}')">Copy Address</button>`:''}`:s.seller?`<div>${settlementEsc(s.seller)}</div><div>${settlementEsc(s.item||'')}</div>`:'Waiting for claim';
     const amount=method==='usdc'?payoutUsdcAmount(complete?cut:due).toFixed(2)+' USDC':settlementGold(complete?cut:due);
-    const options=[src?'<option value="review">Review Screenshot</option>':'',s.submittedAt&&!complete?'<option value="correction">Request Correction</option>':'','<option value="modify">Modify Cut</option>',cr.submittedAt?'<option value="dispute">Review Dispute</option>':'',payoutClaimExpired(r)?'<option value="reopen">Reopen 24h</option>':''].filter(Boolean).join('');
+    const options=[src?'<option value="review">Review Screenshot</option>':'',s.submittedAt&&!complete?'<option value="correction">Request Correction</option>':'','<option value="modify">Modify Cut</option>',cr.submittedAt?'<option value="dispute">Review Dispute</option>':'',complete?'<option value="reopenCut">Reopen Cut</option>':'',payoutClaimExpired(r)?'<option value="reopen">Reopen 24h</option>':''].filter(Boolean).join('');
     return `<tr><td class="payout-person"><strong>${settlementEsc(displayName(r.name)||r.name)}</strong><button class="mutator-mini" onclick="openPayoutHistory('${r.key}')">Payout history</button></td><td class="payout-value"><strong>${amount}</strong><div class="settlement-muted">${method==='usdc'?'USDC':method==='gold'?'Gold':'Method not chosen'}${!complete?' · Remaining':''}</div></td><td class="payout-state"><span class="settlement-status ${status[1]}">${status[0]}</span></td><td class="payout-detail"><details><summary>Destination &amp; proof</summary><div class="payout-detail-body">${destination}${src?`<button class="payout-proof-button" onclick="openPayoutImage('${r.key}')"><img class="payout-thumb" src="${src}" alt="Screenshot from ${settlementEsc(r.name)}" /></button>`:'<div class="settlement-muted">No screenshot</div>'}${s.correctionNote&&s.status==='correction'?`<div>${settlementEsc(s.correctionNote)}</div>`:''}</div></details></td><td class="payout-controls"><div class="payout-actions"><label><input type="checkbox" ${complete?'checked':''} onchange="setPayoutPaid('${r.key}',this.checked)" /> Paid</label><select class="payout-action-select" aria-label="Actions for ${settlementEsc(r.name)}" onchange="runPayoutAction('${r.key}',this.value);this.value='';"><option value="">Actions...</option>${options}</select></div></td></tr>`;
   }).join('');
   return `<div class="settlement-section" id="payout-queue"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${siteCopy('payout_queue_title','Payout Queue')}</div><div class="settlement-section-note">${counts.ready} ready to pay · ${raiders.filter(r=>!payoutIsComplete(r,effectiveRaiderCut(r,calc))).length} unpaid. Paid can be checked without reviewing a claim.</div></div></div><div class="payout-queue-filters" role="group" aria-label="Filter payout status">${PAYOUT_QUEUE_FILTERS.map(([id,label])=>`<button class="btn btn-sm ${payoutQueueFilter===id?'btn-gold':'btn-neutral'}" aria-pressed="${payoutQueueFilter===id}" onclick="setPayoutQueueFilter('${id}')">${label} (${counts[id]})</button>`).join('')}</div><label class="payout-search-label" for="payout-queue-search">Find character</label><input id="payout-queue-search" type="text" value="${settlementEsc(payoutQueueSearch)}" placeholder="Character name" oninput="setPayoutQueueSearch(this.value)" /><div class="settlement-muted" aria-live="polite">${ordered.length} of ${raiders.length} raiders shown</div><div class="payout-queue-table-wrap" data-scroll-key="payout-submissions"><table class="settlement-table payout-submission-table"><thead><tr><th>Raider</th><th>Amount</th><th>Status</th><th>Details</th><th>Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="settlement-empty">No raiders match this view.</td></tr>'}</tbody></table></div></div>`;
@@ -3730,7 +3777,7 @@ function openPayoutHistory(key){
   ov.dataset.raiderKey=key;ov.dataset.runId=runId;document.body.appendChild(ov);ov.querySelector('button')?.focus({preventScroll:true});
 }
 function closePayoutHistory(){document.getElementById('payout-history-overlay')?.remove();}
-function runPayoutAction(key,action){if(!action)return;if(action==='review')openPayoutReview(key);else if(action==='correction')requestPayoutCorrection(key);else if(action==='modify')openCutAdjustment(key);else if(action==='dispute')openCutRequestReview(key);else if(action==='reopen')reopenPayoutClaim(key);}
+function runPayoutAction(key,action){if(!action)return;if(action==='review')openPayoutReview(key);else if(action==='correction')requestPayoutCorrection(key);else if(action==='modify')openCutAdjustment(key);else if(action==='dispute')openCutRequestReview(key);else if(action==='reopen')reopenPayoutClaim(key);else if(action==='reopenCut')reopenPaidCut(key);}
 function closePayoutReview(){document.getElementById('payout-review-overlay')?.remove();document.getElementById('payout-image-overlay')?.remove();}
 function openPayoutReview(key){
   if(!isRL)return;const r=settlement.raiders?.[key],s=r?.submission||{},src=payoutSafeImage(s.imageData);if(!r||!src)return;const calc=calculateSettlementCuts(),cut=effectiveRaiderCut({key,...r},calc),due=payoutStillDue(r,cut),complete=payoutIsComplete(r,cut),ov=document.createElement('div');ov.className='payout-review-overlay';ov.id='payout-review-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="payout-review-card"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${settlementEsc(r.name)}'s Payout Listing</div><div class="settlement-section-note">Seller: ${settlementEsc(s.seller||'Unknown')} · Item: ${settlementEsc(s.item||'Unknown')} · Amount due: ${settlementGold(due||cut)}</div></div><button class="btn btn-outline btn-sm" onclick="closePayoutReview()">Close</button></div><img class="payout-review-image" src="${src}" alt="Auction listing screenshot from ${settlementEsc(r.name)}" /><div style="display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="requestPayoutCorrection('${key}')" ${!s.submittedAt||complete?'disabled':''}>Needs Correction</button><button class="btn btn-green btn-sm" onclick="setPayoutPaid('${key}',true);closePayoutReview()" ${complete?'disabled':''}>Mark Paid</button></div></div>`;document.body.appendChild(ov);
@@ -3743,7 +3790,8 @@ function addRaiderBonus(key){openCutAdjustment(key);}
 function submitRaiderBonus(key){submitCutAdjustment(key);}
 async function submitCutAdjustment(key,id=''){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null,amount=settlementNum(document.getElementById('run-bonus-amount')?.value),reason=String(document.getElementById('run-bonus-note')?.value||'').trim().slice(0,80);if(!r)return;if(!amount){toast('Enter a non-zero gold adjustment');return;}if(!reason){toast('Add a reason');document.getElementById('run-bonus-note')?.focus();return;}const adjustmentId=id||push(runRef(`/settlement/raiders/${key}/cutAdjustments`)).key,prior=id?r.cutAdjustments?.[id]:null,now=Date.now(),writes={};writes[`settlement/raiders/${key}/cutAdjustments/${adjustmentId}`]={...(prior||{}),amount,reason,createdAt:prior?.createdAt||now,createdBy:prior?.createdBy||user,updatedAt:now,updatedBy:user};if(r.submission?.submittedAt&&!payoutIsComplete(r)){writes[`settlement/raiders/${key}/submission/status`]='correction';writes[`settlement/raiders/${key}/submission/correctionNote`]='Your cut changed. Review the new amount and resubmit your payout claim.';}await update(runRef(),writes);document.getElementById('run-bonus-overlay')?.remove();auditLog(id?'cut_adjustment_updated':'cut_adjustment_added',{raider:r.name,amount,reason});toast(`${r.name}'s cut adjusted by ${amount>0?'+':''}${settlementGold(amount)}`);}
 function reverseCutAdjustment(key,id){if(!isRL)return;const raw=settlement.raiders?.[key],a=raw?.cutAdjustments?.[id];if(!raw||!a||a.reversedAt)return;wowConfirm({title:'Reverse Adjustment?',msg:`Remove ${a.amount>0?'+':''}${settlementGold(a.amount)} for ${settlementEsc(raw.name)} from the active cut? The history will remain.`,confirmLabel:'Reverse',danger:true,onConfirm:async()=>{await update(runRef(`/settlement/raiders/${key}/cutAdjustments/${id}`),{reversedAt:Date.now(),reversedBy:user});document.getElementById('run-bonus-overlay')?.remove();auditLog('cut_adjustment_reversed',{raider:raw.name,amount:a.amount,reason:a.reason||''});toast('Cut adjustment reversed');}});}
-function setPayoutPaid(key,paid){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null;if(!r)return;const cut=effectiveRaiderCut(r),writes={};writes[`settlement/raiders/${key}/paid`]=!!paid;writes[`settlement/raiders/${key}/paidAmount`]=paid?cut:0;writes[`settlement/raiders/${key}/paidAt`]=paid?Date.now():null;writes[`settlement/raiders/${key}/paidBy`]=paid?user:null;if(r.submission?.submittedAt)writes[`settlement/raiders/${key}/submission/status`]=paid?'paid':'submitted';auctionList().filter(a=>a.status==='sold'&&attendanceCharacterIdentity(settlementWinner(a))===attendanceCharacterIdentity(r.name)).forEach(a=>{writes[`auctions/${a.id}/paid`]=!!paid;writes[`settlement/payments/${a.id}/settled`]=!!paid;});update(runRef(),writes).then(()=>toast(paid?`${r.name} paid at ${settlementGold(cut)}; linked items checked`:`${r.name}'s payout and item checks cleared`));}
+function setPayoutPaid(key,paid){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null;if(!r)return;if(!paid&&r.paid){reopenPaidCut(key);return;}if(!paid)return;const cut=effectiveRaiderCut(r),now=Date.now(),eventId=push(runRef(`/settlement/raiders/${key}/payoutEvents`)).key,writes={},snapshot={type:'paid',amount:cut,method:r.submission?.method||'manual',rateUsdPer1000:runUsdRate(),usdcAmount:r.submission?.method==='usdc'?payoutUsdcAmount(cut):0,createdAt:now,createdBy:user};writes[`settlement/raiders/${key}/paid`]=true;writes[`settlement/raiders/${key}/paidAmount`]=cut;writes[`settlement/raiders/${key}/paidAt`]=now;writes[`settlement/raiders/${key}/paidBy`]=user;writes[`settlement/raiders/${key}/paidRateUsdPer1000`]=runUsdRate();writes[`settlement/raiders/${key}/payoutEvents/${eventId}`]=snapshot;if(r.submission?.submittedAt)writes[`settlement/raiders/${key}/submission/status`]='paid';auctionList().filter(a=>a.status==='sold'&&attendanceCharacterIdentity(settlementWinner(a))===attendanceCharacterIdentity(r.name)).forEach(a=>{writes[`auctions/${a.id}/paid`]=true;writes[`settlement/payments/${a.id}/settled`]=true;});update(runRef(),writes).then(()=>toast(`${r.name} paid at ${settlementGold(cut)}; linked items checked`));}
+function reopenPaidCut(key){if(!isRL)return;const raw=settlement.raiders?.[key],r=raw?{key,...raw}:null;if(!r?.paid)return;const cut=effectiveRaiderCut(r),now=Date.now();wowConfirm({title:'Reopen Paid Cut?',msg:`Return ${settlementEsc(r.name)} to the unpaid queue at the unchanged cut of ${settlementGold(cut)}. The prior payment remains in audit history.`,confirmLabel:'Reopen Cut',danger:true,onConfirm:()=>{const eventId=push(runRef(`/settlement/raiders/${key}/payoutEvents`)).key,writes={};writes[`settlement/raiders/${key}/payoutEvents/${eventId}`]={type:'reopened',amount:cut,priorPaidAt:r.paidAt||null,priorPaidBy:r.paidBy||null,priorMethod:r.submission?.method||'manual',createdAt:now,createdBy:user};writes[`settlement/raiders/${key}/paid`]=false;writes[`settlement/raiders/${key}/paidAmount`]=0;writes[`settlement/raiders/${key}/paidAt`]=null;writes[`settlement/raiders/${key}/paidBy`]=null;if(r.submission?.submittedAt)writes[`settlement/raiders/${key}/submission/status`]='submitted';auctionList().filter(a=>a.status==='sold'&&attendanceCharacterIdentity(settlementWinner(a))===attendanceCharacterIdentity(r.name)).forEach(a=>{writes[`auctions/${a.id}/paid`]=false;writes[`settlement/payments/${a.id}/settled`]=false;});update(runRef(),writes).then(()=>toast(`${r.name}'s cut reopened without recalculation`));}});}
 function performanceMetricName(metric){return metric==='healing'?'Healing Done':metric==='taken'?'Damage Taken':'Damage Done';}
 function performanceFormatValue(value){value=settlementNum(value);if(value>=1e9)return(value/1e9).toFixed(value>=1e10?1:2).replace(/\.0+$/,'')+'b';if(value>=1e6)return(value/1e6).toFixed(value>=1e7?1:2).replace(/\.0+$/,'')+'m';if(value>=1e3)return(value/1e3).toFixed(value>=1e4?1:2).replace(/\.0+$/,'')+'k';return Math.round(value).toLocaleString();}
 function performanceParseValue(token){const raw=String(token||'').toLowerCase().replace(/,/g,'').replace(/\s/g,''),match=raw.match(/(\d+(?:\.\d+)?)([kmb])?/);if(!match)return 0;const mult=match[2]==='b'?1e9:match[2]==='m'?1e6:match[2]==='k'?1e3:1;return Number(match[1])*mult;}
@@ -3828,19 +3876,21 @@ function rememberSettlementSetup(open,details){settlementSetupOpen=!!open;localS
 function settlementSetupLocked(){return !!settlement.payoutStarted&&!settlement.setupUnlocked;}
 function renderSettlement(){
   const sold=auctionList().filter(a=>a.status==='sold').sort((a,b)=>(b.currentBid||0)-(a.currentBid||0)),collections=calculateSettlementCollections(),calc=calculateSettlementCuts(),remaining=Math.max(0,Math.round((collections.credited-collections.collected)*100)/100),locked=settlementSetupLocked(),payoutTrackingStarted=!!settlement.cutsLockedAt||!!settlement.payoutStarted,duplicateCount=findSettlementDuplicateIds().length;
+  const purchaseGroups=settlementPurchaseGroups(),pendingPurchasers=Math.max(0,purchaseGroups.length-collections.settled),purchaseRows=purchaseGroups.map(group=>{const record=purchasePaymentRecord(group),c=calculatePurchasePayment(group,record),method=c.mode==='gold'?'Gold':c.mode==='split'?`${c.usdMethod==='usdc'?'USDC':'USD'} + Gold`:c.usdMethod==='usdc'?'USDC':'USD';return`<div class="purchase-collection-card"><div class="purchase-person"><strong>${settlementEsc(displayName(group.name)||group.name)}</strong><div class="purchase-items">${group.items.map(a=>`${settlementEsc(a.name)} · ${settlementGold(a.currentBid)}`).join('<br>')}</div></div><div><div class="lbl">Preference</div>${String(record.preference||'usd').toUpperCase()}</div><div><div class="lbl">Method</div>${method}</div><div><div class="lbl">Original USD</div>${usdText(c.originalUsd)}</div><div><div class="lbl">USDC Discount</div>${usdText(c.usdcDiscount)}</div><div><div class="lbl">Final Due</div>${c.mode==='gold'?settlementGold(c.goldPortion):`${c.usdMethod==='usdc'?c.amountDue.toLocaleString()+' USDC':usdText(c.amountDue)}${c.goldPortion?` + ${settlementGold(c.goldPortion)}`:''}`}</div><div><div class="lbl">Pot Credit</div>${settlementGold(c.goldCredited)}</div><div class="purchase-actions"><span class="settlement-status ${c.received?'ok':'warn'}">${c.received?'Received':'Pending'}</span><button class="btn btn-outline btn-sm" onclick="openPurchasePaymentDialog('${group.key}')" ${c.received?'disabled':''}>Change / Split</button>${!c.received?`<button class="btn btn-green btn-sm" onclick="markPurchaseReceived('${group.key}')">Mark Received</button>`:''}</div></div>`;}).join('');
   const paymentRows=sold.map(a=>{const p=settlementPaymentFor(a),c=calculatePayment(a),winner=displayName(settlementWinner(a))||'Unknown',method=p.method||'gold',done=!!a.paid||!!p.settled;let details='';if(method==='gold')details=`<span class="settlement-muted">5% fee calculated automatically</span>`;else if(method==='usd')details=`<label class="settlement-muted">USD received <input type="number" min="0" step=".01" value="${c.usd||''}" placeholder="$0" onchange="savePaymentField('${a.id}','usdReceived',this.value)" style="width:95px;margin-left:.3rem;" /></label>`;else if(method==='split')details=`<label class="settlement-muted">AH gold <input type="number" min="0" max="${c.price}" step=".01" value="${c.gross||''}" placeholder="0g" onchange="savePaymentField('${a.id}','ahGross',this.value)" style="width:90px;margin-left:.3rem;" /></label><label class="settlement-muted" style="margin-left:.4rem;">USD <input type="number" min="0" step=".01" value="${c.usd||''}" placeholder="$0" onchange="savePaymentField('${a.id}','usdReceived',this.value)" style="width:85px;margin-left:.25rem;" /></label>`;else details=`<span class="settlement-muted">Gold supplied by raid leader</span>`;return`<tr>
     <td><div class="item-name ${a.quality||'common'}">${settlementEsc(a.name)}</div><div class="settlement-muted">${settlementEsc(winner)}</div></td><td class="settlement-money">${settlementGold(c.price)}</td>
     <td><select onchange="savePaymentField('${a.id}','method',this.value)"><option value="gold" ${method==='gold'?'selected':''}>AH Gold</option><option value="usd" ${method==='usd'?'selected':''}>USD</option><option value="split" ${method==='split'?'selected':''}>Split</option><option value="covered" ${method==='covered'?'selected':''}>Covered</option></select><div style="margin-top:.3rem;">${details}</div></td><td class="settlement-money">${settlementGold(c.credited)}</td><td><span class="settlement-status ${done?'ok':'warn'}">${done?'Paid':'Unpaid'}</span></td></tr>`;}).join('');
   const mutators=sortedSettlementMutators();
   const mutatorCards=mutators.map(([id,m])=>`<div class="mutator-card" ondragover="event.preventDefault();event.dataTransfer.dropEffect='move'" ondrop="dropSettlementMutator(event,'${id}')"><span class="mutator-drag-handle" draggable="${locked?'false':'true'}" ondragstart="startSettlementMutatorDrag(event,'${id}')" ondragend="endSettlementMutatorDrag()" title="Drag to reorder columns">&#8942;&#8942;</span><div class="mutator-card-info"><input type="text" value="${settlementEsc(m.name||'Mutator')}" ${locked?'disabled':''} onchange="saveSettlementMutatorField('${id}','name',this.value)" aria-label="Mutator name" /><div class="mutator-card-rule">Applied only to checked raiders</div></div><div class="fg"><div class="lbl">%</div><input type="number" step=".01" value="${settlementNum(m.percentage)}" ${locked?'disabled':''} onchange="saveSettlementMutatorField('${id}','percentage',this.value)" style="width:70px;" /></div><div class="fg"><div class="lbl">Gold</div><input type="number" step="1" value="${settlementNum(m.flat)}" ${locked?'disabled':''} onchange="saveSettlementMutatorField('${id}','flat',this.value)" style="width:80px;" /></div><button class="mutator-mini" onclick="removeSettlementMutator('${id}')" ${locked?'disabled':''}>Remove</button></div>`).join('');
-  const raiders=settlementRaiders();
-  const raiderRows=raiders.map(r=>{const cut=effectiveRaiderCut(r,calc),mutatorChecks=mutators.map(([id,m])=>`<td class="settlement-mutator-col"><input type="checkbox" ${(r.mutators||{})[id]?'checked':''} ${locked?'disabled':''} onchange="toggleRaiderMutator('${r.key}','${id}',this.checked)" aria-label="Apply ${settlementEsc(m.name)} to ${settlementEsc(r.name)}" /></td>`).join('');return`<tr><td><button class="mutator-mini" onclick="removeSettlementRaider('${r.key}')" ${locked?'disabled':''} aria-label="Remove ${settlementEsc(r.name)}">&#10005;</button></td><td class="settlement-money">${settlementEsc(displayName(r.name)||r.name)}</td><td style="text-align:center;"><input type="checkbox" ${r.base!==false?'checked':''} ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','base',this.checked)" /></td>${mutatorChecks}<td><input type="number" step="1" value="${settlementNum(r.adjustGold)||''}" placeholder="0" ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','adjustGold',this.value)" /></td><td><input type="number" step="1" value="${settlementNum(r.adjustPct)||''}" placeholder="0" ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','adjustPct',this.value)" /></td><td class="settlement-money">${settlementGold(cut)}${locked&&cutAdjustmentTotal(r)?`<div class="settlement-muted">${cutAdjustmentTotal(r)>0?'+':''}${settlementGold(cutAdjustmentTotal(r))} adjusted</div>`:''}</td></tr>`;}).join('');
+  const raiders=settlementRaiders(),showFinalCuts=payoutTrackingStarted;
+  const raiderRows=raiders.map(r=>{const cut=effectiveRaiderCut(r,calc),mutatorChecks=mutators.map(([id,m])=>`<td class="settlement-mutator-col"><input type="checkbox" ${(r.mutators||{})[id]?'checked':''} ${locked?'disabled':''} onchange="toggleRaiderMutator('${r.key}','${id}',this.checked)" aria-label="Apply ${settlementEsc(m.name)} to ${settlementEsc(r.name)}" /></td>`).join('');return`<tr><td><button class="mutator-mini" onclick="removeSettlementRaider('${r.key}')" ${locked?'disabled':''} aria-label="Remove ${settlementEsc(r.name)}">&#10005;</button></td><td class="settlement-money">${settlementEsc(displayName(r.name)||r.name)}</td><td style="text-align:center;"><input type="checkbox" ${r.base!==false?'checked':''} ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','base',this.checked)" /></td>${mutatorChecks}<td><input type="number" step="1" value="${settlementNum(r.adjustGold)||''}" placeholder="0" ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','adjustGold',this.value)" /></td><td><input type="number" step="1" value="${settlementNum(r.adjustPct)||''}" placeholder="0" ${locked?'disabled':''} onchange="saveRaiderField('${r.key}','adjustPct',this.value)" /></td><td class="settlement-money">${showFinalCuts?settlementGold(cut):'<span class="settlement-muted">Pending lock</span>'}${showFinalCuts&&cutAdjustmentTotal(r)?`<div class="settlement-muted">${cutAdjustmentTotal(r)>0?'+':''}${settlementGold(cutAdjustmentTotal(r))} adjusted</div>`:''}</td></tr>`;}).join('');
   const mutatorHeaders=mutators.map(([id,m])=>`<th class="settlement-mutator-col" title="Drag to reorder: ${settlementEsc(m.name)}" draggable="${locked?'false':'true'}" ondragstart="startSettlementMutatorDrag(event,'${id}')" ondragover="event.preventDefault();event.dataTransfer.dropEffect='move'" ondrop="dropSettlementMutator(event,'${id}')" ondragend="endSettlementMutatorDrag()"><div class="raider-mutator-head"><span>${settlementEsc(m.name)}</span></div></th>`).join(''),mutatorCols=mutators.map(()=>'<col style="width:68px;" />').join(''),raiderTableMinWidth=Math.max(900,752+(mutators.length*68)),effectiveTotal=raiders.reduce((s,r)=>s+effectiveRaiderCut(r,calc),0),paidCount=raiders.filter(r=>payoutIsComplete(r,effectiveRaiderCut(r,calc))).length,paidTotal=raiders.reduce((s,r)=>s+Math.min(payoutPaidAmount(r,effectiveRaiderCut(r,calc)),effectiveRaiderCut(r,calc)),0),unpaidTotal=raiders.reduce((s,r)=>s+payoutStillDue(r,effectiveRaiderCut(r,calc)),0),distributionBalance=(payoutTrackingStarted&&Number.isFinite(Number(settlement.lockedDistributable))?Number(settlement.lockedDistributable):calc.distributable)-effectiveTotal,payoutQueue=(payoutTrackingStarted||raiders.some(r=>r.submission?.submittedAt))?renderPayoutSubmissionQueue(raiders,calc):'';
   return`<div class="settlement-wrap">
-    <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Gross Sold</div><div class="settlement-stat-val">${settlementGold(collections.sold)}</div><div class="settlement-stat-sub">${sold.length} sold item${sold.length===1?'':'s'}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">AH Fees</div><div class="settlement-stat-val settlement-negative">${settlementGold(collections.fee)}</div><div class="settlement-stat-sub">${settlementNum(settlement.ahFeePct)}% of AH-paid gold</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Expected Net Pot</div><div class="settlement-stat-val">${settlementGold(collections.credited)}</div><div class="settlement-stat-sub">Used for management and cuts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Unpaid Purchases</div><div class="settlement-stat-val ${remaining<.01?'settlement-positive':'settlement-negative'}">${settlementGold(remaining)}</div><div class="settlement-stat-sub">${collections.settled} of ${sold.length} marked paid</div></div></div>
+    <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Gross Sold</div><div class="settlement-stat-val">${displayMoney(collections.sold)}</div><div class="settlement-stat-sub">${sold.length} sold item${sold.length===1?'':'s'}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Expected Pot Credit</div><div class="settlement-stat-val">${displayMoney(collections.expected)}</div><div class="settlement-stat-sub">After fees and USDC discounts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Confirmed Pot</div><div class="settlement-stat-val">${displayMoney(collections.credited)}</div><div class="settlement-stat-sub">Only RL-confirmed receipts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Pending Purchasers</div><div class="settlement-stat-val ${pendingPurchasers?'settlement-negative':'settlement-positive'}">${pendingPurchasers}</div><div class="settlement-stat-sub">${collections.settled} of ${purchaseGroups.length} received</div></div></div>
+    <details class="settlement-section" open><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><div><div class="settlement-section-title">Purchase Collection</div><div class="settlement-section-note">One record per purchaser. The site records the RL's confirmation and does not move funds.</div></div><span class="settlement-status ${pendingPurchasers?'warn':'ok'}">${pendingPurchasers} pending</span></summary><div class="purchase-collection-list">${purchaseRows||'<div class="settlement-empty">Purchasers appear after an item is sold.</div>'}</div></details>
     <details class="settlement-section"><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><div><div class="settlement-section-title">${siteCopy('payment_exceptions_title','Payment Exceptions')}</div><div class="settlement-section-note">${siteCopy('payment_exceptions_note','All sales use AH Gold automatically. Open only for USD, split, or covered purchases.')}</div></div><div style="display:flex;align-items:center;gap:.5rem;"><span class="settlement-status ${remaining<.01?'ok':'warn'}">${sold.length-collections.settled} unpaid</span><span class="mutator-mini">Edit</span></div></summary><div class="settlement-toolbar" style="margin:.8rem 0;"><div class="fg"><div class="lbl">AH fee %</div><input type="number" min="0" max="100" step=".01" value="${settlementNum(settlement.ahFeePct)}" onchange="saveSettlementSetting('ahFeePct',this.value)" style="width:90px;" /></div>${duplicateCount?`<button class="btn btn-danger btn-sm" onclick="cleanSettlementDuplicates()">Remove ${duplicateCount} Duplicate${duplicateCount===1?'':'s'}</button>`:''}</div><div class="settlement-table-wrap"><table class="settlement-table" style="min-width:720px;"><thead><tr><th>Item / Winner</th><th>Price</th><th>Source</th><th>Pot Credit</th><th>Status</th></tr></thead><tbody>${paymentRows||`<tr><td colspan="5" class="settlement-empty">Sold items will appear here.</td></tr>`}</tbody></table></div></details>
-    <div class="settlement-section settlement-setup"><div class="settlement-setup-header"><div><div class="settlement-section-title">${siteCopy('cut_setup_title','Cut Setup')}</div><div class="settlement-section-note">${siteCopy('cut_setup_note','Management cut first, equal base cuts second, selected mutators and manual adjustments last.')}</div></div><div class="settlement-setup-glance">${payoutTrackingStarted?`<span class="settlement-status ${locked?'ok':'warn'}">${locked?'Cuts locked':'Setup open'}</span>`:''}<span class="settlement-muted">${calc.managementPct}% · ${settlementNum(settlement.usdcPer1000)||10} USDC / 1,000g</span><button class="btn ${locked?'btn-amber-resume':'btn-gold'} btn-sm" onclick="toggleSettlementLock()">${locked?'Unlock Setup':payoutTrackingStarted?'Lock Setup':'Start Payouts'}</button></div></div>
-      <div class="settlement-toolbar" style="margin-top:.85rem;"><div class="fg"><div class="lbl">Management cut %</div><input type="number" id="settlement-management-cut" min="0" max="100" step=".01" value="${calc.managementPct}" ${locked?'disabled':''} onchange="saveSettlementSetting('managementCut',this.value)" /></div><div class="fg"><div class="lbl">USDC per 1,000g</div><input type="number" min=".01" step=".01" value="${settlementNum(settlement.usdcPer1000)||10}" ${locked?'disabled':''} onchange="saveSettlementSetting('usdcPer1000',this.value)" /></div></div>
+    <div class="settlement-section settlement-setup"><div class="settlement-setup-header"><div><div class="settlement-section-title">${siteCopy('cut_setup_title','Cut Setup')}</div><div class="settlement-section-note">${siteCopy('cut_setup_note','Management cut first, equal base cuts second, selected mutators and manual adjustments last.')}</div></div><div class="settlement-setup-glance">${payoutTrackingStarted?`<span class="settlement-status ${locked?'ok':'warn'}">${locked?'Cuts locked':'Setup open'}</span>`:''}<span class="settlement-muted">${calc.managementPct}% · 1,000g = ${usdText(runUsdRate())}</span><button class="btn ${locked?'btn-amber-resume':'btn-gold'} btn-sm" onclick="toggleSettlementLock()">${locked?'Unlock Setup':payoutTrackingStarted?'Lock Setup':'Start Payouts'}</button></div></div>
+      <div class="settlement-toolbar" style="margin-top:.85rem;"><div class="fg"><div class="lbl">Management cut %</div><input type="number" id="settlement-management-cut" min="0" max="100" step=".01" value="${calc.managementPct}" ${locked?'disabled':''} onchange="saveSettlementSetting('managementCut',this.value)" /></div><div class="fg"><div class="lbl">USD per 1,000g</div><input type="number" min=".01" step=".01" value="${runUsdRate()}" ${locked?'disabled':''} onchange="saveSettlementSetting('usdPer1000',this.value)" /></div></div>
       <details class="settlement-workspace" ${!locked?'open':''} ontoggle="rememberSettlementSetup(this.open,this)"><summary><div><div class="settlement-section-title" style="font-size:.82rem;">Raiders & Mutators</div><div class="settlement-section-note">${raiders.length} raider${raiders.length===1?'':'s'} · ${mutators.length} mutator${mutators.length===1?'':'s'}</div></div><span class="mutator-mini" data-workspace-toggle>${!locked?'Collapse':'Expand'}</span></summary><div class="settlement-workspace-body">
       <div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Raider name</div><input type="text" id="settlement-raider-name" placeholder="Character name" ${locked?'disabled':''} onkeydown="if(event.key==='Enter'){event.preventDefault();addSettlementRaider();}" /></div><button class="btn btn-outline btn-sm" onclick="addSettlementRaider()" ${locked?'disabled':''}>Add Raider</button><button class="btn btn-outline btn-sm" onclick="syncSettlementRaiders()" ${locked?'disabled':''}>Import Attendance</button></div>
       ${renderPerformanceImport(locked,mutators,raiders)}
@@ -3848,10 +3898,10 @@ function renderSettlement(){
       <div class="settlement-table-wrap raider-table-wrap" data-scroll-key="settlement-raiders"><table class="settlement-table raider-settlement-table" style="table-layout:fixed;min-width:${raiderTableMinWidth}px;"><colgroup><col style="width:48px;" /><col style="width:190px;" /><col style="width:64px;" />${mutatorCols}<col style="width:160px;" /><col style="width:160px;" /><col style="width:130px;" /></colgroup><thead><tr><th></th><th>Raider</th><th>Base</th>${mutatorHeaders}<th>Adjust g</th><th>Adjust %</th><th>Calculated Cut</th></tr></thead><tbody>${raiderRows||`<tr><td colspan="${6+mutators.length}" class="settlement-empty">Add raiders or import attendance.</td></tr>`}</tbody></table></div></div></details>
     </div>
     ${payoutTrackingStarted?payoutQueue:''}
-    <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Management · ${calc.managementPct}%</div><div class="settlement-stat-val">${settlementGold(calc.managementCut)}</div><div class="settlement-stat-sub">Calculated from the expected net pot</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">To Distribute</div><div class="settlement-stat-val">${settlementGold(calc.distributable)}</div><div class="settlement-stat-sub">${payoutTrackingStarted?'Locked cuts preserved; later adjustments are isolated':`Base cut ${settlementGold(calc.base)}`}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Payouts Completed</div><div class="settlement-stat-val settlement-positive">${settlementGold(paidTotal)}</div><div class="settlement-stat-sub">${settlementGold(unpaidTotal)} still unpaid</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Distribution Balance</div><div class="settlement-stat-val ${Math.abs(distributionBalance)<=raiders.length?'settlement-positive':'settlement-negative'}">${settlementGold(distributionBalance)}</div><div class="settlement-stat-sub">Post-lock adjustments may make this negative</div></div></div>
-    <div style="display:flex;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;"><button class="btn btn-outline btn-sm" onclick="copyUnpaidPayouts()">Copy Unpaid Payouts</button><button class="btn btn-outline btn-sm" onclick="setAllPayoutsPaid(false)" ${!paidCount?'disabled':''}>Clear Paid</button><button class="btn btn-green btn-sm" onclick="setAllPayoutsPaid(true)" ${!raiders.length||paidCount===raiders.length?'disabled':''}>Mark All Paid</button></div></div>`;
+    <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Management · ${calc.managementPct}%</div><div class="settlement-stat-val">${displayMoney(calc.managementCut)}</div><div class="settlement-stat-sub">Calculated from the confirmed pot</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Current Base Cut</div><div class="settlement-stat-val">${displayMoney(calc.base)}</div><div class="settlement-stat-sub">Equal-share baseline before individual mutators</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Payouts Completed</div><div class="settlement-stat-val settlement-positive">${displayMoney(paidTotal)}</div><div class="settlement-stat-sub">${displayMoney(unpaidTotal)} still unpaid</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Distribution Balance</div><div class="settlement-stat-val ${Math.abs(distributionBalance)<=raiders.length?'settlement-positive':'settlement-negative'}">${displayMoney(distributionBalance)}</div><div class="settlement-stat-sub">Post-lock adjustments may make this negative</div></div></div>
+    <div class="settlement-footer-actions"><button class="btn btn-outline btn-sm" onclick="copyUnpaidPayouts()">Copy Unpaid Payouts</button><button class="btn btn-outline btn-sm" onclick="setAllPayoutsPaid(false)" ${!paidCount?'disabled':''}>Clear Paid</button><button class="btn btn-green btn-sm" onclick="setAllPayoutsPaid(true)" ${!raiders.length||paidCount===raiders.length?'disabled':''}>Mark All Paid</button><button class="btn btn-gold btn-sm" onclick="confirmReset()">Start New Run</button></div></div>`;
 }
-function saveSettlementSetting(field,value){if(!isRL)return;let val=settlementNum(value);if(field==='managementCut'||field==='ahFeePct')val=Math.max(0,Math.min(100,val));if(field==='usdcPer1000')val=Math.max(.01,val||10);if(field==='managementCut')localStorage.setItem('gdkp_management_cut',String(val));update(runRef('/settlement'),{[field]:val});}
+function saveSettlementSetting(field,value){if(!isRL)return;let val=settlementNum(value);if(field==='managementCut'||field==='ahFeePct')val=Math.max(0,Math.min(100,val));if(field==='usdcPer1000'||field==='usdPer1000')val=Math.max(.01,val||10);if(field==='managementCut')localStorage.setItem('gdkp_management_cut',String(val));const writes={[field]:val};if(field==='usdPer1000')writes.usdcPer1000=val;update(runRef('/settlement'),writes);}
 function savePaymentField(auctionId,field,value){if(!isRL)return;const val=(field==='settled')?!!value:(['ahGross','usdReceived','usdGold'].includes(field)?Math.max(0,settlementNum(value)):String(value||'').slice(0,80));update(runRef(`/settlement/payments/${auctionId}`),{[field]:val});}
 function setAllSettlementCollections(done){
   if(!isRL)return;
@@ -3880,11 +3930,11 @@ function toggleSettlementLock(){
   if(!isRL)return;
   if(settlement.payoutStarted&&!settlement.setupUnlocked){wowConfirm({title:'Unlock Setup?',msg:'Existing locked and paid cuts will stay fixed. Use Modify Cut for any payout correction.',confirmLabel:'Unlock',onConfirm:()=>{settlementSetupOpen=true;localStorage.setItem('gdkp_settlement_setup_open','1');update(runRef('/settlement'),{setupUnlocked:true}).then(()=>toast('Setup unlocked; payout amounts remain fixed'));}});return;}
   if(settlement.payoutStarted&&settlement.setupUnlocked){settlementSetupOpen=false;localStorage.setItem('gdkp_settlement_setup_open','0');update(runRef('/settlement'),{setupUnlocked:false}).then(()=>toast('Setup locked · payout amounts unchanged'));return;}
-  const raiders=settlementRaiders(),calc=calculateSettlementCuts(),collections=calculateSettlementCollections(),pending=Math.max(0,auctionList().filter(a=>a.status==='sold').length-collections.settled);
+  const raiders=settlementRaiders(),calc=calculateSettlementCuts(),collections=calculateSettlementCollections(),pending=Math.max(0,collections.purchasers-collections.settled);
   if(!raiders.length){toast('Import or add raiders before starting payouts');return;}
   if(calc.totalPot<=0){toast('The expected net pot is empty');return;}
   const pendingNote=pending?` ${pending} collection${pending===1?' is':'s are'} still pending.`:'';
-  wowConfirm({title:'Start Payouts?',msg:`Lock every raider's current cut and the rate of 1,000g = ${settlementNum(settlement.usdcPer1000)||10} USDC. Later adjustments will not change anyone else's cut. Raiders will have 48 hours to claim.${pendingNote}`,confirmLabel:'Start Payouts',onConfirm:()=>{const now=Date.now(),writes={};raiders.forEach(r=>{writes[`settlement/raiders/${r.key}/lockedCut`]=Math.floor(calc.cuts[r.key]||0);});writes['settlement/payoutStarted']=true;writes['settlement/setupUnlocked']=false;writes['settlement/payoutStartedAt']=now;writes['settlement/claimDeadline']=now+172800000;writes['settlement/claimWindowHours']=48;writes['settlement/usdcNetwork']='Ethereum';writes['settlement/cutSnapshotVersion']=2;writes['settlement/cutsLockedAt']=now;writes['settlement/lockedDistributable']=calc.distributable;settlementSetupOpen=false;localStorage.setItem('gdkp_settlement_setup_open','0');update(runRef(),writes);toast('Payouts started · cuts locked for 48-hour claims');}});
+  wowConfirm({title:'Start Payouts?',msg:`Lock every raider's current cut and the rate of 1,000g = ${usdText(runUsdRate())}. Later adjustments will not change anyone else's cut. Raiders will have 48 hours to claim.${pendingNote}`,confirmLabel:'Start Payouts',onConfirm:()=>{const now=Date.now(),writes={};raiders.forEach(r=>{writes[`settlement/raiders/${r.key}/lockedCut`]=Math.floor(calc.cuts[r.key]||0);});writes['settlement/payoutStarted']=true;writes['settlement/setupUnlocked']=false;writes['settlement/payoutStartedAt']=now;writes['settlement/claimDeadline']=now+172800000;writes['settlement/claimWindowHours']=48;writes['settlement/usdcNetwork']='Ethereum';writes['settlement/cutSnapshotVersion']=2;writes['settlement/cutsLockedAt']=now;writes['settlement/lockedDistributable']=calc.distributable;settlementSetupOpen=false;localStorage.setItem('gdkp_settlement_setup_open','0');update(runRef(),writes);toast('Payouts started · cuts locked for 48-hour claims');}});
 }
 function setAllPayoutsPaid(paid){if(!isRL)return;const raiders=settlementRaiders();if(!raiders.length){toast('No raiders to update');return;}const now=Date.now(),calc=calculateSettlementCuts(),writes={};raiders.forEach(r=>{const cut=effectiveRaiderCut(r,calc);writes[`settlement/raiders/${r.key}/paid`]=!!paid;writes[`settlement/raiders/${r.key}/paidAmount`]=paid?cut:0;writes[`settlement/raiders/${r.key}/paidAt`]=paid?now:null;writes[`settlement/raiders/${r.key}/paidBy`]=paid?user:null;if(r.submission?.submittedAt)writes[`settlement/raiders/${r.key}/submission/status`]=paid?'paid':'submitted';});auctionList().filter(a=>a.status==='sold').forEach(a=>{writes[`auctions/${a.id}/paid`]=!!paid;writes[`settlement/payments/${a.id}/settled`]=!!paid;});update(runRef(),writes).then(()=>toast(paid?'All payouts and linked items marked paid':'All payout and item checks cleared'));}
 function markAllPayoutsPaid(){setAllPayoutsPaid(true);}
@@ -3958,7 +4008,7 @@ function renderPanel(){
     const selectAllBtn=(isRL&&!allPaid)?`<button onclick="markAllPaid([${unpaidIds.map(id=>`'${id}'`).join(',')}])" style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;background:transparent;color:var(--green);border:1px solid rgba(96,204,128,0.4);padding:.2rem .55rem;border-radius:3px;margin-bottom:.35rem;">Mark All Paid</button>`:'';
     const statusLine=allPaid
       ?`<div style="font-size:.75rem;color:var(--green);margin-bottom:.4rem;font-family:'Cinzel',serif;letter-spacing:.05em;">&#10003; Settled</div>`
-      :`<div style="font-size:.75rem;color:var(--red);margin-bottom:.4rem;">Owed: ${owed.toLocaleString()}g</div>`;
+      :`<div style="font-size:.75rem;color:var(--red);margin-bottom:.4rem;">Owed: ${displayMoney(owed)}</div>`;
     const rowBorder=allPaid?'var(--border-gold)':'rgba(226,96,96,0.4)';
     const itemRows=items.map(i=>`
       <div class="raider-item" style="gap:.5rem;">
@@ -3966,10 +4016,10 @@ function renderPanel(){
           style="width:15px;height:15px;flex-shrink:0;cursor:${isRL?'pointer':'default'};accent-color:var(--green);" />
         ${i.icon?`<img loading="lazy" decoding="async" src="${iconUrl(i.icon)}" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:''}
         <span class="raider-item-name item-name ${i.quality}" style="font-size:.78rem;flex:1;">${i.name}</span>
-        <span class="raider-item-price" style="${i.paid?'color:var(--text-muted);text-decoration:line-through;':''}">${i.price.toLocaleString()}g</span>
+        <span class="raider-item-price" style="${i.paid?'color:var(--text-muted);text-decoration:line-through;':''}">${displayMoney(i.price)}</span>
       </div>`).join('');
     return`<div class="raider-row" style="border-color:${rowBorder};">
-      <div class="raider-name" style="margin-bottom:.25rem;"><span>${displayName(name)}</span><span class="raider-total">${total.toLocaleString()}g total</span></div>
+      <div class="raider-name" style="margin-bottom:.25rem;"><span>${displayName(name)}</span><span class="raider-total">${displayMoney(total)} total</span></div>
       ${statusLine}${selectAllBtn}
       ${itemRows}
     </div>`;
@@ -4011,7 +4061,7 @@ function renderRollout(){
     <div class="rollout-hdr">
       <div class="rollout-hdr-left">
         <span class="rollout-hdr-title">&#9760; Rollout</span>
-        <span class="rollout-hdr-meta">${raiders.length} raiders &middot; ${unpaidCount} unpaid &middot; ${totalOwed.toLocaleString()}g owed</span>
+        <span class="rollout-hdr-meta">${raiders.length} raiders &middot; ${unpaidCount} unpaid &middot; ${displayMoney(totalOwed)} owed</span>
       </div>
       <button class="rollout-exit" onclick="exitRollout()">&#x2715; Exit Rollout</button>
     </div>
@@ -4026,10 +4076,10 @@ function renderRollout(){
           <div class="rollout-card-hdr">
             <span class="rollout-card-name">${displayName(name)}</span>
             <div class="rollout-card-right">
-              <span class="rollout-card-total">${total.toLocaleString()}g total</span>
+              <span class="rollout-card-total">${displayMoney(total)} total</span>
               ${allPaid
                 ?`<span class="rollout-card-settled">&#10003; Settled</span>`
-                :`<button class="rollout-trade-btn" onclick="rolloutMarkAll([${unpaidIds.join(',')}],'${name}')" title="Mark all paid">Loot Traded</button><span class="rollout-card-owed">${owed.toLocaleString()}g owed</span>`}
+                :`<button class="rollout-trade-btn" onclick="rolloutMarkAll([${unpaidIds.join(',')}],'${name}')" title="Mark all paid">Loot Traded</button><span class="rollout-card-owed">${displayMoney(owed)} owed</span>`}
             </div>
           </div>
           <div class="rollout-items">
@@ -4041,7 +4091,7 @@ function renderRollout(){
                   ?`<img loading="lazy" decoding="async" class="rollout-item-icon" src="${iconUrl(i.icon)}" ${whAttr} />`
                   :`<div class="rollout-item-icon-ph" ${whAttr}></div>`}
                 <span class="rollout-item-name item-name ${i.quality||'epic'}" ${whAttr}>${i.name}</span>
-                <span class="rollout-item-price${i.paid?' paid':''}">${i.price.toLocaleString()}g</span>
+                <span class="rollout-item-price${i.paid?' paid':''}">${displayMoney(i.price)}</span>
                 ${!i.paid?`<button class="rollout-pay-btn" onclick="rolloutTogglePaid('${i.auctionId}','${name}')">&#10003;</button>`
                          :`<span style="font-size:.65rem;color:rgba(46,180,80,0.5);font-family:'Cinzel',serif;">Paid</span>`}
               </div>`;}).join('')}
@@ -4087,7 +4137,7 @@ function renderRaiderSummary(){
       <div style="padding:1.25rem 1.5rem .9rem;border-bottom:1px solid rgba(201,168,76,0.15);display:flex;align-items:center;justify-content:space-between;">
         <div>
           <div style="font-family:'Cinzel',serif;font-size:1rem;letter-spacing:.1em;color:var(--gold);">Run Complete</div>
-          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.2rem;">${won.length} item${won.length!==1?'s':''} won &middot; ${totalSpent.toLocaleString()}g spent</div>
+          <div style="font-size:.72rem;color:var(--text-muted);margin-top:.2rem;">${won.length} item${won.length!==1?'s':''} won &middot; ${displayMoney(totalSpent)} spent</div>
         </div>
         <button onclick="document.getElementById('raider-summary-overlay').remove()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:.25rem .4rem;">&#10005;</button>
       </div>
@@ -4103,13 +4153,13 @@ function renderRaiderSummary(){
               </a>
               ${a.slot?`<div style="font-size:.68rem;color:var(--text-muted);margin-top:.1rem;">${a.slot}</div>`:''}
             </div>
-            <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);white-space:nowrap;">${a.currentBid.toLocaleString()}g</div>
+            <div style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--gold);white-space:nowrap;">${displayMoney(a.currentBid)}</div>
           </div>`;
         }).join(''):`<div style="padding:2.5rem 1.5rem;text-align:center;font-size:.82rem;color:var(--text-muted);">No items won this run</div>`}
       </div>
       ${totalSpent>0?`<div style="padding:.75rem 1.5rem;border-top:1px solid rgba(201,168,76,0.15);display:flex;justify-content:space-between;align-items:center;">
         <span style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;color:var(--text-muted);text-transform:uppercase;">Total Spent</span>
-        <span style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">${totalSpent.toLocaleString()}g</span>
+        <span style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">${displayMoney(totalSpent)}</span>
       </div>`:''}
     </div>`;
   document.body.appendChild(ol);
@@ -4294,14 +4344,15 @@ function renderLootDisplay(activeCat){
 function confirmReset(){
   wowConfirm({
     title:'Start New Run?',
-    msg:'The current run will be archived and a fresh run will begin.',
+    msg:'The current run will be archived. Set the exchange rate for the new run as USD per 1,000 gold.',
     confirmLabel:'Start New Run',
     danger:false,
+    input:{type:'number',value:runUsdRate(),min:.01,step:.01,placeholder:'10',errorMsg:'Enter the USD value of 1,000 gold'},
     onConfirm:resetRun
   });
 }
 
-async function resetRun(){
+async function resetRun(newRate=runUsdRate()){
   lootDisplayMode=false;
   document.getElementById('loot-display-overlay')?.remove();
   localStorage.removeItem('gdkp_archive_display');
@@ -4313,7 +4364,8 @@ async function resetRun(){
   splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
   const nextCut=Number.isFinite(parseFloat(settlement.managementCut))?parseFloat(settlement.managementCut):DEFAULT_SETTLEMENT.managementCut;
   const savedMutators=JSON.parse(JSON.stringify(settlement.mutators||{}));
-  settlement={...JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT)),managementCut:nextCut,ahFeePct:settlementNum(settlement.ahFeePct)||5,usdcPer1000:settlementNum(settlement.usdcPer1000)||10,mutators:savedMutators};
+  newRate=Math.max(.01,settlementNum(newRate)||10);
+  settlement={...JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT)),managementCut:nextCut,ahFeePct:settlementNum(settlement.ahFeePct)||5,usdPer1000:newRate,usdcPer1000:newRate,mutators:savedMutators};
   payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';rlAttendanceEnsuredFor='';
   attendance={};
   attendanceSettings={enabled:false,open:false,code:''};
@@ -4324,7 +4376,7 @@ async function resetRun(){
   render();
   await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement,attendance:{},attendanceSettings,siteContent:JSON.parse(JSON.stringify(siteContent||{}))});
   subscribeToRun();subscribeSiteContent();
-  toast('New run started — previous run archived');
+  toast(`New run started at ${usdText(newRate)} per 1,000 gold`);
 }
 
 // ── Grids & Cards ─────────────────────────────────────────────────────────
@@ -4537,7 +4589,7 @@ function renderCard(a,mode){
     const rlX=isRL&&!isRetracted?`<button onclick="rlRetractBid('${a.id}','${key}')" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.65rem;padding:0 .2rem;opacity:.5;flex-shrink:0;" title="Retract this bid">✕</button>`:'';
     return`<div class="hist-row" style="${isRetracted?'opacity:.4;':''}">
       <span class="${b.bidder===currentRaiderName()&&!isRetracted?'you-bid':''}" style="${isRetracted?'text-decoration:line-through;color:var(--red);':''};">${name}${isRetracted?' ↩':''}</span>
-      <span style="margin-left:auto;${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${b.amount.toLocaleString()}g</span>
+        <span style="margin-left:auto;${isRetracted?'text-decoration:line-through;color:var(--red);':''}">${displayMoney(b.amount)}</span>
       ${rlX}
     </div>`;
   }).join('');
@@ -4565,8 +4617,8 @@ function renderCard(a,mode){
       :attendanceBlocked
       ?`<div style="text-align:center;padding:.5rem;font-size:.75rem;color:var(--amber);font-family:'Cinzel',serif;letter-spacing:.05em;">Check in to this raid before bidding</div>`
       :(hasBids
-        ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${inc.toLocaleString()}g</button>`;}).join('')
-        : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${cur.toLocaleString()}g</button>`);
+        ? btns.map(inc=>{const amt=cur+inc;return`<button class="qb" style="text-align:center;flex:1;" onclick="quickBid('${a.id}',${amt},event)">+${displayMoney(inc)}</button>`;}).join('')
+        : `<button class="qb" style="flex:1;text-align:center;" onclick="quickBid('${a.id}',${cur},event)">Bid ${displayMoney(cur)}</button>`);
     const bidRightBtns=isRL?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:auto;align-self:flex-start;margin-top:.5rem;">
       <button class="btn btn-clone btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="duplicateItem('${a.id}')">Clone</button>
       <button class="btn btn-outline btn-sm" style="padding:.2rem .55rem;font-size:.65rem;" onclick="resetAuction('${a.id}')">Reset</button>
@@ -4582,19 +4634,19 @@ function renderCard(a,mode){
         :`<button onclick="setAutoBid('${a.id}')" style="background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.4);color:var(--gold);cursor:pointer;font-size:.7rem;font-family:'Cinzel',serif;letter-spacing:.06em;padding:.3rem .7rem;border-radius:3px;">&#9654; Set Limit Bid</button>`
       }
     </div>`:'' ;
-    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${cur.toLocaleString()}g</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===currentRaiderName()?'You are leading':displayName(top.bidder)+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${minNext.toLocaleString()}g</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt">${displayMoney(cur)}</div><div class="bid-ldr ${isLeading?'you':''}">${top?(top.bidder===currentRaiderName()?'You are leading':displayName(top.bidder)+' leads'):'Starting bid'}</div></div>${bidRightBtns}</div><div class="min-bid-note">Min next: ${displayMoney(minNext)}</div><div class="quick-bids">${qbtns}</div>${cbtn}${crow}${autoBidBtn}</div>`;
     if(previewActive){
       bidSection=`<div class="bid-section">${noteHTML}
-        <div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt bid-preview">${(a.previewBid||0).toLocaleString()}g</div><div class="bid-preview-note">&#9998; Price being adjusted&hellip;</div></div>${bidRightBtns}</div>
+        <div style="display:flex;align-items:flex-start;gap:.5rem;"><div><div class="bid-amt bid-preview">${displayMoney(a.previewBid||0)}</div><div class="bid-preview-note">&#9998; Price being adjusted&hellip;</div></div>${bidRightBtns}</div>
         <div class="quick-bids" style="opacity:.3;pointer-events:none;">${qbtns}</div></div>`;
     }
   }else if(mode==='open'&&a.paused){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-bottom:.2rem;">&#128203; ${a.note}</div>`:'';
-    bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
+    bidSection=`<div class="bid-section">${noteHTML}<div class="bid-amt">${displayMoney(a.currentBid||0)}</div><div style="font-size:.78rem;color:var(--amber);">Bidding paused</div></div>`;
   }
   else if(mode==='queued'){
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);">&#128203; ${a.note}</div>`:'';
-    bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div>${noteHTML}</div>`;
+    bidSection=`<div class="bid-section"><div class="bid-amt">${displayMoney(a.currentBid||0)}</div>${noteHTML}</div>`;
   }
   else if(mode==='sold'){
     const isWinner=top&&top.bidder===currentRaiderName();
@@ -4604,9 +4656,9 @@ function renderCard(a,mode){
         ?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--green);font-family:'Cinzel',serif;">&#10003; Paid</div>`
         :(isWinner?`<div style="margin-top:.4rem;font-size:.75rem;color:var(--red);font-family:'Cinzel',serif;">&#9679; Unpaid &mdash; trade the raid leader</div>`:''));
     const noteHTML=a.note?`<div style="font-size:.78rem;color:var(--amber);margin-top:.2rem;">&#128203; ${a.note}</div>`:'';
-    bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div class="bid-ldr">Won by ${top?displayName(top.bidder):'&mdash;'}</div>${noteHTML}${paidBtn}</div>`;
+    bidSection=`<div class="bid-section"><div class="bid-amt">${displayMoney(a.currentBid||0)}</div><div class="bid-ldr">Won by ${top?displayName(top.bidder):'&mdash;'}</div>${noteHTML}${paidBtn}</div>`;
   }
-  else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${(a.currentBid||0).toLocaleString()}g</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
+  else if(mode==='expired'){bidSection=`<div class="bid-section"><div class="bid-amt">${displayMoney(a.currentBid||0)}</div><div style="font-size:.85rem;color:var(--red);">No bids placed</div></div>`;}
   let rlControls='';
   let badge='';
   if(isRL){
@@ -4660,7 +4712,7 @@ function addToQueue(){
   const dd=document.getElementById('item-dropdown');if(dd)dd.style.display='none';
   const qtyInp=document.getElementById('m-qty');if(qtyInp)qtyInp.value='1';
   const noteInp=document.getElementById('m-note');if(noteInp)noteInp.value='';
-  modalQuality='epic';modalCategory='Tier';
+  modalQuality='epic';
   ['legendary','epic','rare','uncommon'].forEach(x=>{
     const b=document.getElementById('q-'+x);if(!b)return;
     const s=x==='epic'?Q_STYLES[x].on:Q_STYLES[x].off;
@@ -4871,8 +4923,6 @@ function coinExplosionAt(goldAmount, rect){
     },ti*180);
   });
   playCoinSound();
-  if(goldAmount>=25000) setTimeout(()=>playCoinSound(),200);
-  if(goldAmount>=100000) setTimeout(()=>playCoinSound(),400);
 }
 
 function coinExplosion(auctionId, goldAmount, preRect){
@@ -4947,22 +4997,27 @@ function toggleMute(){
   soundMuted=!soundMuted;
   localStorage.setItem('gdkp_muted',soundMuted?'1':'0');
   const btn=document.getElementById('mute-btn');
-  if(btn)btn.textContent=soundMuted?'🔇':'🔊';
+  if(btn)btn.textContent=soundMuted?'Muted':'Sound';
+  if(soundMuted){clearTimeout(notificationSoundTimer);notificationSoundTimer=null;if(activeNotificationAudio){activeNotificationAudio.pause();activeNotificationAudio=null;}}
+  renderHdr();
   toast(soundMuted?'Sound muted':'Sound on');
 }
-function playCoinSound(){
+function playCoinSound(immediate=false){
   if(soundMuted)return;
+  if(!immediate){clearTimeout(notificationSoundTimer);notificationSoundTimer=setTimeout(()=>playCoinSound(true),2000);return;}
   try{
+    if(activeNotificationAudio&&!activeNotificationAudio.paused)return;
     const a=new Audio(_coinSrc);
-    a.volume=0.07;
+    activeNotificationAudio=a;a.volume=0.035;a.onended=()=>{if(activeNotificationAudio===a)activeNotificationAudio=null;};
     a.play().catch(()=>{});
   }catch(e){}
 }
 // Plays one cue when item(s) go live. count<=3 → the normal single bell.
 // count>3 → a distinct ascending chime (a bulk Start All), played as one
 // sequenced sound so it doesn't stack into a jarring blast.
-function playGoLiveSound(count){
+function playGoLiveSound(count,immediate=false){
   if(soundMuted||!count)return;
+  if(!immediate){clearTimeout(notificationSoundTimer);notificationSoundTimer=setTimeout(()=>playGoLiveSound(count,true),2000);return;}
   try{
     const ctx=new(window.AudioContext||window.webkitAudioContext)();
     if(count<=3){
@@ -4971,7 +5026,7 @@ function playGoLiveSound(count){
       o.connect(g);g.connect(ctx.destination);
       o.type='sine';o.frequency.setValueAtTime(660,t);
       o.frequency.exponentialRampToValueAtTime(880,t+0.08);
-      g.gain.setValueAtTime(0.18,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.6);
+      g.gain.setValueAtTime(0.06,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.6);
       o.start(t);o.stop(t+0.6);
     } else {
       const t0=ctx.currentTime;
@@ -4984,7 +5039,7 @@ function playGoLiveSound(count){
         const t=t0+i*0.09;
         o.frequency.setValueAtTime(f,t);
         g.gain.setValueAtTime(0.0001,t);
-        g.gain.exponentialRampToValueAtTime(last?0.16:0.12,t+0.02);
+        g.gain.exponentialRampToValueAtTime(last?0.06:0.045,t+0.02);
         g.gain.exponentialRampToValueAtTime(0.0001,t+(last?0.5:0.18));
         o.start(t);o.stop(t+(last?0.55:0.22));
       });
@@ -6340,6 +6395,20 @@ if (_savedUser) {
 }
 // Always init hover regardless of login state
 initPanelHover();
+// Keep modal layering predictable and prevent the page underneath from moving.
+const _dialogSelector='.wow-dialog-overlay,.modal-overlay,.account-payment-overlay,.payout-review-overlay,.unpaid-overlay,.rollout-overlay,#attendance-overlay,#raider-summary-overlay';
+const _dialogObserver=new MutationObserver(()=>document.body.classList.toggle('dialog-open',!!document.querySelector(_dialogSelector)));
+_dialogObserver.observe(document.body,{childList:true,subtree:false});
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape')return;
+  const top=[...document.querySelectorAll(_dialogSelector)].filter(el=>getComputedStyle(el).display!=='none').sort((a,b)=>(parseInt(getComputedStyle(a).zIndex)||0)-(parseInt(getComputedStyle(b).zIndex)||0)).pop();
+  if(!top)return;
+  if(top.id==='wow-dialog-overlay')document.getElementById('wow-cancel')?.click();
+  else if(top.id==='cut-request-overlay')closeCutRequest();
+  else if(top.id==='feedback-overlay')closeFeedbackForm();
+  else if(top.id==='attendance-overlay')closeAttendanceManager();
+  else if(top.id==='purchase-payment-dialog'||top.id==='cut-request-review'||top.id==='sold-edit-overlay'||top.id==='site-copy-editor'||top.id==='site-text-manager'||top.id==='payout-image-overlay')top.remove();
+},{capture:true});
 // Draggable + resizable loot tracker — set once at page load
 if(!window._trackerDragSet){
   window._trackerDragSet=true;

@@ -41,7 +41,7 @@
     --border-gold:rgba(212,169,60,0.35);--border-gold-strong:rgba(212,169,60,0.65);
     --text-bright:#f8f0d8;--text-muted:#a89060;
     --epic:#b44aff;--rare:#2288ff;--uncommon:#44ff44;--common:#ffffff;--poor:#aaaaaa;
-    --red:#ff6060;--green:#60cc80;--amber:#f0a830;
+    --red:#ff6060;--green:#6fa77c;--amber:#f0a830;
   }
   html{font-size:20px;-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent;}
   body{background:var(--bg-deep);font-family:'Inter',sans-serif;color:var(--text-bright);min-height:100vh;min-height:100dvh;overscroll-behavior-y:contain;}
@@ -109,12 +109,12 @@
   .btn-outline:hover{background:#143650;border-color:#3d88aa;color:#a0d4ec;}
   .btn-clone{background:#1e1535;color:#b08aff;border:1px solid #5a3a99;font-weight:600;}
   .btn-clone:hover{background:#2a1d4a;border-color:#7a52cc;color:#ccaaff;}
-  .btn-green{background:#1a6b30;color:#6aff8a;border:1px solid #2ecc52;font-weight:600;}
-  .btn-green:hover{background:#236b33;border-color:#40ff66;}
+  .btn-green{background:#173c29;color:#acd5b6;border:1px solid #477c58;font-weight:600;}
+  .btn-green:hover{background:#204b34;border-color:#60966f;color:#c6e4cd;}
   .btn-amber{background:#3d2806;color:#f0a838;border:1px solid #c87818;font-weight:600;letter-spacing:.1em;}
   .btn-amber:hover{background:#54370a;border-color:#e8900a;color:#ffc060;}
-  .btn-amber-resume{background:#0d2e14;color:#6aff8a;border:1px solid #2ecc52;font-weight:600;letter-spacing:.1em;}
-  .btn-amber-resume:hover{background:#16401f;border-color:#40ff66;}
+  .btn-amber-resume{background:#173c29;color:#acd5b6;border:1px solid #477c58;font-weight:600;letter-spacing:.1em;}
+  .btn-amber-resume:hover{background:#204b34;border-color:#60966f;color:#c6e4cd;}
   .btn-gold-soft{background:#3a2d08;color:#f5d060;border:1px solid #c9a84c;font-weight:600;}
   .btn-gold-soft:hover{background:#4e3d0c;border-color:#f0cc6a;color:#ffe28a;}
   .fav-btn{position:absolute;top:.35rem;right:.35rem;z-index:3;background:rgba(20,16,10,0.55);border:1px solid rgba(201,168,76,0.25);border-radius:3px;color:rgba(201,168,76,0.45);cursor:pointer;font-size:.85rem;line-height:1;padding:.18rem .32rem;transition:color .15s,border-color .15s;}
@@ -122,8 +122,8 @@
   .fav-btn.faved{color:var(--gold);border-color:rgba(201,168,76,0.6);}
   .btn-neutral{background:#28241e;color:#c2b8a8;border:1px solid #6a6055;font-weight:600;}
   .btn-neutral:hover{background:#363026;border-color:#8a7f70;color:#e0d6c6;}
-  .qb-custom{background:#1a5c2a !important;color:#6aff8a !important;border:1px solid #2ecc52 !important;border-style:solid !important;font-weight:600;}
-  .qb-custom:hover{background:#236b33 !important;border-color:#40ff66 !important;}
+  .qb-custom{background:#173c29 !important;color:#acd5b6 !important;border:1px solid #477c58 !important;border-style:solid !important;font-weight:600;}
+  .qb-custom:hover{background:#204b34 !important;border-color:#60966f !important;color:#c6e4cd !important;}
   .qb-custom.active-custom{background:#0e3d1c !important;color:#4dff70 !important;border-color:#28cc44 !important;}
   .btn-sm{box-sizing:border-box;min-height:38px;padding:.38rem .8rem;font-size:.72rem;display:inline-flex;align-items:center;justify-content:center;text-align:center;}
   .btn-danger{background:linear-gradient(180deg,#8a1a1a,#5a0e0e);color:#ffd0d0;border:1px solid #cc3030;font-size:.76rem;}
@@ -382,8 +382,10 @@
   @keyframes spin{to{transform:rotate(360deg);}}
   .card-wrap .card{flex:1;}
   /* Dragged card — lifted, faded */
-  .card-wrap.dragging{opacity:.35;transform:scale(.96);}
+  .card-wrap.dragging{opacity:.52;transform:scale(.97);}
   .card-wrap.dragging .card{border-color:var(--gold);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+  .card-wrap[draggable=true]{cursor:grab;}
+  .card-wrap.remote-drag-preview{transition:transform .18s ease,opacity .18s ease;}
   /* Drop indicators — clear insertion line + shift neighbour aside */
   .card-wrap.drop-before{transform:translateX(8px);}
   .card-wrap.drop-after{transform:translateX(-8px);}
@@ -1133,6 +1135,7 @@ const fbApp = initializeApp(firebaseConfig);
 const db = getDatabase(fbApp);
 
 let user=null,isRL=false,discordUser=null,auctions={},runId=null,tab=localStorage.getItem('gdkp_tab')||'active';
+let cardDragPreview=null;
 if(tab==='splits')tab='settlement';
 let nickMap={};
 function sanitizeNick(s){return String(s||'').replace(/[<>&"'`]/g,'').trim().slice(0,20);}
@@ -2242,6 +2245,7 @@ function subscribeToRun(){
       return;
     }
     const prevAuctions={...auctions};
+    const prevCardDragPreview=cardDragPreview;
     const prevSettlementState=JSON.stringify(settlement);
     const prevExchangeRate=runUsdRate();
     const prevExchangeLock=exchangeRateIsLocked();
@@ -2250,6 +2254,10 @@ function subscribeToRun(){
     const currentAttendanceKey=attendanceKeyForCurrentUser();
     const prevCurrentAttendanceState=JSON.stringify(currentAttendanceKey?attendance[currentAttendanceKey]||null:null);
     auctions=data.auctions||{};
+    cardDragPreview=data.cardDragPreview||null;
+    if(JSON.stringify(prevCardDragPreview)!==JSON.stringify(cardDragPreview)&&!isRL){
+      requestAnimationFrame(applyCardDragPreviewToDOM);
+    }
     presenceData=data.presence||{};
     const _prevNicks=JSON.stringify(nickMap);
     nickMap=data.nicks||{};
@@ -3373,10 +3381,10 @@ function buildModal(title,a,fn){
       ${isEdit?`
         <button class="btn btn-outline btn-sm" onclick="saveEditAndQueue()" title="Save and move back to queue">&#8630; Queue</button>
         <button class="btn btn-gold btn-sm" onclick="saveEdit()">Save</button>
-        <button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="saveEditAndStart()">&#9654; Start</button>
+        <button class="btn btn-green btn-sm" onclick="saveEditAndStart()">&#9654; Start</button>
       `:`
         <button class="btn btn-gold btn-sm" onclick="${fn}()">Queue</button>
-        <button class="btn btn-sm" style="background:#1a6b30;color:#6aff8a;border:2px solid #2ecc52;font-weight:600;letter-spacing:.08em;" onclick="addToQueueAndStart()">&#9654; Start</button>
+        <button class="btn btn-green btn-sm" onclick="addToQueueAndStart()">&#9654; Start</button>
       `}
     </div>
   </div></div>`;
@@ -3464,7 +3472,8 @@ function refreshPotAndLoot(){
 function renderMain(){
   const _scroll=_saveScroll();
   const all=auctionList();
-  const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999)),active=all.filter(a=>a.status==='open'),sold=all.filter(a=>a.status==='sold'),expired=all.filter(a=>a.status==='expired');
+  const byOrder=(a,b)=>(a.order??99999)-(b.order??99999)||(a.createdAt??0)-(b.createdAt??0);
+  const queued=all.filter(a=>a.status==='queued').sort(byOrder),active=all.filter(a=>a.status==='open').sort(byOrder),sold=all.filter(a=>a.status==='sold').sort(byOrder),expired=all.filter(a=>a.status==='expired').sort(byOrder);
   const membersBar = renderMembersBar(presenceData);
   const myLootHTML=buildMyLootHTML();
   const potBar=buildPotBarHTML();
@@ -3484,7 +3493,7 @@ function renderMain(){
 
   let secActions='';
   if(isRL&&tab!=='splits'&&tab!=='settlement'&&tab!=='payout'){
-    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _bs='font-weight:600;font-size:.8rem;width:100%;text-align:center;white-space:nowrap;';const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="${_bs}" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';const _cancelAllBtn=_live.length?`<button class="btn btn-danger btn-sm" style="${_bs}" onclick="cancelAll()">Cancel All</button>`:'';const _closeAllBtn=_live.length?`<button class="btn btn-sm" style="${_bs}background:#0d2e14;color:#6aff8a;border:1px solid #2ecc52;" onclick="closeAll()">Close All</button>`:'';secActions=_live.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;width:100%;max-width:340px;">${_pauseAllBtn}${_cancelAllBtn}${_closeAllBtn}<button class="btn add-item-btn" style="width:100%;min-width:0;" onclick="openModal()">+ ADD ITEM</button></div>`:`<div class="rl-controls"><button class="btn add-item-btn" onclick="openModal()">+ ADD ITEM</button></div>`;}
+    if(tab==='active'){const _live=active.filter(a=>a.status==='open');const _anyRunning=_live.some(a=>!a.paused);const _bs='font-weight:600;font-size:.8rem;width:100%;text-align:center;white-space:nowrap;';const _pauseAllBtn=_live.length?`<button class="btn ${_anyRunning?'btn-amber':'btn-amber-resume'} btn-sm" style="${_bs}" onclick="togglePauseAll()">${_anyRunning?'&#10073;&#10073; Pause All':'&#9654; Resume All'}</button>`:'';const _cancelAllBtn=_live.length?`<button class="btn btn-danger btn-sm" style="${_bs}" onclick="cancelAll()">Cancel All</button>`:'';const _closeAllBtn=_live.length?`<button class="btn btn-green btn-sm" style="${_bs}" onclick="closeAll()">Close All</button>`:'';secActions=_live.length?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;width:100%;max-width:340px;">${_pauseAllBtn}${_cancelAllBtn}${_closeAllBtn}<button class="btn add-item-btn" style="width:100%;min-width:0;" onclick="openModal()">+ ADD ITEM</button></div>`:`<div class="rl-controls"><button class="btn add-item-btn" onclick="openModal()">+ ADD ITEM</button></div>`;}
     else if(tab==='queued') secActions=`<div class="rl-controls">${queued.length?`<button class="btn btn-green btn-sm" style="font-weight:600;padding:.5rem 1.2rem;font-size:.8rem;" onclick="startAll()">&#9654; Start All</button>`:''}<button class="btn add-item-btn" onclick="openModal()">+ ADD ITEM</button></div>`;
     else if(tab==='sold') secActions=`<div class="rl-controls"><button class="btn add-item-btn" onclick="openModal()">+ ADD ITEM</button></div>`;
     else if(tab==='expired') secActions=`<div class="rl-controls"><button class="btn add-item-btn" onclick="openModal()">+ ADD ITEM</button></div>`;
@@ -3522,6 +3531,8 @@ function renderMain(){
     ${archivedSettlementContext?'':membersBar+potBar+myLootHTML+settingsBar+attendanceBanner}${tabs}
     ${tab!=='splits'&&tab!=='settlement'&&tab!=='payout'?`<div class="sec-hdr"><div class="sec-hdr-spacer" aria-hidden="true"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div class="sec-actions">${secActions||''}</div></div>`:''}
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
+
+  if(cardDragPreview&&!isRL)requestAnimationFrame(applyCardDragPreviewToDOM);
 
   if(settlementFocusTarget){
     const focusId=settlementFocusTarget;
@@ -4741,13 +4752,14 @@ function undoBulkRemove(){
 }
 
 function renderGrid(list,mode){
+  list=[...list].sort((a,b)=>(a.order??99999)-(b.order??99999)||(a.createdAt??0)-(b.createdAt??0));
   if(!list.length){const msgs={open:'No live auctions',queued:'Queue is empty',sold:'No items sold yet',expired:'No expired items'};return`<div class="empty"><div style="font-family:'Cinzel',serif;color:var(--gold-dim);">${msgs[mode]||'Nothing here'}</div></div>`;}
-  const draggable=mode==='queued'&&isRL;
+  const draggable=['open','queued','sold','expired'].includes(mode)&&isRL&&!archivedSettlementContext;
   const bulkBar=isRL?renderBulkBar(list,mode):'';
   return bulkBar+`<div class="grid">${list.map(a=>{
     const checked=selectedItems.has(a.id);
     const checkbox=isRL?`<div class="card-check ${checked?'checked':''}" onclick="toggleSelect(event,'${a.id}','${mode}')" title="Select">${checked?'✓':''}</div>`:'';
-    return`<div ${draggable?`draggable="true" ondragstart="dragStart(event,'${a.id}')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="${draggable?'cursor:grab;':(isRL?'cursor:pointer;':'')}position:relative;" onclick="cardClick(event,'${a.id}','${mode}')">${checkbox}${renderCard(a,mode)}</div>`;
+    return`<div ${draggable?`draggable="true" data-drag-mode="${mode}" ondragstart="dragStart(event,'${a.id}','${mode}')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dragDrop(event,'${a.id}')" ondragend="dragEnd(event)"`:''} id="wrap-${a.id}" class="card-wrap ${checked?'card-selected':''}" style="${draggable?'cursor:grab;':(isRL?'cursor:pointer;':'')}position:relative;" onclick="cardClick(event,'${a.id}','${mode}')">${checkbox}${renderCard(a,mode)}</div>`;
   }).join('')}</div>`;
 }
 
@@ -6616,14 +6628,52 @@ function closeModal(){
   if(!wasAdding)_restoreScroll(_sc);
   requestAnimationFrame(syncDialogScrollLock);
 }
-let _dragId=null,_dragEl=null;
-function dragStart(e,id){
+let _dragId=null,_dragEl=null,_dragMode=null,_dragDropped=false,_dragBroadcastTimer=null,_dragLastSignature='';
+function dragStatusForMode(mode){return mode==='open'?'open':mode==='queued'?'queued':mode==='sold'?'sold':mode==='expired'?'expired':null;}
+function visibleDragIds(){return _dragEl?.parentElement?[..._dragEl.parentElement.querySelectorAll(':scope > .card-wrap')].map(el=>el.id.replace(/^wrap-/,'')):[];}
+function fullDragIds(){
+  const visible=visibleDragIds(),visibleSet=new Set(visible),status=dragStatusForMode(_dragMode);
+  const full=auctionList().filter(a=>a.status===status).sort((a,b)=>(a.order??99999)-(b.order??99999)||(a.createdAt??0)-(b.createdAt??0)).map(a=>a.id);
+  let next=0;
+  return full.map(id=>visibleSet.has(id)?visible[next++]:id);
+}
+function broadcastCardDragPreview(ids,immediate=false){
+  if(!isRL||!_dragMode||!ids.length)return;
+  const signature=_dragMode+':'+ids.join(',');
+  if(signature===_dragLastSignature)return;
+  _dragLastSignature=signature;
+  const mode=_dragMode,payload={actor:user||'Raid Leader',mode,status:dragStatusForMode(mode),orderedIds:[...ids]};
+  const send=()=>{_dragBroadcastTimer=null;update(runRef(),{cardDragPreview:{...payload,updatedAt:Date.now()}}).catch(()=>{});};
+  if(_dragBroadcastTimer)clearTimeout(_dragBroadcastTimer);
+  if(immediate)send();else _dragBroadcastTimer=setTimeout(send,90);
+}
+function clearCardDragPreview(){
+  if(_dragBroadcastTimer){clearTimeout(_dragBroadcastTimer);_dragBroadcastTimer=null;}
+  if(isRL&&runId)update(runRef(),{cardDragPreview:null}).catch(()=>{});
+}
+function applyCardDragPreviewToDOM(){
+  const preview=cardDragPreview;
+  if(!preview||!Array.isArray(preview.orderedIds)||Date.now()-Number(preview.updatedAt||0)>6000)return;
+  const currentMode=tab==='active'?'open':tab==='queued'?'queued':tab==='sold'?'sold':tab==='expired'?'expired':null;
+  if(!currentMode||preview.mode!==currentMode)return;
+  const wrappers=preview.orderedIds.map(id=>document.getElementById('wrap-'+id)).filter(Boolean);
+  if(!wrappers.length)return;
+  const parent=wrappers[0].parentElement;
+  if(!parent||!wrappers.every(el=>el.parentElement===parent))return;
+  wrappers.forEach(el=>{el.classList.add('remote-drag-preview');parent.appendChild(el);});
+  setTimeout(()=>wrappers.forEach(el=>el.classList.remove('remote-drag-preview')),220);
+}
+function dragStart(e,id,mode){
   _dragId=id;
   _dragEl=e.currentTarget;
+  _dragMode=mode;
+  _dragDropped=false;
+  _dragLastSignature='';
   e.dataTransfer.effectAllowed='move';
   try{e.dataTransfer.setData('text/plain',id);}catch(_){}
   // Lifted look on the dragged card
   setTimeout(()=>{if(_dragEl)_dragEl.classList.add('dragging');},0);
+  setTimeout(()=>broadcastCardDragPreview(fullDragIds(),true),0);
 }
 function dragOver(e){
   e.preventDefault();
@@ -6642,6 +6692,12 @@ function dragOver(e){
   });
   target.classList.toggle('drop-before',before);
   target.classList.toggle('drop-after',!before);
+  const parent=target.parentElement;
+  if(parent&&_dragEl&&parent===_dragEl.parentElement){
+    if(before)parent.insertBefore(_dragEl,target);
+    else parent.insertBefore(_dragEl,target.nextSibling);
+    broadcastCardDragPreview(fullDragIds());
+  }
 }
 function dragLeave(e){
   // Only clear if actually leaving the element (not entering a child)
@@ -6650,28 +6706,22 @@ function dragLeave(e){
 }
 function dragDrop(e,targetId){
   e.preventDefault();
-  const target=e.currentTarget;
-  const insertAfter=target&&target.classList.contains('drop-after');
   document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
-  if(!_dragId||_dragId===targetId)return;
-  const queued=auctionList().filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
-  const ids=queued.map(a=>a.id);
-  const fromIdx=ids.indexOf(_dragId);
-  let toIdx=ids.indexOf(targetId);
-  if(fromIdx===-1||toIdx===-1)return;
-  ids.splice(fromIdx,1);
-  // Recompute target index after removal
-  toIdx=ids.indexOf(targetId);
-  if(insertAfter)toIdx+=1;
-  ids.splice(toIdx,0,_dragId);
+  if(!_dragId)return;
+  _dragDropped=true;
+  if(_dragBroadcastTimer){clearTimeout(_dragBroadcastTimer);_dragBroadcastTimer=null;}
+  const ids=fullDragIds();
+  if(!ids.length)return;
   const updates={};
   ids.forEach((id,i)=>{updates[`auctions/${id}/order`]=i;});
-  update(runRef(),updates);
+  updates.cardDragPreview=null;
+  update(runRef(),updates).then(()=>toast('Card order saved')).catch(()=>{toast('Could not save card order');clearCardDragPreview();});
 }
 function dragEnd(e){
   if(_dragEl)_dragEl.classList.remove('dragging');
   document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
-  _dragId=null;_dragEl=null;
+  if(!_dragDropped)clearCardDragPreview();
+  _dragId=null;_dragEl=null;_dragMode=null;_dragDropped=false;_dragLastSignature='';
 }
 function setTab(t){const archivedTab=archivedSettlementContext?.payoutOnly?'payout':'settlement';if(archivedSettlementContext&&t!==archivedTab){toast('Return to the current run to use auction tabs');return;}tab=t;localStorage.setItem('gdkp_tab',t);render();}
 

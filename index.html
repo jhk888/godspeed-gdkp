@@ -204,8 +204,11 @@
   .tab{font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;padding:.55rem 1.2rem;cursor:pointer;color:var(--text-muted);background:rgba(20,16,8,0.85);border:1px solid rgba(201,168,76,0.2);border-bottom:none;border-radius:4px 4px 0 0;transition:all .15s;}
   .tab:hover{color:var(--text-bright);background:rgba(40,32,14,0.9);border-color:rgba(201,168,76,0.4);}
   .tab.active{color:#1a1208;background:var(--gold);border-color:var(--gold);font-weight:600;}
-  .sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;flex-wrap:wrap;gap:.5rem;padding:0;}
-  .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;flex:1;text-align:center;}
+  .sec-hdr{display:grid;grid-template-columns:minmax(150px,1fr) auto minmax(150px,1fr);align-items:center;margin-bottom:1.2rem;gap:.75rem;padding:0;}
+  .sec-title{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);letter-spacing:.08em;text-align:center;}
+  .sec-actions{display:flex;justify-content:flex-end;min-width:150px;}
+  .sec-actions .rl-controls{width:min(100%,300px);}
+  .sec-actions .rl-controls>.btn:only-child{grid-column:1/-1;width:100%;min-width:140px;justify-self:stretch;}
   /* Standard desktop+ — cap content and fit up to 5 auction cards per row */
   @media(min-width:1101px){
     .main{max-width:1760px;}
@@ -783,8 +786,8 @@
   .archived-settlement-kicker{font-family:'Cinzel',serif;color:var(--gold);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;}
   .archived-settlement-title{font-family:'Cinzel',serif;color:var(--gold-light);font-size:1.15rem;margin-top:.2rem;}
   .archived-settlement-date{color:var(--text-muted);font-size:.72rem;margin-top:.2rem;}
-  .archive-card-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.4rem;align-items:stretch;}
-  .archive-card-actions .btn{width:100%;height:38px;min-height:38px;padding:.3rem .45rem;font-size:.6rem;display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;}
+  .archive-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;align-items:stretch;}
+  .archive-card-actions .btn{box-sizing:border-box;width:100%;height:40px;min-height:40px;padding:.35rem .55rem;font-size:.64rem;display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;}
   .raid-code-field{width:170px!important;min-height:46px;background-color:#242427!important;background-image:linear-gradient(145deg,rgba(255,255,255,.035),transparent 45%),repeating-linear-gradient(128deg,transparent 0 17px,rgba(0,0,0,.24) 18px 19px,transparent 20px 38px)!important;border:1px solid #62562f!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.8),inset 0 0 18px rgba(0,0,0,.7)!important;color:var(--gold-light)!important;font-family:'Cinzel',serif!important;font-weight:700;letter-spacing:.22em!important;text-shadow:0 1px 0 #000;}
   .raid-code-field::placeholder{color:rgba(212,169,60,.48)!important;}
   .settlement-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;}
@@ -956,7 +959,7 @@
   .settlement-workspace>summary::-webkit-details-marker{display:none;}
   .settlement-workspace-body{padding-top:.15rem;}
   @media(max-width:900px){.settlement-summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
-  @media(max-width:760px){.performance-import-grid{grid-template-columns:1fr}.performance-saved-row{grid-template-columns:1fr auto}.performance-saved-row>div:first-child{grid-column:1/-1;}}
+  @media(max-width:760px){.performance-import-grid{grid-template-columns:1fr}.performance-saved-row{grid-template-columns:1fr auto}.performance-saved-row>div:first-child{grid-column:1/-1;}.sec-hdr{grid-template-columns:minmax(0,1fr) minmax(140px,auto)}.sec-hdr-spacer{display:none}.sec-title{text-align:left}.sec-actions{min-width:140px}}
   @media(max-width:600px){.settlement-summary{grid-template-columns:1fr 1fr;gap:.4rem}.settlement-section{padding:.7rem}.settlement-stat{padding:.65rem}.settlement-stat-val{font-size:1rem}.settlement-toolbar{align-items:stretch}.settlement-toolbar .fg{width:100%}.settlement-toolbar .btn{width:100%}.mutator-card{flex-basis:100%;width:100%}.payout-claim-grid{grid-template-columns:1fr}.payout-attach-preview{grid-template-columns:1fr;text-align:center}.payout-attach-preview img{margin:0 auto;width:min(100%,260px);height:145px;}.performance-preview{grid-template-columns:1fr;text-align:center}.performance-preview img{margin:0 auto;width:min(100%,260px);height:145px}}
   @media(prefers-reduced-motion:reduce){.payout-paid-spark,.attendance-spark{display:none!important;animation:none!important;}}
 
@@ -992,7 +995,7 @@
   @media(max-width:600px){.payout-history-totals{grid-template-columns:repeat(2,minmax(0,1fr));}.payout-queue-filters .btn{min-height:40px;padding:.4rem .55rem;}}
   @media(max-width:1100px){.purchase-collection-card{grid-template-columns:repeat(3,minmax(0,1fr));}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.purchase-actions{justify-content:flex-start}}
   @media(max-width:1100px){.account-action-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-  @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}.currency-toggle{grid-template-columns:repeat(2,36px);height:36px}.currency-toggle button{width:36px;height:34px}.header-state-button{min-width:78px;height:36px;padding:0 .45rem;font-size:.58rem}.account-action-grid{grid-template-columns:1fr 1fr}.account-footer-actions{grid-template-columns:1fr 1fr}.auction-meta-row{grid-template-columns:112px minmax(0,1fr) 62px}.auction-meta-row .badge{width:62px;min-width:62px}.uniform-actions .btn{flex:1 1 130px;min-width:120px}.archive-card-actions{grid-template-columns:1fr 1fr}.archived-settlement-header{align-items:stretch}.archived-settlement-header .btn{width:100%}.rollout-body{padding:.75rem}.raid-code-field{width:100%!important}}
+  @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}.currency-toggle{grid-template-columns:repeat(2,36px);height:36px}.currency-toggle button{width:36px;height:34px}.header-state-button{min-width:78px;height:36px;padding:0 .45rem;font-size:.58rem}.account-action-grid{grid-template-columns:1fr 1fr}.account-footer-actions{grid-template-columns:1fr 1fr}.auction-meta-row{grid-template-columns:112px minmax(0,1fr) 62px}.auction-meta-row .badge{width:62px;min-width:62px}.uniform-actions .btn{flex:1 1 130px;min-width:120px}.archive-card-actions{grid-template-columns:1fr 1fr}.archived-settlement-header{align-items:stretch}.archived-settlement-header .btn{width:100%}.rollout-body{padding:.75rem}.raid-code-field{width:100%!important}.sec-hdr{grid-template-columns:1fr}.sec-title{text-align:center}.sec-actions{width:100%;justify-content:center}.sec-actions .rl-controls{width:min(100%,300px)}}
 
 </style>
 </head>
@@ -2642,6 +2645,7 @@ async function getOrCreateRun(){
   subscribeToRun();subscribeSiteContent();startTick();startPresence();subscribeToBans();
   render();
   if(isRL){const archivedKey=localStorage.getItem('gdkp_archived_settlement_key');if(archivedKey&&archivedKey!==runId)setTimeout(()=>openArchivedSettlement(archivedKey),300);else if(archivedKey)localStorage.removeItem('gdkp_archived_settlement_key');}
+  else{const archivedPayoutKey=localStorage.getItem('gdkp_archived_payout_key');if(archivedPayoutKey&&archivedPayoutKey!==runId)setTimeout(()=>openArchivedPayoutByKey(archivedPayoutKey),300);else if(archivedPayoutKey)localStorage.removeItem('gdkp_archived_payout_key');}
   if(createdFreshRun&&isRL)setTimeout(()=>wowConfirm({title:'Set Run Exchange Rate',msg:'Enter the USD value of 1,000 gold for this run.',confirmLabel:'Save Rate',input:{type:'number',value:10,min:.01,step:.01,errorMsg:'Enter the USD value of 1,000 gold'},onConfirm:value=>saveSettlementSetting('usdPer1000',value)}),250);
   // Single global handler for loot display dismiss (set once, never re-added)
   if(!window._lootDisplayHandlerSet){
@@ -2689,12 +2693,16 @@ function join(){
 }
 function logout(){
   clearPresence();
+  if(unsubArchivedSettlement){unsubArchivedSettlement();unsubArchivedSettlement=null;}
+  archivedSettlementContext=null;activeRunState=null;
   if(unsubAccount){unsubAccount();unsubAccount=null;}
   if(unsubAccounts){unsubAccounts();unsubAccounts=null;}
   user=null;isRL=false;discordUser=null;
   localStorage.removeItem('gdkp_user');
   localStorage.removeItem('gdkp_isRL');
   localStorage.removeItem('gdkp_discord');
+  localStorage.removeItem('gdkp_archived_payout_key');
+  localStorage.removeItem('gdkp_archived_settlement_key');
   if(unsubRun)unsubRun();if(tickInterval)clearInterval(tickInterval);
   accountData={profile:{},creditRequests:{},ledger:{},withdrawals:{}};allAccounts={};panelOpen=false;render();
 }
@@ -3417,12 +3425,12 @@ function renderMain(){
   const membersBar = renderMembersBar(presenceData);
   const myLootHTML=buildMyLootHTML();
   const potBar=buildPotBarHTML();
-  const attendanceBanner=buildAttendanceBanner();
+  const attendanceBanner=tab==='payout'?'':buildAttendanceBanner();
 
   const settingsBar='';
 
 
-  const tabs=archivedSettlementContext?`<div class="tabs"><div class="tab active">Archived Settlement</div></div>`:`<div class="tabs">
+  const tabs=archivedSettlementContext?`<div class="tabs"><div class="tab active">${archivedSettlementContext.payoutOnly?'Archived Payout':'Archived Settlement'}</div></div>`:`<div class="tabs">
     <div class="tab ${tab==='active'?'active':''}" tabindex="0" onclick="setTab('active')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('active')">Live (${active.length})</div>
     <div class="tab ${tab==='queued'?'active':''}" tabindex="0" onclick="setTab('queued')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('queued')">Queue (${queued.length})</div>
     <div class="tab ${tab==='sold'?'active':''}" tabindex="0" onclick="setTab('sold')" onkeydown="if(event.key==='Enter'||event.key===' ')setTab('sold')">Sold (${sold.length})${isRL&&sold.filter(a=>!a.paid).length?`<span onclick="event.stopPropagation();showUnpaidOverlay()" style="margin-left:.4rem;background:rgba(226,96,96,0.85);color:#fff;font-size:.6rem;font-family:'Cinzel',serif;padding:.1rem .35rem;border-radius:3px;cursor:pointer;vertical-align:middle;">${sold.filter(a=>!a.paid).length} owed</span>`:''}</div>
@@ -3469,7 +3477,7 @@ function renderMain(){
 
   document.getElementById('main').innerHTML=`
     ${archivedSettlementContext?'':membersBar+potBar+myLootHTML+settingsBar+attendanceBanner}${tabs}
-    ${tab!=='splits'&&tab!=='settlement'&&tab!=='payout'?`<div class="sec-hdr"><div style="flex:1;"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div style="flex:1;display:flex;justify-content:flex-end;">${secActions?secActions.replace('<div class="rl-controls">','<div class="rl-controls" style="justify-content:flex-end;">'):''}</div></div>`:''}
+    ${tab!=='splits'&&tab!=='settlement'&&tab!=='payout'?`<div class="sec-hdr"><div class="sec-hdr-spacer" aria-hidden="true"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div class="sec-actions">${secActions||''}</div></div>`:''}
     <div id="auction-grid-bg">${content}</div>${mHTML}`;
 
   if(settlementFocusTarget){
@@ -3743,11 +3751,21 @@ function validEthAddress(value){return/^0x[a-fA-F0-9]{40}$/.test(String(value||'
 function shortEthAddress(value){value=String(value||'');return value.length>12?value.slice(0,6)+'…'+value.slice(-4):value;}
 function setPayoutMethod(method){if(!['gold','usdc'].includes(method))return;rememberPayoutFields();payoutDraftMethod=method;renderMain();}
 function celebratePaidPayoutOnce(raiderKey){
-  if(!runId||!raiderKey||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
-  const storageKey=`gdkp_paid_seen_${runId}_${raiderKey}`;if(localStorage.getItem(storageKey))return;localStorage.setItem(storageKey,'1');
+  const payoutRunKey=settlementRunKey();if(!payoutRunKey||!raiderKey||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+  const storageKey=`gdkp_paid_seen_${payoutRunKey}_${raiderKey}`;if(localStorage.getItem(storageKey))return;localStorage.setItem(storageKey,'1');
   requestAnimationFrame(()=>{const card=document.getElementById('payout-paid-card');if(!card)return;const rect=card.getBoundingClientRect(),count=Math.min(22,Math.max(12,Math.round(rect.width/45)));for(let i=0;i<count;i++){const spark=document.createElement('span'),angle=(Math.PI*2*i/count)+(Math.random()*.24),distance=70+Math.random()*Math.min(210,rect.width*.32);spark.className='payout-paid-spark';spark.style.left=(rect.width/2-4)+'px';spark.style.top='78px';spark.style.setProperty('--spark-x',(Math.cos(angle)*distance)+'px');spark.style.setProperty('--spark-y',(Math.sin(angle)*distance+25)+'px');spark.style.setProperty('--spark-time',(1+Math.random()*.65)+'s');card.appendChild(spark);setTimeout(()=>spark.remove(),1800);}});
 }
-function renderMyPayout(){
+function archivedPayoutHeader(){
+  if(!archivedSettlementContext?.payoutOnly)return'';
+  const date=archivedSettlementContext.createdAt?new Date(archivedSettlementContext.createdAt).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'}):'Date unavailable';
+  return`<div class="archived-settlement-header"><div><div class="archived-settlement-kicker">Archived Payout</div><div class="archived-settlement-title">${settlementEsc(archivedSettlementContext.title||'Previous Run')}</div><div class="archived-settlement-date">${settlementEsc(date)} · Changes save to this run</div></div><button class="btn btn-outline" onclick="closeArchivedSettlement()">Back to Current Run</button></div>`;
+}
+function archivedPayoutLookup(){
+  if(archivedSettlementContext)return'';
+  return`<div class="settlement-section" style="margin-bottom:1rem;"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Open a Previous Payout</div><div class="settlement-section-note">Enter the raid code from that run.</div></div></div><div class="field-action-row" style="max-width:430px;"><div class="fg"><div class="lbl">Previous raid code</div><input class="raid-code-field" id="archived-payout-code" maxlength="6" placeholder="RAID CODE" autocomplete="one-time-code" onkeydown="if(event.key==='Enter'){event.preventDefault();openArchivedPayoutByCode();}" /></div><button class="btn btn-gold btn-sm" onclick="openArchivedPayoutByCode()">Open</button></div></div>`;
+}
+function renderMyPayout(){return archivedPayoutHeader()+archivedPayoutLookup()+renderMyPayoutBody();}
+function renderMyPayoutBody(){
   const r=payoutCurrentRaider();
   if(!settlement.payoutStarted)return`<div class="payout-claim"><div class="settlement-section"><div class="settlement-section-title">My Payout</div><div class="settlement-empty">Payouts have not started for this run.</div></div></div>`;
   if(!r)return`<div class="payout-claim"><div class="settlement-section"><div class="settlement-section-title">My Payout</div><div class="settlement-empty">No payout is connected to ${settlementEsc(currentRaiderName()||'your character')}. Ask the raid leader to confirm the attendance roster.</div></div></div>`;
@@ -3951,6 +3969,7 @@ function renderSettlement(){
   const mutatorHeaders=mutators.map(([id,m])=>`<th class="settlement-mutator-col" title="Drag to reorder: ${settlementEsc(m.name)}" draggable="${locked?'false':'true'}" ondragstart="startSettlementMutatorDrag(event,'${id}')" ondragover="event.preventDefault();event.dataTransfer.dropEffect='move'" ondrop="dropSettlementMutator(event,'${id}')" ondragend="endSettlementMutatorDrag()"><div class="raider-mutator-head"><span>${settlementEsc(m.name)}</span></div></th>`).join(''),mutatorCols=mutators.map(()=>'<col style="width:68px;" />').join(''),raiderTableMinWidth=Math.max(900,752+(mutators.length*68)),effectiveTotal=raiders.reduce((s,r)=>s+effectiveRaiderCut(r,calc),0),paidCount=raiders.filter(r=>payoutIsComplete(r,effectiveRaiderCut(r,calc))).length,paidTotal=raiders.reduce((s,r)=>s+Math.min(payoutPaidAmount(r,effectiveRaiderCut(r,calc)),effectiveRaiderCut(r,calc)),0),unpaidTotal=raiders.reduce((s,r)=>s+payoutStillDue(r,effectiveRaiderCut(r,calc)),0),distributionBalance=(payoutTrackingStarted&&Number.isFinite(Number(settlement.lockedDistributable))?Number(settlement.lockedDistributable):calc.distributable)-effectiveTotal,payoutQueue=(payoutTrackingStarted||raiders.some(r=>r.submission?.submittedAt))?renderPayoutSubmissionQueue(raiders,calc):'';
   return`<div class="settlement-wrap">
     ${archivedSettlementHeader()}
+    ${payoutTrackingStarted?payoutQueue:''}
     <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Gross Sold</div><div class="settlement-stat-val">${displayMoney(collections.sold)}</div><div class="settlement-stat-sub">${sold.length} sold item${sold.length===1?'':'s'}</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Expected Pot Credit</div><div class="settlement-stat-val">${displayMoney(collections.expected)}</div><div class="settlement-stat-sub">After fees and USDC discounts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Confirmed Pot</div><div class="settlement-stat-val">${displayMoney(collections.credited)}</div><div class="settlement-stat-sub">Only RL-confirmed receipts</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Pending Purchasers</div><div class="settlement-stat-val ${pendingPurchasers?'settlement-negative':'settlement-positive'}">${pendingPurchasers}</div><div class="settlement-stat-sub">${collections.settled} of ${purchaseGroups.length} received</div></div></div>
     <details class="settlement-section" open><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><div><div class="settlement-section-title">Purchase Collection</div><div class="settlement-section-note">One record per purchaser. The site records the RL's confirmation and does not move funds.</div></div><span class="settlement-status ${pendingPurchasers?'warn':'ok'}">${pendingPurchasers} pending</span></summary><div class="purchase-collection-list">${purchaseRows||'<div class="settlement-empty">Purchasers appear after an item is sold.</div>'}</div></details>
     <details class="settlement-section"><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:.7rem;flex-wrap:wrap;"><div><div class="settlement-section-title">${siteCopy('payment_exceptions_title','Payment Exceptions')}</div><div class="settlement-section-note">${siteCopy('payment_exceptions_note','All sales use AH Gold automatically. Open only for USD, split, or covered purchases.')}</div></div><div style="display:flex;align-items:center;gap:.5rem;"><span class="settlement-status ${remaining<.01?'ok':'warn'}">${sold.length-collections.settled} unpaid</span><span class="mutator-mini">Edit</span></div></summary><div class="settlement-toolbar" style="margin:.8rem 0;"><div class="fg"><div class="lbl">AH fee %</div><input type="number" min="0" max="100" step=".01" value="${settlementNum(settlement.ahFeePct)}" onchange="saveSettlementSetting('ahFeePct',this.value)" style="width:90px;" /></div>${duplicateCount?`<button class="btn btn-danger btn-sm" onclick="cleanSettlementDuplicates()">Remove ${duplicateCount} Duplicate${duplicateCount===1?'':'s'}</button>`:''}</div><div class="settlement-table-wrap"><table class="settlement-table" style="min-width:720px;"><thead><tr><th>Item / Winner</th><th>Price</th><th>Source</th><th>Pot Credit</th><th>Status</th></tr></thead><tbody>${paymentRows||`<tr><td colspan="5" class="settlement-empty">Sold items will appear here.</td></tr>`}</tbody></table></div></details>
@@ -3962,7 +3981,6 @@ function renderSettlement(){
       <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.45rem;"><div><div class="settlement-section-title" style="font-size:.78rem;">Manual Mutators</div><div class="settlement-section-note">Create, edit, and check mutators yourself before payouts start.</div></div>${mutators.length?`<button class="mutator-mini" onclick="resetSettlementMutatorOrder()" ${locked?'disabled':''}>Use Role Order</button>`:''}</div><div class="mutator-grid">${mutatorCards||'<div class="settlement-empty">No saved mutators yet.</div>'}</div><div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Mutator name</div><input type="text" id="mutator-name" placeholder="Example: Tanks" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Pool %</div><input type="number" id="mutator-pct" step=".01" placeholder="0" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Flat gold</div><input type="number" id="mutator-flat" step="1" placeholder="0" ${locked?'disabled':''} onkeydown="if(event.key==='Enter')addSettlementMutator()" /></div><button class="btn btn-gold-soft btn-sm" onclick="addSettlementMutator()" ${locked?'disabled':''}>Save Mutator</button></div>
       <div class="settlement-table-wrap raider-table-wrap" data-scroll-key="settlement-raiders"><table class="settlement-table raider-settlement-table" style="table-layout:fixed;min-width:${raiderTableMinWidth}px;"><colgroup><col style="width:48px;" /><col style="width:190px;" /><col style="width:64px;" />${mutatorCols}<col style="width:160px;" /><col style="width:160px;" /><col style="width:130px;" /></colgroup><thead><tr><th></th><th>Raider</th><th>Base</th>${mutatorHeaders}<th>Adjust g</th><th>Adjust %</th><th>Calculated Cut</th></tr></thead><tbody>${raiderRows||`<tr><td colspan="${6+mutators.length}" class="settlement-empty">Add raiders or import attendance.</td></tr>`}</tbody></table></div></div></details>
     </div>
-    ${payoutTrackingStarted?payoutQueue:''}
     <div class="settlement-summary"><div class="settlement-stat"><div class="settlement-stat-lbl">Management · ${calc.managementPct}%</div><div class="settlement-stat-val">${displayMoney(calc.managementCut)}</div><div class="settlement-stat-sub">Calculated from the confirmed pot</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Current Base Cut</div><div class="settlement-stat-val">${displayMoney(calc.base)}</div><div class="settlement-stat-sub">Equal-share baseline before individual mutators</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Payouts Completed</div><div class="settlement-stat-val settlement-positive">${displayMoney(paidTotal)}</div><div class="settlement-stat-sub">${displayMoney(unpaidTotal)} still unpaid</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Distribution Balance</div><div class="settlement-stat-val ${Math.abs(distributionBalance)<=raiders.length?'settlement-positive':'settlement-negative'}">${displayMoney(distributionBalance)}</div><div class="settlement-stat-sub">Post-lock adjustments may make this negative</div></div></div>
     <div class="settlement-footer-actions"><button class="btn btn-outline btn-sm" onclick="copyUnpaidPayouts()">Copy Unpaid Payouts</button><button class="btn btn-outline btn-sm" onclick="setAllPayoutsPaid(false)" ${!paidCount?'disabled':''}>Clear Paid</button><button class="btn btn-green btn-sm" onclick="setAllPayoutsPaid(true)" ${!raiders.length||paidCount===raiders.length?'disabled':''}>Mark All Paid</button>${archivedSettlementContext?`<button class="btn btn-gold btn-sm" onclick="closeArchivedSettlement()">Back to Current Run</button>`:`<button class="btn btn-gold btn-sm" onclick="confirmReset()">Start New Run</button>`}</div></div>`;
 }
@@ -5831,6 +5849,58 @@ function archivedSettlementHeader(){
   const context=archivedSettlementContext,date=context.createdAt?new Date(context.createdAt).toLocaleString('en-US',{dateStyle:'medium',timeStyle:'short'}):'Date unavailable';
   return`<div class="archived-settlement-header"><div><div class="archived-settlement-kicker">Archived Settlement</div><div class="archived-settlement-title">${settlementEsc(context.title||'Untitled Run')}</div><div class="archived-settlement-date">${settlementEsc(date)}${context.hasSettlement?'':' · No saved Settlement record; archived auction data is shown.'}</div></div><button class="btn btn-outline" onclick="closeArchivedSettlement()">Back to Current Run</button></div>`;
 }
+function archivedPayoutAccess(data){
+  const discordId=String(discordUser?.id||'');if(!discordId)return null;
+  const attendanceEntry=Object.entries(data?.attendance||{}).find(([key,a])=>key===`discord_${discordId}`||String(a?.discordId||'')===discordId);
+  const raiders=Object.entries(data?.settlement?.raiders||{});
+  if(attendanceEntry){
+    const character=attendanceEntry[1]?.character||'';
+    const match=raiders.find(([key,r])=>key===settlementRaiderKey(character)||attendanceCharacterIdentity(r?.name)===attendanceCharacterIdentity(character));
+    if(match)return{attendanceKey:attendanceEntry[0],character:match[1]?.name||character,raiderKey:match[0]};
+  }
+  const submitted=raiders.find(([,r])=>String(r?.submission?.discordId||'')===discordId);
+  return submitted?{attendanceKey:`discord_${discordId}`,character:submitted[1]?.name||'',raiderKey:submitted[0]}:null;
+}
+async function openArchivedPayoutByCode(){
+  if(isRL){toast('Raid leaders can open archived payouts from Archived Runs');return;}
+  if(!discordUser?.id){toast('Discord login is required');return;}
+  const input=document.getElementById('archived-payout-code'),code=String(input?.value||'').trim().toUpperCase();
+  if(!code){toast('Enter the previous raid code');input?.focus();return;}
+  try{
+    const runs=(await get(ref(db,'runs'))).val()||{};
+    const matches=Object.entries(runs).filter(([,data])=>data?.archived&&String(data?.attendanceSettings?.code||'').trim().toUpperCase()===code).sort(([,a],[,b])=>(b.archivedAt||b.createdAt||0)-(a.archivedAt||a.createdAt||0));
+    if(!matches.length){toast('No archived payout matches that code');input?.focus();input?.select();return;}
+    const accessible=matches.find(([,data])=>archivedPayoutAccess(data));
+    if(!accessible){toast('No payout for your Discord account was found in that run');return;}
+    await activateArchivedPayout(accessible[0],accessible[1],archivedPayoutAccess(accessible[1]));
+  }catch(error){console.error('Archived payout lookup failed',error);toast('Could not open the archived payout');}
+}
+async function openArchivedPayoutByKey(runKey){
+  if(isRL||!runKey||runKey===runId)return;
+  try{
+    const data=(await get(ref(db,`runs/${runKey}`))).val(),access=data?.archived?archivedPayoutAccess(data):null;
+    if(!data||!access){localStorage.removeItem('gdkp_archived_payout_key');return;}
+    await activateArchivedPayout(runKey,data,access);
+  }catch(error){localStorage.removeItem('gdkp_archived_payout_key');}
+}
+async function activateArchivedPayout(runKey,data,access){
+  if(!runKey||!data||!access)return;
+  archivedSettlementReturnScroll=window.scrollY||document.documentElement.scrollTop||0;
+  if(!archivedSettlementContext)activeRunState={auctions:{...auctions},settlement:JSON.parse(JSON.stringify(settlement)),attendance:JSON.parse(JSON.stringify(attendance)),attendanceSettings:JSON.parse(JSON.stringify(attendanceSettings)),settings:JSON.parse(JSON.stringify(raidSettings))};
+  if(unsubArchivedSettlement)unsubArchivedSettlement();
+  archivedSettlementContext={key:runKey,title:data.settings?.raidTitle||'Previous Run',createdAt:data.createdAt||data.archivedAt||0,hasSettlement:!!data.settlement,nicks:data.nicks||{},payoutOnly:true};
+  localStorage.setItem('gdkp_archived_payout_key',runKey);
+  applySettlementRunData(data);
+  if(!currentAttendanceRecord())attendance[access.attendanceKey]={discordId:String(discordUser?.id||''),character:access.character,approved:true};
+  payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';modal=false;editId=null;tab='payout';closePanel();closeUserSettings();render();window.scrollTo(0,0);
+  unsubArchivedSettlement=onValue(ref(db,`runs/${runKey}`),archiveSnap=>{
+    const latest=archiveSnap.val(),latestAccess=latest?archivedPayoutAccess(latest):null;
+    if(!latest||!latestAccess){localStorage.removeItem('gdkp_archived_payout_key');toast(latest?'Archived payout access is no longer available':'Archived run was deleted');closeArchivedSettlement();return;}
+    if(!archivedSettlementContext?.payoutOnly||archivedSettlementContext.key!==runKey)return;
+    archivedSettlementContext={...archivedSettlementContext,title:latest.settings?.raidTitle||'Previous Run',createdAt:latest.createdAt||latest.archivedAt||0,nicks:latest.nicks||{}};
+    applySettlementRunData(latest);if(!currentAttendanceRecord())attendance[latestAccess.attendanceKey]={discordId:String(discordUser?.id||''),character:latestAccess.character,approved:true};if(tab==='payout')renderMain();
+  },error=>{console.error('Archived payout listener failed',error);toast('Archived payout could not be refreshed');});
+}
 async function openArchivedSettlement(runKey){
   if(!isRL||!runKey||runKey===runId)return;
   archivedSettlementReturnScroll=window.scrollY||document.documentElement.scrollTop||0;
@@ -5855,10 +5925,11 @@ async function openArchivedSettlement(runKey){
 }
 async function closeArchivedSettlement(){
   if(!archivedSettlementContext)return;
+  const wasPayout=!!archivedSettlementContext.payoutOnly;
   if(unsubArchivedSettlement){unsubArchivedSettlement();unsubArchivedSettlement=null;}
-  archivedSettlementContext=null;localStorage.removeItem('gdkp_archived_settlement_key');
+  archivedSettlementContext=null;localStorage.removeItem('gdkp_archived_settlement_key');localStorage.removeItem('gdkp_archived_payout_key');
   if(activeRunState)applySettlementRunData(activeRunState);
-  tab='settlement';render();
+  activeRunState=null;tab=wasPayout?'payout':'settlement';render();
   const y=archivedSettlementReturnScroll;requestAnimationFrame(()=>window.scrollTo(0,y));
 }
 
@@ -6420,7 +6491,7 @@ function dragEnd(e){
   document.querySelectorAll('.drop-before,.drop-after').forEach(el=>el.classList.remove('drop-before','drop-after'));
   _dragId=null;_dragEl=null;
 }
-function setTab(t){if(archivedSettlementContext&&t!=='settlement'){toast('Return to the current run to use auction tabs');return;}tab=t;localStorage.setItem('gdkp_tab',t);render();}
+function setTab(t){const archivedTab=archivedSettlementContext?.payoutOnly?'payout':'settlement';if(archivedSettlementContext&&t!==archivedTab){toast('Return to the current run to use auction tabs');return;}tab=t;localStorage.setItem('gdkp_tab',t);render();}
 
 function archiveSyncSettlementRaiders(silent=false){
   const checked=attendanceList().filter(a=>a.approved&&a.character),names=new Set(checked.map(a=>a.character));
@@ -6537,7 +6608,7 @@ Object.assign(window,{openCutRequest,closeCutRequest,handleCutRequestFile,handle
 Object.assign(window,{setDisplayCurrency,toggleDisplayCurrency,changeAttendancePayment,openPurchasePaymentDialog,updatePurchasePaymentPreview,savePurchasePayment,markPurchaseReceived,setPayoutQueueFilter,setPayoutQueueSearch,openPayoutHistory,closePayoutHistory,setPayoutMethod,copyPayoutAddress,reopenPayoutClaim,addRaiderBonus,submitRaiderBonus,openCutAdjustment,submitCutAdjustment,reverseCutAdjustment,runPayoutAction,toggleSiteEditMode,openSiteCopyEditor,saveSiteCopy,resetSiteCopy,openSiteTextManager,previewSiteTextField,saveSiteTextManager});
 Object.assign(window,{rememberPerformanceEncounter,setPerformanceMetric,handlePerformanceDrag,handlePerformanceDrop,handlePerformancePaste,handlePerformanceFile,removePerformanceImage,readPerformanceScreenshot,updatePerformanceRow,addPerformanceRow,removePerformanceRow,batchAssignPerformanceMutator,openPerformanceDraftImage,openPerformanceImportImage,closePerformanceImage,savePerformanceImport,deletePerformanceImport,rememberSettlementSetup});
 Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,addAccountCharacter,setPreferredCharacter,removeAccountCharacter,accountOpenTab,accountOpenPanel,openCreditRequest,openWithdrawalRequest,closeAccountPayment,handleAccountPaymentFile,handleAccountPaymentPaste,handleAccountPaymentDrag,handleAccountPaymentDrop,removeAccountPaymentAttachment,openDraftAccountAttachment,submitAccountPayment,cancelCreditRequest,openAccountAdmin,approveAccountCredit,declineAccountCredit,grantQuickCredit,payAccountWithdrawal,correctAccountWithdrawal,openAccountAttachment,pruneStalePresence,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,verifyAttendanceCode,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts,handlePayoutDrag,handlePayoutDrop,handlePayoutPaste,handlePayoutFile,rememberPayoutFields,removePayoutAttachment,openPayoutImage,submitPayoutListing,closePayoutReview,openPayoutReview,requestPayoutCorrection,setPayoutPaid});
-Object.assign(window,{openArchivedSettlement,closeArchivedSettlement});
+Object.assign(window,{openArchivedSettlement,openArchivedPayoutByCode,closeArchivedSettlement});
 const currentSyncSettlementRaiders=window.syncSettlementRaiders,currentRemoveSettlementMutator=window.removeSettlementMutator,currentSubmitCutAdjustment=window.submitCutAdjustment,currentSetPayoutPaid=window.setPayoutPaid,currentSetAllPayoutsPaid=window.setAllPayoutsPaid,currentToggleSettlementLock=window.toggleSettlementLock,currentRunPayoutAction=window.runPayoutAction,currentOpenCutRequestReview=window.openCutRequestReview,currentRespondCutRequest=window.respondCutRequest;
 window.syncSettlementRaiders=(...args)=>archivedSettlementContext?archiveSyncSettlementRaiders(...args):currentSyncSettlementRaiders(...args);
 window.removeSettlementMutator=(...args)=>archivedSettlementContext?archiveRemoveSettlementMutator(...args):currentRemoveSettlementMutator(...args);

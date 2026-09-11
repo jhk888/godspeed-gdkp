@@ -566,7 +566,7 @@
 
   /* Side panel */
   .panel-hover-zone{position:fixed;top:0;right:0;width:48px;height:100vh;height:100dvh;z-index:99;cursor:pointer;}
-  .side-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px);background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .25s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
+  .side-panel{position:fixed;top:0;right:-430px;width:410px;height:100vh;height:100dvh;padding-bottom:env(safe-area-inset-bottom,0px);background:rgba(16,13,10,0.98);border-left:1px solid var(--border-gold-strong);z-index:100;transition:right .25s ease;display:flex;flex-direction:column;backdrop-filter:blur(8px);}
   .side-panel.open{right:0;}
   .side-panel-hdr{padding:.6rem .75rem;border-bottom:1px solid var(--border-gold);display:flex;flex-direction:column;gap:.5rem;flex-shrink:0;}
   .side-panel-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--gold);letter-spacing:.1em;}
@@ -788,12 +788,12 @@
   .archived-settlement-kicker{font-family:'Cinzel',serif;color:var(--gold);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;}
   .archived-settlement-title{font-family:'Cinzel',serif;color:var(--gold-light);font-size:1.15rem;margin-top:.2rem;}
   .archived-settlement-date{color:var(--text-muted);font-size:.72rem;margin-top:.2rem;}
-  .archive-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;align-items:stretch;}
-  .archive-card-actions .btn{box-sizing:border-box;width:100%;height:40px;min-height:40px;padding:.35rem .55rem;font-size:.64rem;display:flex;align-items:center;justify-content:center;text-align:center;white-space:nowrap;}
+  .archive-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;align-items:stretch;margin-top:.5rem;}
+  .archive-card-actions .btn,.archive-code-row .btn{box-sizing:border-box;width:100%;height:44px;min-height:44px;padding:.35rem .5rem;font-size:.61rem;line-height:1.2;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;}
   .archive-card-actions .btn:last-child:nth-child(odd){grid-column:1/-1;width:calc(50% - .25rem);justify-self:center;}
-  .archive-code-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;padding:.55rem .65rem;background:rgba(0,0,0,.2);border:1px solid rgba(201,168,76,.12);border-radius:3px;}
-  .archive-code-row .btn{width:100%;height:38px;min-height:38px;padding:.3rem .45rem;font-size:.61rem;white-space:nowrap;}
-  .archived-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:.5rem;flex-wrap:wrap;}
+  .archive-code-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem;}
+  .archived-header-actions{display:grid;grid-template-columns:repeat(3,minmax(190px,1fr));align-items:stretch;justify-content:end;gap:.6rem;width:min(100%,660px);}
+  .archived-header-actions .btn{box-sizing:border-box;width:100%;height:46px;min-height:46px;padding:.4rem .55rem;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal;line-height:1.2;}
   .raid-code-field{width:170px!important;min-height:46px;background-color:#242427!important;background-image:linear-gradient(145deg,rgba(255,255,255,.035),transparent 45%),repeating-linear-gradient(128deg,transparent 0 17px,rgba(0,0,0,.24) 18px 19px,transparent 20px 38px)!important;border:1px solid #62562f!important;box-shadow:inset 0 0 0 1px rgba(0,0,0,.8),inset 0 0 18px rgba(0,0,0,.7)!important;color:var(--gold-light)!important;font-family:'Cinzel',serif!important;font-weight:700;letter-spacing:.22em!important;text-shadow:0 1px 0 #000;}
   .raid-code-field::placeholder{color:rgba(212,169,60,.48)!important;}
   .settlement-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.65rem;}
@@ -821,13 +821,21 @@
   .settlement-toolbar{display:flex;align-items:flex-end;gap:.6rem;flex-wrap:wrap;}
   .settlement-toolbar .fg{min-width:120px;}
   .settlement-toolbar input{font-size:.78rem;padding:.42rem .55rem;}
-  .mutator-grid{display:flex;flex-wrap:wrap;align-items:stretch;gap:.55rem;margin-bottom:.85rem;}
-  .mutator-grid>.settlement-empty{flex:1 1 100%;}
-  .mutator-card{background:var(--bg-card);border:1px solid rgba(212,169,60,.2);border-radius:3px;padding:.65rem .7rem;display:flex;align-items:center;gap:.55rem;flex:0 1 360px;max-width:100%;}
-  .mutator-card-info{flex:1;min-width:0;}
+  .mutator-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr));align-items:stretch;gap:.65rem;margin-bottom:.85rem;}
+  .mutator-grid>.settlement-empty{grid-column:1/-1;}
+  .mutator-card{background:var(--bg-card);border:1px solid rgba(212,169,60,.2);border-radius:3px;padding:.7rem .75rem;display:grid;grid-template-columns:18px minmax(160px,1fr) 70px 80px auto;align-items:center;gap:.55rem;min-width:0;max-width:100%;}
+  .mutator-card-info{min-width:0;}
+  .mutator-card-info>input{box-sizing:border-box;width:100%;min-width:0;}
   .mutator-card-name{font-family:'Cinzel',serif;color:var(--gold-light);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .mutator-card-rule{font-size:.64rem;color:var(--text-muted);margin-top:.15rem;}
   .mutator-card input{font-size:.68rem;padding:.28rem .4rem;}
+  .mutator-new-name{min-width:240px;flex:1 1 280px;}
+  .member-history-search{margin-bottom:.75rem;padding:.7rem;background:rgba(30,26,20,.72);border:1px solid var(--border-gold);border-radius:4px;}
+  .member-history-search input{width:100%;box-sizing:border-box;margin-top:.35rem;}
+  .member-history-results{display:grid;gap:.4rem;margin-top:.5rem;}
+  .member-history-result{padding:.55rem .65rem;border:1px solid rgba(201,168,76,.18);border-radius:3px;background:rgba(0,0,0,.2);}
+  .member-history-result summary{cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.5rem;color:var(--gold-light);font-family:'Cinzel',serif;font-size:.7rem;}
+  .member-history-result-meta{font-family:Inter,sans-serif;font-size:.67rem;color:var(--text-muted);white-space:nowrap;}
   .mutator-actions{display:flex;gap:.3rem;}
   .mutator-mini{background:none;border:1px solid var(--border-gold);color:var(--text-muted);border-radius:2px;padding:.2rem .38rem;font-size:.62rem;cursor:pointer;}
   .mutator-mini:hover{color:var(--gold);border-color:var(--gold);}
@@ -968,7 +976,7 @@
   .settlement-workspace-body{padding-top:.15rem;}
   @media(max-width:900px){.settlement-summary{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:760px){.performance-import-grid{grid-template-columns:1fr}.performance-saved-row{grid-template-columns:1fr auto}.performance-saved-row>div:first-child{grid-column:1/-1;}.sec-hdr{grid-template-columns:minmax(0,1fr) minmax(140px,auto)}.sec-hdr-spacer{display:none}.sec-title{text-align:left}.sec-actions{min-width:140px}}
-  @media(max-width:600px){.settlement-summary{grid-template-columns:1fr 1fr;gap:.4rem}.settlement-section{padding:.7rem}.settlement-stat{padding:.65rem}.settlement-stat-val{font-size:1rem}.settlement-toolbar{align-items:stretch}.settlement-toolbar .fg{width:100%}.settlement-toolbar .btn{width:100%}.mutator-card{flex-basis:100%;width:100%}.payout-claim-grid{grid-template-columns:1fr}.payout-attach-preview{grid-template-columns:1fr;text-align:center}.payout-attach-preview img{margin:0 auto;width:min(100%,260px);height:145px;}.performance-preview{grid-template-columns:1fr;text-align:center}.performance-preview img{margin:0 auto;width:min(100%,260px);height:145px}}
+  @media(max-width:600px){.settlement-summary{grid-template-columns:1fr 1fr;gap:.4rem}.settlement-section{padding:.7rem}.settlement-stat{padding:.65rem}.settlement-stat-val{font-size:1rem}.settlement-toolbar{align-items:stretch}.settlement-toolbar .fg{width:100%}.settlement-toolbar .btn{width:100%}.mutator-card{grid-template-columns:16px minmax(0,1fr) 64px 72px;width:100%}.mutator-card>.mutator-mini{grid-column:2/-1;justify-self:end}.mutator-new-name{min-width:0}.payout-claim-grid{grid-template-columns:1fr}.payout-attach-preview{grid-template-columns:1fr;text-align:center}.payout-attach-preview img{margin:0 auto;width:min(100%,260px);height:145px;}.performance-preview{grid-template-columns:1fr;text-align:center}.performance-preview img{margin:0 auto;width:min(100%,260px);height:145px}}
   @media(prefers-reduced-motion:reduce){.payout-paid-spark,.attendance-spark{display:none!important;animation:none!important;}}
 
   .payout-queue-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin:.7rem 0;}
@@ -1003,7 +1011,7 @@
   @media(max-width:600px){.payout-history-totals{grid-template-columns:repeat(2,minmax(0,1fr));}.payout-queue-filters .btn{min-height:40px;padding:.4rem .55rem;}}
   @media(max-width:1100px){.purchase-collection-card{grid-template-columns:repeat(3,minmax(0,1fr));}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.purchase-actions{justify-content:flex-start}}
   @media(max-width:1100px){.account-action-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-  @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}.currency-toggle{grid-template-columns:repeat(2,36px);height:36px}.currency-toggle button{width:36px;height:34px}.header-state-button{min-width:78px;height:36px;padding:0 .45rem;font-size:.58rem}.account-action-grid{grid-template-columns:1fr 1fr}.account-footer-actions{grid-template-columns:1fr 1fr}.auction-meta-row{grid-template-columns:112px minmax(0,1fr) 62px}.auction-meta-row .badge{width:62px;min-width:62px}.uniform-actions .btn{flex:1 1 130px;min-width:120px}.archive-card-actions{grid-template-columns:1fr 1fr}.archived-settlement-header{align-items:stretch}.archived-header-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}.archived-header-actions .btn:last-child{grid-column:1/-1}.rollout-body{padding:.75rem}.raid-code-field{width:100%!important}.sec-hdr{grid-template-columns:1fr}.sec-title{text-align:center}.sec-actions{width:100%;justify-content:center}.sec-actions .rl-controls{width:min(100%,300px)}.sec-actions .rl-controls>.add-item-btn:only-child{justify-self:center}}
+  @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}.currency-toggle{grid-template-columns:repeat(2,36px);height:36px}.currency-toggle button{width:36px;height:34px}.header-state-button{min-width:78px;height:36px;padding:0 .45rem;font-size:.58rem}.account-action-grid{grid-template-columns:1fr 1fr}.account-footer-actions{grid-template-columns:1fr 1fr}.auction-meta-row{grid-template-columns:112px minmax(0,1fr) 62px}.auction-meta-row .badge{width:62px;min-width:62px}.uniform-actions .btn{flex:1 1 130px;min-width:120px}.archive-card-actions{grid-template-columns:1fr 1fr}.archived-settlement-header{align-items:stretch}.archived-header-actions{display:grid;grid-template-columns:1fr;width:100%}.archived-header-actions .btn:last-child{grid-column:auto}.rollout-body{padding:.75rem}.raid-code-field{width:100%!important}.sec-hdr{grid-template-columns:1fr}.sec-title{text-align:center}.sec-actions{width:100%;justify-content:center}.sec-actions .rl-controls{width:min(100%,300px)}.sec-actions .rl-controls>.add-item-btn:only-child{justify-self:center}}
 
 </style>
 </head>
@@ -1127,6 +1135,7 @@ let lootDisplayMode=false;
 let autoBids={}; // {auctionId: maxAmount} — raider's auto-bid limits
 let searchQuery='',searchResults=[],searchTimer=null,isSearching=false,selectedItem=null;
 let panelOpen=false,panelTab='raiders';
+let memberHistoryQuery='';
 let splits=JSON.parse(JSON.stringify(DEFAULT_SPLITS));
 let splitsLoaded=false;
 let settlement=JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT));
@@ -2353,6 +2362,8 @@ function subscribeToRun(){
           pendingExplosions.push({id,amount:a.currentBid||0,rect});
           bidOnlyUpdate=false;
         }
+        const prevStructure=prevAuctions[id];
+        if(prevStructure&&(a.order!==prevStructure.order||a.category!==prevStructure.category||a.name!==prevStructure.name||a.quality!==prevStructure.quality||a.itemId!==prevStructure.itemId||a.itemIcon!==prevStructure.itemIcon))bidOnlyUpdate=false;
         if(prevAuctions[id]&&a.status!==prevAuctions[id].status) bidOnlyUpdate=false;
       });
       if(pendingLive.length){playGoLiveSound(pendingLive.length);if(!isRL&&tab!=='active'){tab='active';localStorage.setItem('gdkp_tab','active');}}
@@ -2400,8 +2411,13 @@ function subscribeToRun(){
           if(t.firstElementChild)wrap.replaceChild(t.firstElementChild,oldCard);
         }
       });
-      // If item count changed (new item queued), re-render the grid area only
-      if(Object.keys(auctions).length!==Object.keys(prevAuctions).length){
+      // Keep the grid behind the dialog live for additions, moves, category changes,
+      // and status changes without replacing the dialog the RL is using.
+      const modalGridChanged=Object.keys(auctions).length!==Object.keys(prevAuctions).length||Object.keys(auctions).some(id=>{
+        const a=auctions[id],p=prevAuctions[id];
+        return !a||!p||a.status!==p.status||a.order!==p.order||a.category!==p.category||a.name!==p.name;
+      });
+      if(modalGridChanged){
         const all=auctionList();
         const queued=all.filter(a=>a.status==='queued').sort((a,b)=>(a.order??99999)-(b.order??99999));
         const active=all.filter(a=>a.status==='open');
@@ -2496,7 +2512,8 @@ function subscribeToRun(){
         const newlyOpen=Object.keys(auctions).filter(id=>auctions[id]?.status==='open'&&prevAuctions[id]?.status!=='open');
         // Items that just left open (closed/sold/expired)
         const closedOpen=Object.keys(prevAuctions).filter(id=>prevAuctions[id]?.status==='open'&&auctions[id]?.status!=='open');
-        const needsGridRebuild=newlyOpen.length>0||closedOpen.length>0;
+        const activeLayoutChanged=Object.keys(auctions).some(id=>{const a=auctions[id],p=prevAuctions[id];return a&&p&&a.status==='open'&&(a.order!==p.order||a.category!==p.category);});
+        const needsGridRebuild=newlyOpen.length>0||closedOpen.length>0||activeLayoutChanged;
         if(!needsGridRebuild&&changedIds.length>0&&changedIds.length<5){
           // Small targeted update — replace only changed cards
           changedIds.forEach(id=>{
@@ -3999,7 +4016,7 @@ function renderSettlement(){
       <details class="settlement-workspace" ${!locked?'open':''} ontoggle="rememberSettlementSetup(this.open,this)"><summary><div><div class="settlement-section-title" style="font-size:.82rem;">Raiders & Mutators</div><div class="settlement-section-note">${raiders.length} raider${raiders.length===1?'':'s'} · ${mutators.length} mutator${mutators.length===1?'':'s'}</div></div><span class="mutator-mini" data-workspace-toggle>${!locked?'Collapse':'Expand'}</span></summary><div class="settlement-workspace-body">
       <div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Raider name</div><input type="text" id="settlement-raider-name" placeholder="Character name" ${locked?'disabled':''} onkeydown="if(event.key==='Enter'){event.preventDefault();addSettlementRaider();}" /></div><button class="btn btn-outline btn-sm" onclick="addSettlementRaider()" ${locked?'disabled':''}>Add Raider</button><button class="btn btn-outline btn-sm" onclick="syncSettlementRaiders()" ${locked?'disabled':''}>Import Attendance</button></div>
       ${renderPerformanceImport(locked,mutators,raiders)}
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.45rem;"><div><div class="settlement-section-title" style="font-size:.78rem;">Manual Mutators</div><div class="settlement-section-note">Create, edit, and check mutators yourself before payouts start.</div></div>${mutators.length?`<button class="mutator-mini" onclick="resetSettlementMutatorOrder()" ${locked?'disabled':''}>Use Role Order</button>`:''}</div><div class="mutator-grid">${mutatorCards||'<div class="settlement-empty">No saved mutators yet.</div>'}</div><div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg"><div class="lbl">Mutator name</div><input type="text" id="mutator-name" placeholder="Example: Tanks" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Pool %</div><input type="number" id="mutator-pct" step=".01" placeholder="0" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Flat gold</div><input type="number" id="mutator-flat" step="1" placeholder="0" ${locked?'disabled':''} onkeydown="if(event.key==='Enter')addSettlementMutator()" /></div><button class="btn btn-gold-soft btn-sm" onclick="addSettlementMutator()" ${locked?'disabled':''}>Save Mutator</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.45rem;"><div><div class="settlement-section-title" style="font-size:.78rem;">Manual Mutators</div><div class="settlement-section-note">Create, edit, and check mutators yourself before payouts start.</div></div>${mutators.length?`<button class="mutator-mini" onclick="resetSettlementMutatorOrder()" ${locked?'disabled':''}>Use Role Order</button>`:''}</div><div class="mutator-grid">${mutatorCards||'<div class="settlement-empty">No saved mutators yet.</div>'}</div><div class="settlement-toolbar" style="margin-bottom:.85rem;"><div class="fg mutator-new-name"><div class="lbl">Mutator name</div><input type="text" id="mutator-name" placeholder="Example: Tanks" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Pool %</div><input type="number" id="mutator-pct" step=".01" placeholder="0" ${locked?'disabled':''} /></div><div class="fg"><div class="lbl">Flat gold</div><input type="number" id="mutator-flat" step="1" placeholder="0" ${locked?'disabled':''} onkeydown="if(event.key==='Enter')addSettlementMutator()" /></div><button class="btn btn-gold-soft btn-sm" onclick="addSettlementMutator()" ${locked?'disabled':''}>Save Mutator</button></div>
       <div class="settlement-table-wrap raider-table-wrap" data-scroll-key="settlement-raiders"><table class="settlement-table raider-settlement-table" style="table-layout:fixed;min-width:${raiderTableMinWidth}px;"><colgroup><col style="width:48px;" /><col style="width:190px;" /><col style="width:64px;" />${mutatorCols}<col style="width:160px;" /><col style="width:160px;" /><col style="width:130px;" /></colgroup><thead><tr><th></th><th>Raider</th><th>Base</th>${mutatorHeaders}<th>Adjust g</th><th>Adjust %</th><th>Calculated Cut</th></tr></thead><tbody>${raiderRows||`<tr><td colspan="${6+mutators.length}" class="settlement-empty">Add raiders or import attendance.</td></tr>`}</tbody></table></div></div></details>
     </div>
     <div class="settlement-summary compact-three"><div class="settlement-stat"><div class="settlement-stat-lbl">Management · ${calc.managementPct}%</div><div class="settlement-stat-val">${goldText(calc.managementCut)}</div><div class="settlement-stat-sub">Gold accounting value</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Payouts Completed</div><div class="settlement-stat-val settlement-positive">${goldText(paidTotal)}</div><div class="settlement-stat-sub">${goldText(unpaidTotal)} gold equivalent still unpaid</div></div><div class="settlement-stat"><div class="settlement-stat-lbl">Distribution Balance</div><div class="settlement-stat-val ${Math.abs(distributionBalance)<=raiders.length?'settlement-positive':'settlement-negative'}">${goldText(distributionBalance)}</div><div class="settlement-stat-sub">Gold accounting value after adjustments</div></div></div>
@@ -4076,6 +4093,23 @@ function closePanel(){
 }
 function togglePanel(){panelOpen?closePanel():openPanel();}
 
+function memberHistorySearchHTML(){
+  if(!isRL)return'';
+  return`<div class="member-history-search"><div class="lbl">Member History</div><input type="search" id="member-history-search" value="${settlementEsc(memberHistoryQuery)}" placeholder="Search character name" autocomplete="off" oninput="setMemberHistorySearch(this.value)" /><div class="member-history-results" id="member-history-results"><div class="settlement-muted">Type a name to search every saved run.</div></div></div>`;
+}
+function setMemberHistorySearch(value){memberHistoryQuery=String(value||'').trim();renderMemberHistoryResults();}
+async function renderMemberHistoryResults(){
+  const el=document.getElementById('member-history-results');if(!el||!isRL)return;
+  const query=attendanceCharacterIdentity(memberHistoryQuery);
+  if(!query){el.innerHTML='<div class="settlement-muted">Type a name to search every saved run.</div>';return;}
+  el.innerHTML='<div class="settlement-muted">Searching...</div>';
+  const stats=await fetchCrossRunStats();
+  if(!document.body.contains(el))return;
+  const matches=Object.entries(stats||{}).filter(([name])=>attendanceCharacterIdentity(name).includes(query)).sort((a,b)=>(b[1].lastSeen||0)-(a[1].lastSeen||0)||(b[1].totalSpent||0)-(a[1].totalSpent||0)).slice(0,12);
+  if(!matches.length){el.innerHTML='<div class="settlement-muted">No saved member matches.</div>';return;}
+  el.innerHTML=matches.map(([name,s])=>`<details class="member-history-result"><summary><span>${settlementEsc(name)}</span><span class="member-history-result-meta">${s.runCount||0} runs · ${s.itemsWon||0} wins</span></summary><div class="settlement-muted" style="margin-top:.45rem;">Recorded spend: ${displayMoney(s.totalSpent||0)}${s.lastSeen?`<br>Last seen: ${settlementEsc(new Date(s.lastSeen).toLocaleDateString())}`:''}</div>${s.items?.length?`<div style="margin-top:.4rem;">${[...s.items].sort((a,b)=>(b.price||0)-(a.price||0)).slice(0,5).map(i=>`<div class="raider-item"><span class="raider-item-name item-name ${i.quality||'common'}">${settlementEsc(i.name||'Unknown item')}</span><span class="raider-item-price">${displayMoney(i.price||0)}</span></div>`).join('')}</div>`:''}</details>`).join('');
+}
+
 // Set up hover zone after DOM ready
 function initPanelHover(){
   const zone=document.getElementById('panel-hover-zone');
@@ -4091,6 +4125,7 @@ function initPanelHover(){
 
 function renderPanel(){
   const body=document.getElementById('side-panel-body');if(!body)return;
+  const historySearch=memberHistorySearchHTML();
   const rlTools=isRL?`<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem;"><button class="btn ${attendanceSettings.open?'btn-green':'btn-outline'} btn-sm" onclick="openAttendanceManager()">Attendance (${attendanceList().length})</button><button class="btn btn-outline btn-sm" onclick="closePanel();setTab('settlement')">Settlement</button></div>`:'';
   const lootMap=getAllRaiderLoot();
   const raiders=Object.keys(lootMap).sort((a,b)=>{
@@ -4098,13 +4133,13 @@ function renderPanel(){
     const totalB=lootMap[b].reduce((s,i)=>s+i.price,0);
     return totalB-totalA;
   });
-  if(!raiders.length){body.innerHTML=rlTools+'<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:2rem 0;">No items sold yet</div>';return;}
+  if(!raiders.length){body.innerHTML=historySearch+rlTools+'<div style="color:var(--text-muted);font-size:.85rem;text-align:center;padding:2rem 0;">No items sold yet</div>';renderMemberHistoryResults();return;}
   // Unpaid summary
   const unpaidRaiders=raiders.filter(n=>lootMap[n].some(i=>!i.paid));
   const unpaidBanner=unpaidRaiders.length?`<div style="background:rgba(226,96,96,0.1);border:1px solid rgba(226,96,96,0.3);border-radius:3px;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.78rem;font-family:'Cinzel',serif;">
     <span style="color:var(--red);">&#9888; Unpaid:</span> <span style="color:var(--text-bright);">${unpaidRaiders.join(', ')}</span>
   </div>`:'';
-  body.innerHTML=rlTools+unpaidBanner+raiders.map(name=>{
+  body.innerHTML=historySearch+rlTools+unpaidBanner+raiders.map(name=>{
     const items=lootMap[name];
     const total=items.reduce((s,i)=>s+i.price,0);
     const owed=items.filter(i=>!i.paid).reduce((s,i)=>s+i.price,0);
@@ -4129,6 +4164,7 @@ function renderPanel(){
       ${itemRows}
     </div>`;
   }).join('');
+  renderMemberHistoryResults();
 }
 
 // ── Rollout Mode ──────────────────────────────────────────────────────────
@@ -4840,13 +4876,21 @@ function addToQueueAndStart(){
   const btn3=Math.max(1,parseInt(document.getElementById('m-btn3')?.value)||1000);
   const startBid=parseInt(document.getElementById('m-start')?.value)||1000;
   const name=selectedItem.name;
+  const selectedCategory=modalCategory||'Other';
   const endsAt=Date.now()+dur*1000;
+  const activeCount=auctionList().filter(a=>a.status==='open').length;
   for(let i=0;i<qty;i++){
     const nr=push(runRef('/auctions'));
-    createWrites.push(set(nr,{id:nr.key,name,slot:selectedItem.slot||'',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:modalCategory||'Other',note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',paused:false,endsAt,remaining:dur,order:i}));
+    createWrites.push(set(nr,{id:nr.key,name,slot:selectedItem.slot||'',quality:modalQuality,itemId:selectedItem.id,itemIcon:selectedItem.icon||null,currentBid:startBid,startBid,minIncrement:btn1,duration:dur,bidButtons:[btn1,btn2,btn3],category:selectedCategory,note:document.getElementById('m-note')?.value?.trim()||'',bids:{},status:'open',paused:false,endsAt,remaining:dur,order:activeCount+i}));
   }
   Promise.all(createWrites).catch(()=>toast('Could not start the item')).finally(()=>{itemCreatePending=false;});
-  modal=false;editId=null;selectedItem=null;searchQuery='';modalQuality='epic';modalCategory='Tier';
+  _removeModalFocusTrap();
+  document.getElementById('modal-overlay')?.remove();
+  modal=false;editId=null;selectedItem=null;searchQuery='';modalQuality='epic';
+  tab='active';localStorage.setItem('gdkp_tab','active');
+  syncDialogScrollLock();
+  render();
+  requestAnimationFrame(syncDialogScrollLock);
   toast(qty>1?`${qty}x ${name} started!`:`${name} started!`);
 }
 function saveEdit(){
@@ -5274,7 +5318,7 @@ function _installModalFocusTrap(){
   document.addEventListener('keydown',_modalFocusTrap,true);
 }
 function _removeModalFocusTrap(){if(_modalFocusTrap){document.removeEventListener('keydown',_modalFocusTrap,true);_modalFocusTrap=null;}}
-function openModal(){if(archivedSettlementContext){toast('Return to the current run to add auctions');return;}modal=true;editId=null;modalQuality='epic';modalCategory='Tier';selectedItem=null;searchQuery='';render();setTimeout(()=>{const inp=document.getElementById('item-search-input');if(inp)inp.focus();_installModalFocusTrap();},80);}
+function openModal(){if(archivedSettlementContext){toast('Return to the current run to add auctions');return;}modal=true;editId=null;modalQuality='epic';if(!raidCategories.includes(modalCategory))modalCategory=raidCategories[0]||'Other';selectedItem=null;searchQuery='';render();setTimeout(()=>{const inp=document.getElementById('item-search-input');if(inp)inp.focus();_installModalFocusTrap();syncDialogScrollLock();},80);}
 function openEdit(id){const a=auctions[id];if(!a)return;modal=true;editId=id;modalQuality=a.quality||'epic';modalCategory=a.category||'Tier';selectedItem={name:a.name,id:a.itemId,icon:a.itemIcon,slot:a.slot};searchQuery=a.name||'';render();setTimeout(_installModalFocusTrap,80);}
 let _modalMousedownOnOverlay=false;
 function modalOverlayMousedown(e){_modalMousedownOnOverlay=e.target===e.currentTarget;}
@@ -6292,16 +6336,25 @@ async function fetchCrossRunStats(forceRefresh){
     const snap=await get(ref(db,'runs'));
     const runs=snap.val()||{};
     const stats={};
-    Object.values(runs).forEach(run=>{
+    Object.entries(runs).forEach(([runKey,run])=>{
+      const seenThisRun=new Set();
+      const includeMember=name=>{
+        name=String(name||'').trim();if(!name)return null;
+        if(!stats[name])stats[name]={totalSpent:0,itemsWon:0,items:[],runs:new Set(),lastSeen:0};
+        if(!seenThisRun.has(name)){stats[name].runs.add(runKey);seenThisRun.add(name);}
+        stats[name].lastSeen=Math.max(stats[name].lastSeen||0,run.createdAt||run.archivedAt||0);
+        return stats[name];
+      };
+      Object.values(run.attendance||{}).filter(a=>a?.approved&&a.character).forEach(a=>includeMember(a.character));
+      Object.values(run.settlement?.raiders||{}).forEach(r=>includeMember(r?.name));
       Object.values(run.auctions||{}).filter(a=>a.status==='sold').forEach(a=>{
-        const bids=Object.values(a.bids||{}).sort((x,y)=>y.amount-x.amount);
+        const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
         if(!bids[0])return;
         const winner=bids[0].bidder;
-        if(!stats[winner])stats[winner]={totalSpent:0,itemsWon:0,items:[],runs:new Set()};
-        stats[winner].totalSpent+=(a.currentBid||0);
-        stats[winner].itemsWon++;
-        stats[winner].items.push({name:a.name,price:a.currentBid,quality:a.quality||'common',itemId:a.itemId||null});
-        if(run.createdAt) stats[winner].runs.add(run.createdAt);
+        const member=includeMember(winner);if(!member)return;
+        member.totalSpent+=(a.currentBid||0);
+        member.itemsWon++;
+        member.items.push({name:a.name,price:a.currentBid,quality:a.quality||'common',itemId:a.itemId||null,runTitle:run.settings?.raidTitle||'',runAt:run.createdAt||0});
       });
     });
     // Convert Set to count
@@ -6494,6 +6547,7 @@ function closeModal(){
   if(wasAdding)tab='queued';
   render();
   if(!wasAdding)_restoreScroll(_sc);
+  requestAnimationFrame(syncDialogScrollLock);
 }
 let _dragId=null,_dragEl=null;
 function dragStart(e,id){
@@ -6668,7 +6722,7 @@ document.addEventListener('click',e=>{
 Object.assign(window,{openCutRequest,closeCutRequest,handleCutRequestFile,handleCutRequestPaste,handleCutRequestDrop,submitCutRequest,openCutRequestReview,respondCutRequest,openFeedbackForm,closeFeedbackForm,handleFeedbackFile,handleFeedbackPaste,handleFeedbackDrop,submitFeedback,openFeedbackAdmin,openFeedbackAttachment,setFeedbackDone});
 Object.assign(window,{setDisplayCurrency,toggleDisplayCurrency,changeAttendancePayment,openPurchasePaymentDialog,updatePurchasePaymentPreview,savePurchasePayment,markPurchaseReceived,setPayoutQueueFilter,setPayoutQueueSearch,rememberPayoutDetail,openPayoutHistory,closePayoutHistory,setPayoutMethod,copyPayoutAddress,reopenPayoutClaim,addRaiderBonus,submitRaiderBonus,openCutAdjustment,submitCutAdjustment,reverseCutAdjustment,runPayoutAction,toggleSiteEditMode,openSiteCopyEditor,saveSiteCopy,resetSiteCopy,openSiteTextManager,previewSiteTextField,saveSiteTextManager});
 Object.assign(window,{rememberPerformanceEncounter,setPerformanceMetric,handlePerformanceDrag,handlePerformanceDrop,handlePerformancePaste,handlePerformanceFile,removePerformanceImage,readPerformanceScreenshot,updatePerformanceRow,addPerformanceRow,removePerformanceRow,batchAssignPerformanceMutator,openPerformanceDraftImage,openPerformanceImportImage,closePerformanceImage,savePerformanceImport,deletePerformanceImport,rememberSettlementSetup});
-Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,addAccountCharacter,setPreferredCharacter,removeAccountCharacter,accountOpenTab,accountOpenPanel,openCreditRequest,openWithdrawalRequest,closeAccountPayment,handleAccountPaymentFile,handleAccountPaymentPaste,handleAccountPaymentDrag,handleAccountPaymentDrop,removeAccountPaymentAttachment,openDraftAccountAttachment,submitAccountPayment,cancelCreditRequest,openAccountAdmin,approveAccountCredit,declineAccountCredit,grantQuickCredit,payAccountWithdrawal,correctAccountWithdrawal,openAccountAttachment,pruneStalePresence,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,verifyAttendanceCode,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts,handlePayoutDrag,handlePayoutDrop,handlePayoutPaste,handlePayoutFile,rememberPayoutFields,removePayoutAttachment,openPayoutImage,submitPayoutListing,closePayoutReview,openPayoutReview,requestPayoutCorrection,setPayoutPaid});
+Object.assign(window,{join,joinDiscord,logout,wowConfirm,toggleMute,togglePanel,openPanel,closePanel,setPanelTab,setMemberHistorySearch,kickBan,unban,setCategoryFilter,setLiveCatFilter,toggleMyBids,toggleMyItems,showMemberTooltip,showMemberTooltipFixed,showMemberTooltipFromHeader,showOnlineTooltip,hideOnlineTooltip,hideMemberTooltip,cancelHide,saveRaidTitle,startEditTitle,saveCategories,toggleMembersSidebar,sendChat,deleteChat,toggleChat,mentionMember,openDM,closeDM,switchChatTab,removePastItem,deleteRun,undoDeleteRun,restoreArchivedRun,setTab,openModal,closeModal,openEdit,addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue,previewStartBid,startOne,startAll,togglePause,togglePauseAll,cancelAll,closeAll,undoBulkRemove,cardClick,extendTimer,closeAuction,cancelAuction,resetAuction,rlRetractBid,coinExplosion,coinExplosionAt,removeQueued,restartAuction,restartFromSold,quickBid,placeBid,toggleCustom,setQ,setModalCat,updateSettings,onSearchInput,handleSearchKeydown,handleDropdownItemKey,handleQualityKeydown,handleCatKeydown,selectItem,clearItemSelection,toggleLootDisplay,renderLootDisplay,renderLootTracker,closeArchiveDisplay,confirmReset,updateSlot,updateAdminCut,addSlot,removeSlot,saveSplits,togglePaid,markAllPaid,showUnpaidOverlay,togglePaidFromOverlay,enterRollout,exitRollout,renderRollout,rolloutTogglePaid,rolloutMarkAll,renderRaiderSummary,setAutoBid,clearAutoBid,modalOverlayMousedown,modalOverlayMouseup,removeSold,openEditSold,saveSoldEdit,dragStart,dragOver,dragDrop,dragEnd,dragLeave,retractBid,duplicateItem,startLootDisplayFromArchive,retryMissingIcons,backfillItemIds,toggleSelect,toggleSelectAll,clearSelection,bulkRestart,bulkStart,bulkPause,bulkClose,bulkRemove,bulkExtend,toggleFav,toggleWatch,openUserSettings,closeUserSettings,saveUserSettings,addAccountCharacter,setPreferredCharacter,removeAccountCharacter,accountOpenTab,accountOpenPanel,openCreditRequest,openWithdrawalRequest,closeAccountPayment,handleAccountPaymentFile,handleAccountPaymentPaste,handleAccountPaymentDrag,handleAccountPaymentDrop,removeAccountPaymentAttachment,openDraftAccountAttachment,submitAccountPayment,cancelCreditRequest,openAccountAdmin,approveAccountCredit,declineAccountCredit,grantQuickCredit,payAccountWithdrawal,correctAccountWithdrawal,openAccountAttachment,pruneStalePresence,openAttendanceManager,closeAttendanceManager,toggleAttendanceCheckIn,copyAttendanceInvite,verifyAttendanceCode,checkInAttendance,leaveAttendance,removeAttendanceMember,editAttendanceCharacter,saveSettlementSetting,savePaymentField,setAllSettlementCollections,cleanSettlementDuplicates,addSettlementRaider,syncSettlementRaiders,removeSettlementRaider,saveRaiderField,toggleRaiderMutator,addSettlementMutator,saveSettlementMutatorField,editSettlementMutator,removeSettlementMutator,startSettlementMutatorDrag,dropSettlementMutator,endSettlementMutatorDrag,resetSettlementMutatorOrder,toggleSettlementLock,setAllPayoutsPaid,markAllPayoutsPaid,copyUnpaidPayouts,handlePayoutDrag,handlePayoutDrop,handlePayoutPaste,handlePayoutFile,rememberPayoutFields,removePayoutAttachment,openPayoutImage,submitPayoutListing,closePayoutReview,openPayoutReview,requestPayoutCorrection,setPayoutPaid});
 Object.assign(window,{openArchivedSettlement,openMyArchivedPayouts,openArchivedPayoutByCode,openArchivedPayoutByKey,copyArchivedRunCode,generateArchivedRunCode,copyArchivedPayoutLink,resumeArchivedRun,closeArchivedSettlement});
 const currentSyncSettlementRaiders=window.syncSettlementRaiders,currentRemoveSettlementMutator=window.removeSettlementMutator,currentSubmitCutAdjustment=window.submitCutAdjustment,currentSetPayoutPaid=window.setPayoutPaid,currentSetAllPayoutsPaid=window.setAllPayoutsPaid,currentToggleSettlementLock=window.toggleSettlementLock,currentRunPayoutAction=window.runPayoutAction,currentOpenCutRequestReview=window.openCutRequestReview,currentRespondCutRequest=window.respondCutRequest;
 window.syncSettlementRaiders=(...args)=>archivedSettlementContext?archiveSyncSettlementRaiders(...args):currentSyncSettlementRaiders(...args);
@@ -6733,13 +6787,18 @@ if (_savedUser) {
 initPanelHover();
 // Keep modal layering predictable and prevent the page underneath from moving.
 const _dialogSelector='.wow-dialog-overlay,.modal-overlay,.account-payment-overlay,.payout-review-overlay,.unpaid-overlay,.rollout-overlay,#attendance-overlay,#raider-summary-overlay';
-const _dialogObserver=new MutationObserver(()=>document.body.classList.toggle('dialog-open',!!document.querySelector(_dialogSelector)));
-_dialogObserver.observe(document.body,{childList:true,subtree:false});
+function syncDialogScrollLock(){
+  const hasOpenDialog=[...document.querySelectorAll(_dialogSelector)].some(el=>getComputedStyle(el).display!=='none');
+  document.body.classList.toggle('dialog-open',hasOpenDialog);
+}
+const _dialogObserver=new MutationObserver(syncDialogScrollLock);
+_dialogObserver.observe(document.body,{childList:true,subtree:true});
 document.addEventListener('keydown',event=>{
   if(event.key!=='Escape')return;
   const top=[...document.querySelectorAll(_dialogSelector)].filter(el=>getComputedStyle(el).display!=='none').sort((a,b)=>(parseInt(getComputedStyle(a).zIndex)||0)-(parseInt(getComputedStyle(b).zIndex)||0)).pop();
   if(!top)return;
   if(top.id==='wow-dialog-overlay')document.getElementById('wow-cancel')?.click();
+  else if(top.id==='modal-overlay')closeModal();
   else if(top.id==='cut-request-overlay')closeCutRequest();
   else if(top.id==='feedback-overlay')closeFeedbackForm();
   else if(top.id==='attendance-overlay')closeAttendanceManager();

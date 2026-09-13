@@ -232,7 +232,7 @@
     .rl-badge{display:none;}
     .hdr{grid-template-columns:minmax(70px,.7fr) auto minmax(0,1fr);}
     .logo{font-size:clamp(.88rem,2.1vw,1.1rem);}
-    .logo-sub{font-size:.52rem;letter-spacing:.16em;max-width:30ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .logo-sub{font-size:.8rem;letter-spacing:.08em;white-space:normal;overflow-wrap:anywhere;}
     .header-avatar{display:none;}
     .btn-sm{font-size:.65rem;padding:.3rem .55rem;}
   }
@@ -245,7 +245,7 @@
     .header-left{display:none !important;}
     .logo-center{text-align:left;}
     .logo{font-size:.9rem;white-space:nowrap;}
-    .logo-sub{display:none;}
+    .logo-sub{display:block;white-space:normal;overflow-wrap:anywhere;}
     .rl-badge{display:none;}
     #hdr-user{gap:.3rem;justify-content:flex-end;}
     .usr-chip{font-size:.58rem;padding:.3rem .45rem;max-width:82px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -1050,7 +1050,9 @@
 .dashboard-entry p{margin:.25rem 0;overflow-wrap:anywhere;font-size:.8rem;}
 .dashboard-entry .btn{width:100%;min-height:44px;white-space:normal;}
 @media(max-width:600px){.dashboard-entry{grid-template-columns:minmax(0,1fr);}.dashboard-entry .btn{width:160px;justify-self:end;}}
-/* Header revision 44: full title and independent wrapping controls. */
+/* Header revision 45: full title and independent wrapping controls. */
+.header-build{font:12px/1.4 Inter,sans-serif;color:var(--text-muted);white-space:nowrap;}
+.hdr .header-left{gap:.8rem;flex-wrap:wrap;}
 .hdr .logo-center .logo-sub{display:block;max-width:none;width:100%;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;margin:.35rem auto 0;line-height:1.5;letter-spacing:.08em;}
 .hdr .raid-title-display{display:inline;white-space:normal;overflow-wrap:anywhere;}
 .hdr .raid-title-input{box-sizing:border-box;width:min(100%,560px);max-width:100%;}
@@ -1076,6 +1078,7 @@
 <div id="app">
   <div class="hdr">
     <div class="header-left">
+      <span class="header-build">Build 45</span>
       <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
         <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)"></span>

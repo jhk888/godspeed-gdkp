@@ -10,7 +10,7 @@ const {execute}=require('./core');
 const {receipt,scan}=require('./usdcWatch');
 initializeApp();
 const RPC=defineSecret('GS_ETHEREUM_RPC'),CLIENT_SECRET=defineSecret('GS_DISCORD_SECRET');
-const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_URL',{default:'https://godspeedgdkp.bid/'}),RL=defineString('GS_RL_DISCORD_ID',{default:'670939357686923265'});
+const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_URL'),RL=defineString('GS_RL_DISCORD_ID',{default:'670939357686923265'});
 const region='us-central1';
 async function commit(actor,op,data,id){let result,error;const now=Date.now();const tx=await getDatabase().ref().transaction(root=>{try{const out=execute(root,actor,op,data,id,now);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);if(!tx.committed)throw new HttpsError('failed-precondition',error?.message||'Transaction conflicted; retry');return result;}
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:String(request.auth.token.discordId)===RL.value()};}

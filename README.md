@@ -1,3 +1,7 @@
+# Test project configuration
+
+This copy targets godspeed-coin-test. Keep it on the godspeed-coin GitHub branch. The test website URL and Discord callback still need configuration. No backend has been deployed. Database rules and full integration still require testing. Use simulated accounting tests before any real funds.
+
 # Godspeed Coin Phase 1, Build 46
 
 This package extends the full Godspeed GDKP HTML from Build 45. It has not been deployed. Install and validate the Firebase backend before uploading `index.html`; the new Discord sign-in route depends on that backend.
@@ -55,7 +59,7 @@ Use a staging Firebase project first. Production deployment and real transfers h
 
 1. Back up RTDB and current rules. Keep the existing images, manifest and other static assets beside the HTML.
 2. Use Node 22 and Firebase CLI. Enable Firebase Authentication, the required Cloud Functions services and billing for scheduled functions. In Firebase Auth, authorize your site domain.
-3. In your Discord application's OAuth configuration, add `https://us-central1-YOUR_PROJECT.cloudfunctions.net/gsDiscordAuth` as a redirect URI.
+3. In your Discord application's OAuth configuration, add `https://us-central1-godspeed-coin-test.cloudfunctions.net/gsDiscordAuth` as a redirect URI.
 4. From this directory, choose your Firebase project. Set the secrets through Firebase's secret manager:
 
    ```sh
@@ -70,7 +74,7 @@ Use a staging Firebase project first. Production deployment and real transfers h
 
    ```text
    GS_DISCORD_CLIENT_ID=YOUR_DISCORD_APPLICATION_ID
-   GS_SITE_URL=https://godspeedgdkp.bid/
+   GS_SITE_URL=YOUR_TEST_SITE_URL
    GS_RL_DISCORD_ID=670939357686923265
    ```
 

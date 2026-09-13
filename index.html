@@ -1050,6 +1050,26 @@
 .dashboard-entry p{margin:.25rem 0;overflow-wrap:anywhere;font-size:.8rem;}
 .dashboard-entry .btn{width:100%;min-height:44px;white-space:normal;}
 @media(max-width:600px){.dashboard-entry{grid-template-columns:minmax(0,1fr);}.dashboard-entry .btn{width:160px;justify-self:end;}}
+/* Header revision 44: full title and independent wrapping controls. */
+.hdr .logo-center .logo-sub{display:block;max-width:none;width:100%;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;margin:.35rem auto 0;line-height:1.5;letter-spacing:.08em;}
+.hdr .raid-title-display{display:inline;white-space:normal;overflow-wrap:anywhere;}
+.hdr .raid-title-input{box-sizing:border-box;width:min(100%,560px);max-width:100%;}
+.hdr #hdr-user{gap:.6rem;}
+.hdr #hdr-user>.btn,.hdr #hdr-user>.usr-chip{box-sizing:border-box;flex:0 0 auto;min-height:44px;height:auto;max-width:100%;display:inline-flex;align-items:center;justify-content:center;padding:.6rem .85rem!important;font-size:.72rem!important;line-height:1.25;letter-spacing:.06em;white-space:normal;overflow-wrap:anywhere;overflow:visible;text-overflow:clip;}
+.hdr #hdr-user>.currency-toggle{flex:0 0 auto;height:44px;}
+.hdr #hdr-user>.currency-toggle button{height:42px;}
+.hdr.header-stacked{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;gap:.8rem;}
+.hdr.header-stacked .logo-center{grid-column:1;grid-row:1;width:100%;}
+.hdr.header-stacked .header-left{grid-column:1;grid-row:2;justify-content:center;}
+.hdr.header-stacked #hdr-user{grid-column:1;grid-row:3;justify-content:center;flex-wrap:wrap;width:100%;}
+@media(max-width:1400px){
+  .hdr{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;gap:.8rem;padding:1rem;}
+  .hdr .logo-center{grid-column:1;grid-row:1;text-align:center;width:100%;}
+  .hdr .logo{font-size:clamp(1.1rem,2.4vw,1.65rem);white-space:normal;}
+  .hdr .logo-sub{font-size:.8rem;}
+  .hdr .header-left{display:flex!important;grid-column:1;grid-row:2;justify-content:center;}
+  .hdr #hdr-user{grid-column:1;grid-row:3;justify-content:center;flex-wrap:wrap;width:100%;}
+}
 </style>
 </head>
 <body>

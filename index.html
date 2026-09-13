@@ -1041,6 +1041,15 @@
     #hdr-user{grid-column:1;grid-row:2;justify-content:center;flex-wrap:wrap;}
   }
 
+#settlements-dashboard{box-sizing:border-box;width:min(1000px,96vw);max-height:90dvh;margin:auto;padding:1rem;border:1px solid var(--border-gold);border-radius:6px;background:#17140e;color:var(--text-bright);overflow:auto;font:inherit;}
+#settlements-dashboard::backdrop{background:rgba(0,0,0,.8);}
+.dashboard-toolbar{display:flex;gap:.6rem;flex-wrap:wrap;margin:.8rem 0;}
+.dashboard-toolbar input{flex:1 1 220px;min-width:0;background:#100e09;color:var(--text-bright);border:1px solid var(--border-gold);padding:.6rem;}
+.dashboard-toolbar select{background:#100e09;color:var(--text-bright);border:1px solid var(--border-gold);padding:.6rem;max-width:100%;}
+.dashboard-entry{display:grid;grid-template-columns:minmax(0,1fr) 160px;gap:.75rem;align-items:center;padding:.8rem 0;border-top:1px solid var(--border-gold);}
+.dashboard-entry p{margin:.25rem 0;overflow-wrap:anywhere;font-size:.8rem;}
+.dashboard-entry .btn{width:100%;min-height:44px;white-space:normal;}
+@media(max-width:600px){.dashboard-entry{grid-template-columns:minmax(0,1fr);}.dashboard-entry .btn{width:160px;justify-self:end;}}
 </style>
 </head>
 <body>
@@ -3018,6 +3027,69 @@ function renderAttendanceManager(){
   const scrollBox=overlay.querySelector('[data-scroll-key="attendance-manager"]');if(scrollBox&&savedScroll)scrollBox.scrollTop=savedScroll;
 }
 
+let settlementsDashboardUnsubscribe=null,settlementsDashboardEntries=[];
+function collectSettlementTasks(runs,currentKey){
+  const entries=[];
+  Object.entries(runs||{}).forEach(([key,run])=>{
+    if(!run||run.deleted||run.deletedAt||(!run.archived&&key!==currentKey))return;
+    const state=run.settlement||{};
+    Object.entries(state.raiders||{}).forEach(([raiderKey,r])=>{
+      if(!r)return;
+      const s=r.submission||{},request=r.cutRequest||{};
+      const adjustments=Object.values(r.cutAdjustments||{}).filter(a=>a&&!a.reversedAt).reduce((sum,a)=>sum+(Number(a.amount)||0),0);
+      const locked=state.payoutStarted&&r.lockedCut!=null&&Number.isFinite(Number(r.lockedCut));
+      const cut=locked?Math.max(0,Math.floor(Number(r.lockedCut)+adjustments)):null;
+      const paid=r.paidAmount!=null&&Number.isFinite(Number(r.paidAmount))?Number(r.paidAmount):r.paid?(cut||0):0;
+      const complete=!!r.paid&&(cut===null||paid>=cut);
+      const dispute=['pending','open','reopened'].includes(request.status)||(!request.status&&!!request.submittedAt);
+      const category=dispute?'dispute':complete?null:s.status==='correction'?'correction':s.submittedAt?(s.method==='usdc'?'usdc':'gold'):state.payoutStarted?'unclaimed':null;
+      if(!category)return;
+      const due=cut===null?null:Math.max(0,cut-paid),rate=Number(r.paidRateUsdPer1000||s.rateUsdcPer1000||state.usdPer1000||state.usdcPer1000)||10;
+      const amount=due===null?'Amount available in settlement':s.method==='usdc'?`${(due*rate/1000).toFixed(2)} USDC`:`${due.toLocaleString()}g${s.method?'':' · method not chosen'}`;
+      entries.push({key,raiderKey,name:r.name||'Unnamed raider',title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||run.archivedAt||0,archived:!!run.archived,category,amount,note:dispute?request.note||'':s.status==='correction'?s.correctionNote||'':'',hasProof:!!s.imageData||!!request.hasAttachment});
+    });
+  });
+  const priority={dispute:0,gold:1,usdc:1,correction:2,unclaimed:3};
+  return entries.sort((a,b)=>priority[a.category]-priority[b.category]||a.date-b.date||a.name.localeCompare(b.name));
+}
+function closeSettlementsDashboard(){
+  if(settlementsDashboardUnsubscribe){settlementsDashboardUnsubscribe();settlementsDashboardUnsubscribe=null;}
+  const dialog=document.getElementById('settlements-dashboard');if(dialog?.open)dialog.close();dialog?.remove();settlementsDashboardEntries=[];
+}
+function renderSettlementsDashboard(){
+  const dialog=document.getElementById('settlements-dashboard');if(!dialog)return;
+  if(!isRL){closeSettlementsDashboard();return;}
+  const query=dialog.querySelector('input').value.trim().toLowerCase(),filter=dialog.querySelector('select').value;
+  const labels={dispute:'Open dispute',gold:'Purchase ready',usdc:'USDC ready',correction:'Correction needed',unclaimed:'No claim'};
+  const entries=settlementsDashboardEntries;
+  dialog.querySelector('[data-dashboard-counts]').textContent=`${entries.filter(e=>e.category==='dispute').length} disputes · ${entries.filter(e=>['gold','usdc'].includes(e.category)).length} ready to pay · ${entries.filter(e=>e.category==='correction').length} corrections · ${entries.filter(e=>e.category==='unclaimed').length} unclaimed`;
+  const visible=entries.map((entry,index)=>({entry,index})).filter(({entry:e})=>(filter==='all'||e.category===filter)&&`${e.name} ${e.title}`.toLowerCase().includes(query));
+  const list=dialog.querySelector('[data-dashboard-list]'),scroll=dialog.scrollTop;
+  list.innerHTML=visible.map(({entry:e,index})=>`<article class="dashboard-entry"><div><strong>${settlementEsc(e.name)}</strong> <span class="settlement-status ${['gold','usdc'].includes(e.category)?'ready':'warn'}">${labels[e.category]}</span><p>${settlementEsc(e.amount)}</p><p class="settlement-muted">${settlementEsc(e.title)} · ${e.date?settlementEsc(new Date(e.date).toLocaleDateString()):'Date unavailable'} · ${e.archived?'Archived':'Current run'}</p>${e.note?`<p>${settlementEsc(e.note)}</p>`:''}${e.hasProof?'<p class="settlement-muted">Proof attached</p>':''}</div><button class="btn btn-outline btn-sm" data-dashboard-entry="${index}">${e.category==='dispute'?'Review Dispute':'Open Payout'}</button></article>`).join('')||'<p class="settlement-empty">No outstanding entries match this view.</p>';
+  dialog.scrollTop=scroll;
+}
+function openSettlementsDashboard(){
+  if(!isRL)return;closeSettlementsDashboard();closeUserSettings();closePanel();
+  const dialog=document.createElement('dialog');dialog.id='settlements-dashboard';dialog.setAttribute('aria-labelledby','settlements-dashboard-title');
+  dialog.innerHTML='<div class="settlement-section-hdr"><div><h2 id="settlements-dashboard-title" class="settlement-section-title">Settlements</h2><p class="settlement-section-note">Outstanding payouts and disputes across current and archived runs. Open an entry to handle it.</p></div><button class="btn btn-outline btn-sm" data-dashboard-close>Close</button></div><div class="dashboard-toolbar"><input aria-label="Search raider or run" placeholder="Search raider or run"><select aria-label="Settlement status"><option value="all">All outstanding</option><option value="dispute">Open disputes</option><option value="gold">Purchase ready</option><option value="usdc">USDC ready</option><option value="correction">Corrections</option><option value="unclaimed">No claim</option></select></div><p data-dashboard-counts class="settlement-muted" aria-live="polite">Loading runs…</p><div data-dashboard-list></div>';
+  dialog.querySelector('[data-dashboard-close]').onclick=closeSettlementsDashboard;
+  dialog.querySelector('input').oninput=renderSettlementsDashboard;dialog.querySelector('select').onchange=renderSettlementsDashboard;
+  dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettlementsDashboard();});
+  dialog.querySelector('[data-dashboard-list]').onclick=event=>{const button=event.target.closest('[data-dashboard-entry]');if(button)openDashboardSettlement(Number(button.dataset.dashboardEntry));};
+  document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('input').focus();
+  settlementsDashboardUnsubscribe=onValue(ref(db,'runs'),snapshot=>{if(!dialog.isConnected)return;if(!isRL){closeSettlementsDashboard();return;}settlementsDashboardEntries=collectSettlementTasks(snapshot.val(),runId);renderSettlementsDashboard();},()=>{if(!dialog.isConnected)return;settlementsDashboardEntries=[];dialog.querySelector('[data-dashboard-counts]').textContent='Could not load runs. Close and reopen to retry.';dialog.querySelector('[data-dashboard-list]').replaceChildren();});
+}
+async function openDashboardSettlement(index){
+  if(!isRL)return;const entry=settlementsDashboardEntries[index];if(!entry)return;
+  closeSettlementsDashboard();
+  if(entry.key===runId){if(archivedSettlementContext)await closeArchivedSettlement();setTab('settlement');}
+  else{await openArchivedSettlement(entry.key);if(archivedSettlementContext?.key!==entry.key)return;}
+  if(!isRL||!settlement.raiders?.[entry.raiderKey]){toast('This entry is no longer available');return;}
+  payoutQueueRun=settlementRunKey();payoutQueueFilter='all';payoutQueueSearch=entry.name;refreshPayoutQueue();
+  requestAnimationFrame(()=>document.getElementById('payout-queue')?.scrollIntoView({block:'start'}));
+  if(entry.category==='dispute')openCutRequestReview(entry.raiderKey);
+}
+Object.assign(window,{openSettlementsDashboard});
 let headerLayoutFrame=0;
 function syncHeaderLayout(){
   const header=document.querySelector('.hdr'),logo=header?.querySelector('.logo-center'),controls=document.getElementById('hdr-user'),left=header?.querySelector('.header-left');
@@ -3025,7 +3097,9 @@ function syncHeaderLayout(){
   if(window.innerWidth<=600){header.classList.remove('header-stacked');return;}
   header.classList.remove('header-stacked');
   const headerBox=header.getBoundingClientRect(),logoBox=logo.getBoundingClientRect(),controlsBox=controls.getBoundingClientRect(),leftBox=left?.getBoundingClientRect(),clearance=24;
-  const collision=controlsBox.left<logoBox.right+clearance||controlsBox.right>headerBox.right+1||(leftBox&&leftBox.width>0&&leftBox.right>logoBox.left-clearance);
+  const childBoxes=[...controls.children].map(el=>el.getBoundingClientRect()).filter(box=>box.width>0);
+  const controlsLeft=Math.min(controlsBox.left,...childBoxes.map(box=>box.left)),controlsRight=Math.max(controlsBox.right,...childBoxes.map(box=>box.right));
+  const collision=controlsLeft<logoBox.right+clearance||controlsRight>headerBox.right+1||(leftBox&&leftBox.width>0&&leftBox.right>logoBox.left-clearance);
   header.classList.toggle('header-stacked',collision);
 }
 function scheduleHeaderLayout(){cancelAnimationFrame(headerLayoutFrame);headerLayoutFrame=requestAnimationFrame(syncHeaderLayout);}
@@ -3061,6 +3135,7 @@ function renderHdr(){
   updateOnlineCounter();
   document.getElementById('hdr-user').innerHTML=`
     ${avatarEl}<span class="usr-chip" onclick="openUserSettings()" title="Open My Account" style="cursor:pointer;">${settlementEsc(user)}</span>
+    ${isRL?'<button type="button" class="btn btn-outline btn-sm" onclick="openSettlementsDashboard()">Settlements</button>':''}
     <div class="currency-toggle" role="group" aria-label="Display currency"><button type="button" class="${displayCurrency==='usd'?'active':''}" onclick="setDisplayCurrency('usd')" aria-pressed="${displayCurrency==='usd'}" title="Show USD">$</button><button type="button" class="${displayCurrency==='gold'?'active':''}" onclick="setDisplayCurrency('gold')" aria-pressed="${displayCurrency==='gold'}" title="Show gold">&#128176;</button></div>
     ${isRL&&!archivedSettlementContext?`<button type="button" class="btn btn-outline btn-sm header-rate-button ${exchangeRateIsLocked()?'rate-locked':''}" onclick="openExchangeRateControl()" title="Edit or lock this run's exchange rate">${exchangeRateIsLocked()?'&#128274; ':''}${usdText(runUsdRate())} / 1K</button>`:''}
     <button type="button" class="btn btn-outline btn-sm header-state-button ${soundMuted?'is-muted':'is-active'}" onclick="toggleMute()" aria-pressed="${!soundMuted}" title="${soundMuted?'Turn sound on':'Mute sound'}">${soundMuted?'Muted':'Sound On'}</button>
@@ -6989,7 +7064,7 @@ if (_savedUser) {
 // Always init hover regardless of login state
 initPanelHover();
 // Keep modal layering predictable and prevent the page underneath from moving.
-const _dialogSelector='.wow-dialog-overlay,.modal-overlay,.account-payment-overlay,.payout-review-overlay,.unpaid-overlay,.rollout-overlay,#attendance-overlay,#raider-summary-overlay';
+const _dialogSelector='.wow-dialog-overlay,.modal-overlay,.account-payment-overlay,.payout-review-overlay,.unpaid-overlay,.rollout-overlay,#attendance-overlay,#raider-summary-overlay,#settlements-dashboard[open]';
 function syncDialogScrollLock(){
   const hasOpenDialog=[...document.querySelectorAll(_dialogSelector)].some(el=>getComputedStyle(el).display!=='none');
   document.body.classList.toggle('dialog-open',hasOpenDialog);

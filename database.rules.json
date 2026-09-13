@@ -1,0 +1,192 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "gs": {
+      ".read": false,
+      ".write": false
+    },
+    "accounts": {
+      ".read": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
+      "$id": {
+        ".read": "(auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) || (auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists())",
+        "profile": {
+          ".write": "(auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) || (auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists())"
+        },
+        "tickets": {
+          ".write": false
+        },
+        "gsBalance": {
+          ".write": false
+        },
+        "usdReserved": {
+          ".write": false
+        },
+        "ledger": {
+          "$entry": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!data.exists() || data.child('unit').val() !== 'GS') && (!newData.exists() || newData.child('unit').val() !== 'GS')"
+          }
+        },
+        "creditRequests": {
+          "$request": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) && ((!data.exists() && newData.child('status').val() === 'pending') || (data.child('status').val() === 'pending' && newData.child('status').val() === 'cancelled')))"
+          }
+        },
+        "withdrawals": {
+          "$request": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) && newData.child('status').val() === 'submitted')"
+          }
+        }
+      }
+    },
+    "runs": {
+      ".read": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
+      "$run": {
+        ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!root.child('runs').child($run).child('settlement/settlementMode').exists() || (!data.exists() && !newData.child('settlement/gsPayments').exists() && !newData.child('settlement/payoutStarted').val()))",
+        "settings": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "archived": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "archivedAt": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "attendanceSettings": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "siteContent": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "lootDisplay": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "archiveDisplay": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "cardOrder": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "cardDrag": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "cardDragPreview": {
+          ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "presence": {
+          ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "nicks": {
+          ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "chat": {
+          ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "audit": {
+          ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+        },
+        "attendance": {
+          "$id": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && $id === 'discord_' + auth.token.discordId && (!newData.exists() || newData.child('discordId').val() === auth.token.discordId))"
+          }
+        },
+        "auctions": {
+          "$auction": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/gsPayments').child($auction).child('status').val() !== 'paid'",
+            "bids": {
+              "$bid": {
+                ".write": "(!root.child('runs').child($run).child('settlement/settlementMode').exists()) && (auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && ((!data.exists() && newData.child('discordId').val() === auth.token.discordId) || data.child('discordId').val() === auth.token.discordId)"
+              }
+            },
+            "currentBid": {
+              ".write": "(!root.child('runs').child($run).child('settlement/settlementMode').exists()) && (auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists())"
+            },
+            "order": {
+              ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+            }
+          }
+        },
+        "settlement": {
+          "raiders": {
+            "$raider": {
+              ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && !root.child('runs').child($run).child('settlement/payoutStarted').val()",
+              "cutRequest": {
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())"
+              },
+              "cutDisputeHistory": {
+                "$event": {
+                  ".write": "!data.exists() && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()))"
+                }
+              },
+              "submission": {
+                ".write": "(!root.child('runs').child($run).child('settlement/settlementMode').exists()) && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()))"
+              },
+              "base": {
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/setupUnlocked').val() === true"
+              },
+              "adjustGold": {
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/setupUnlocked').val() === true"
+              },
+              "adjustPct": {
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/setupUnlocked').val() === true"
+              },
+              "mutators": {
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/setupUnlocked').val() === true"
+              }
+            }
+          },
+          "mutators": {
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!root.child('runs').child($run).child('settlement/payoutStarted').val() || root.child('runs').child($run).child('settlement/setupUnlocked').val() === true)"
+          },
+          "setupUnlocked": {
+            ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+          },
+          "performanceImports": {
+            ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+          },
+          "performanceDraft": {
+            ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+          }
+        }
+      }
+    },
+    "bans": {
+      ".read": true,
+      ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
+    },
+    "audit": {
+      ".read": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
+      "$run": {
+        "$event": {
+          ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists() && !data.exists()"
+        }
+      }
+    },
+    "discordProfiles": {
+      "$id": {
+        ".read": "(auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) || (auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists())",
+        ".write": "(auth != null && auth.uid === 'discord_' + $id && !root.child('bans').child('discord_' + $id).exists()) || (auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists())"
+      }
+    },
+    "siteFeedback": {
+      ".read": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
+      "$id": {
+        ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && !data.exists() && newData.child('discordId').val() === auth.token.discordId)"
+      }
+    },
+    "siteFeedbackAttachments": {
+      "$id": {
+        ".read": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
+        ".write": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists() && !data.exists()"
+      }
+    },
+    "cutDisputeAttachments": {
+      "$run": {
+        "$raider": {
+          ".read": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())",
+          ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())"
+        }
+      }
+    }
+  }
+}

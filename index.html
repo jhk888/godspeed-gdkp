@@ -1072,13 +1072,14 @@
   .hdr .header-left{display:flex!important;grid-column:1;grid-row:2;justify-content:center;}
   .hdr #hdr-user{grid-column:1;grid-row:3;justify-content:center;flex-wrap:wrap;width:100%;}
 }
+.gs-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin:1rem 0}.gs-fields label{display:flex;flex-direction:column;gap:.35rem}.gs-fields input,.gs-fields select{min-width:0;width:100%;box-sizing:border-box;background:var(--bg-input);color:var(--text-bright);padding:.5rem;border:1px solid var(--border-gold)}.gs-address{overflow-wrap:anywhere}.gs-payout-row{padding:.8rem 0;border-bottom:1px solid var(--border-gold)}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="hdr">
     <div class="header-left">
-      <span class="header-build">Build 45</span>
+      <span class="header-build">Build 46 · GS</span>
       <div id="hdr-online" style="display:none;align-items:center;gap:.45rem;">
         <span style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 6px var(--green);flex-shrink:0;"></span>
         <span id="hdr-online-count" style="font-family:'Cinzel',serif;font-size:.75rem;color:var(--text-muted);letter-spacing:.06em;white-space:nowrap;cursor:default;" onmouseenter="showOnlineTooltip(event)" onmouseleave="hideOnlineTooltip(event)"></span>
@@ -1130,6 +1131,8 @@
 <div class="toast" id="toast"></div>
 
 <script type="module">
+import {getAuth,signInWithCustomToken,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, set, get, update, onValue, push, remove, onDisconnect }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
@@ -2740,7 +2743,7 @@ async function getOrCreateRun(){
   loadDiscordCharacters(runs);
   const keys=Object.keys(runs).filter(k=>!runs[k].archived).sort().reverse();
   if(keys.length>0){runId=keys[0];}
-  else{const nr=push(ref(db,'runs'));runId=nr.key;createdFreshRun=true;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
+  else{const nr=push(ref(db,'runs'));runId=nr.key;createdFreshRun=true;const savedCut=parseFloat(localStorage.getItem('gdkp_management_cut'));const initialSettlement={...DEFAULT_SETTLEMENT,settlementMode:"coin",gsCutLines:{lead:15,treasury:5,risk:5,handling:0},managementCut:Number.isFinite(savedCut)?savedCut:DEFAULT_SETTLEMENT.managementCut};await set(nr,{createdAt:Date.now(),settings:raidSettings,auctions:{},settlement:initialSettlement,attendance:{},attendanceSettings:{enabled:false,open:false,code:''}});}
   splitsLoaded=false;
   subscribeToRun();subscribeSiteContent();startTick();startPresence();subscribeToBans();
   render();
@@ -3083,18 +3086,18 @@ function renderSettlementsDashboard(){
   const dialog=document.getElementById('settlements-dashboard');if(!dialog)return;
   if(!isRL){closeSettlementsDashboard();return;}
   const query=dialog.querySelector('input').value.trim().toLowerCase(),filter=dialog.querySelector('select').value;
-  const labels={dispute:'Open dispute',gold:'Purchase ready',usdc:'USDC ready',correction:'Correction needed',unclaimed:'No claim'};
+  const labels={dispute:'Open dispute',gold:'Purchase ready',usdc:'USDC ready',gs:'GS ready',correction:'Correction needed',unclaimed:'No claim'};
   const entries=settlementsDashboardEntries;
-  dialog.querySelector('[data-dashboard-counts]').textContent=`${entries.filter(e=>e.category==='dispute').length} disputes · ${entries.filter(e=>['gold','usdc'].includes(e.category)).length} ready to pay · ${entries.filter(e=>e.category==='correction').length} corrections · ${entries.filter(e=>e.category==='unclaimed').length} unclaimed`;
+  dialog.querySelector('[data-dashboard-counts]').textContent=`${entries.filter(e=>e.category==='dispute').length} disputes · ${entries.filter(e=>['gold','usdc','gs'].includes(e.category)).length} ready to pay · ${entries.filter(e=>e.category==='correction').length} corrections · ${entries.filter(e=>e.category==='unclaimed').length} unclaimed`;
   const visible=entries.map((entry,index)=>({entry,index})).filter(({entry:e})=>(filter==='all'||e.category===filter)&&`${e.name} ${e.title}`.toLowerCase().includes(query));
   const list=dialog.querySelector('[data-dashboard-list]'),scroll=dialog.scrollTop;
-  list.innerHTML=visible.map(({entry:e,index})=>`<article class="dashboard-entry"><div><strong>${settlementEsc(e.name)}</strong> <span class="settlement-status ${['gold','usdc'].includes(e.category)?'ready':'warn'}">${labels[e.category]}</span><p>${settlementEsc(e.amount)}</p><p class="settlement-muted">${settlementEsc(e.title)} · ${e.date?settlementEsc(new Date(e.date).toLocaleDateString()):'Date unavailable'} · ${e.archived?'Archived':'Current run'}</p>${e.note?`<p>${settlementEsc(e.note)}</p>`:''}${e.hasProof?'<p class="settlement-muted">Proof attached</p>':''}</div><button class="btn btn-outline btn-sm" data-dashboard-entry="${index}">${e.category==='dispute'?'Review Dispute':'Open Payout'}</button></article>`).join('')||'<p class="settlement-empty">No outstanding entries match this view.</p>';
+  list.innerHTML=visible.map(({entry:e,index})=>`<article class="dashboard-entry"><div><strong>${settlementEsc(e.name)}</strong> <span class="settlement-status ${['gold','usdc','gs'].includes(e.category)?'ready':'warn'}">${labels[e.category]}</span><p>${settlementEsc(e.amount)}</p><p class="settlement-muted">${settlementEsc(e.title)} · ${e.date?settlementEsc(new Date(e.date).toLocaleDateString()):'Date unavailable'} · ${e.archived?'Archived':'Current run'}</p>${e.note?`<p>${settlementEsc(e.note)}</p>`:''}${e.hasProof?'<p class="settlement-muted">Proof attached</p>':''}</div><button class="btn btn-outline btn-sm" data-dashboard-entry="${index}">${e.category==='dispute'?'Review Dispute':'Open Payout'}</button></article>`).join('')||'<p class="settlement-empty">No outstanding entries match this view.</p>';
   dialog.scrollTop=scroll;
 }
 function openSettlementsDashboard(){
   if(!isRL)return;closeSettlementsDashboard();closeUserSettings();closePanel();
   const dialog=document.createElement('dialog');dialog.id='settlements-dashboard';dialog.setAttribute('aria-labelledby','settlements-dashboard-title');
-  dialog.innerHTML='<div class="settlement-section-hdr"><div><h2 id="settlements-dashboard-title" class="settlement-section-title">Settlements</h2><p class="settlement-section-note">Outstanding payouts and disputes across current and archived runs. Open an entry to handle it.</p></div><button class="btn btn-outline btn-sm" data-dashboard-close>Close</button></div><div class="dashboard-toolbar"><input aria-label="Search raider or run" placeholder="Search raider or run"><select aria-label="Settlement status"><option value="all">All outstanding</option><option value="dispute">Open disputes</option><option value="gold">Purchase ready</option><option value="usdc">USDC ready</option><option value="correction">Corrections</option><option value="unclaimed">No claim</option></select></div><p data-dashboard-counts class="settlement-muted" aria-live="polite">Loading runs…</p><div data-dashboard-list></div>';
+  dialog.innerHTML='<div class="settlement-section-hdr"><div><h2 id="settlements-dashboard-title" class="settlement-section-title">Settlements</h2><p class="settlement-section-note">Outstanding payouts and disputes across current and archived runs. Open an entry to handle it.</p></div><button class="btn btn-outline btn-sm" data-dashboard-close>Close</button></div><div class="dashboard-toolbar"><input aria-label="Search raider or run" placeholder="Search raider or run"><select aria-label="Settlement status"><option value="all">All outstanding</option><option value="dispute">Open disputes</option><option value="gold">Purchase ready</option><option value="usdc">USDC ready</option><option value="gs">GS ready</option><option value="correction">Corrections</option><option value="unclaimed">No claim</option></select></div><p data-dashboard-counts class="settlement-muted" aria-live="polite">Loading runs…</p><div data-dashboard-list></div>';
   dialog.querySelector('[data-dashboard-close]').onclick=closeSettlementsDashboard;
   dialog.querySelector('input').oninput=renderSettlementsDashboard;dialog.querySelector('select').onchange=renderSettlementsDashboard;
   dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettlementsDashboard();});
@@ -3472,7 +3475,7 @@ function previewStartBid(v){
 
 function buildModal(title,a,fn){
   const isEdit=!!a;
-  const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:raidSettings.defaultBidButtons||[250,500,1000];
+  const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:gsContext()?[1,5,10]:raidSettings.defaultBidButtons||[250,500,1000];
   // NOTE: do NOT set modalCategory here. buildModal runs on every render(), so a
   // background update (bid/presence/chat) would wipe the selected category back to
   // 'Tier' mid-edit. modalCategory is initialized in openModal/openEdit and only
@@ -3492,16 +3495,16 @@ function buildModal(title,a,fn){
     <div class="fg"><div class="lbl">Quality</div><div class="q-row">${qRowHTML(isEdit?a.quality:modalQuality)}</div></div>
     <div class="modal-divider"></div>
     <div class="three-col">
-      <div class="fg"><div class="lbl">Start bid (g)</div><input type="number" id="m-start" value="${a?a.currentBid:1000}" min="1" step="100"${isEdit&&a.status==='open'?' oninput="previewStartBid(this.value)"':''} /></div>
+      <div class="fg"><div class="lbl">Start bid (${gsContext()?'GS':'g'})</div><input type="number" id="m-start" value="${a?a.currentBid:gsContext()?10:1000}" min="1" step="100"${isEdit&&a.status==='open'?' oninput="previewStartBid(this.value)"':''} /></div>
       <div class="fg"><div class="lbl">Timer (s)</div><input type="number" id="m-timer" value="${a?a.duration:raidSettings.defaultTimer}" min="10" max="600" step="10" /></div>
       ${!isEdit?`<div class="fg"><div class="lbl">Qty</div><input type="number" id="m-qty" value="1" min="1" max="20" step="1" /></div>`:''}
     </div>
-    <div class="fg"><div class="lbl">Bid buttons (g increments)</div>
+    <div class="fg"><div class="lbl">Bid buttons (${gsContext()?'GS':'g'} increments)</div>
       <div style="display:flex;gap:.5rem;align-items:center;">
         <input type="number" id="m-btn1" value="${bidBtns[0]}" min="1" max="999999" step="50" style="width:120px;" />
         <input type="number" id="m-btn2" value="${bidBtns[1]}" min="1" max="999999" step="50" style="width:120px;" />
         <input type="number" id="m-btn3" value="${bidBtns[2]}" min="1" max="999999" step="50" style="width:120px;" />
-        <span style="font-size:.8rem;color:var(--text-muted);">g each</span>
+        <span style="font-size:.8rem;color:var(--text-muted);">${gsContext()?'GS':'g'} each</span>
       </div>
     </div>
     <div class="fg"><div class="lbl">Category</div><div class="q-row" id="cat-row">${catRowHTML(modalCategory)}</div></div>
@@ -4764,7 +4767,7 @@ async function resetRun(newRate=runUsdRate()){
   const nextCut=Number.isFinite(parseFloat(settlement.managementCut))?parseFloat(settlement.managementCut):DEFAULT_SETTLEMENT.managementCut;
   const savedMutators=JSON.parse(JSON.stringify(settlement.mutators||{}));
   newRate=Math.max(.01,settlementNum(newRate)||10);
-  settlement={...JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT)),managementCut:nextCut,ahFeePct:settlementNum(settlement.ahFeePct)||5,usdPer1000:newRate,usdcPer1000:newRate,mutators:savedMutators};
+  settlement={...JSON.parse(JSON.stringify(DEFAULT_SETTLEMENT)),settlementMode:"coin",gsCutLines:{lead:15,treasury:5,risk:5,handling:0},gsHaircutPct:0,goldEnabled:false,managementCut:nextCut,ahFeePct:settlementNum(settlement.ahFeePct)||5,usdPer1000:newRate,usdcPer1000:newRate,mutators:savedMutators};
   payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';rlAttendanceEnsuredFor='';
   attendance={};
   attendanceSettings={enabled:false,open:false,code:''};
@@ -7041,10 +7044,107 @@ window.openFeedbackAttachmentSafe=openFeedbackAttachmentSafe;
 window.setFeedbackDoneSafe=setFeedbackDoneSafe;
 
 // Handle Discord OAuth callback
+const GS_CALCULATE=function calculateCuts(state,total){
+  const round=n=>Math.floor((n+1e-9)*100)/100,lines=state.gsCutLines||{lead:15,treasury:5,risk:5,handling:0};
+  const pct=Object.values(lines).reduce((s,n)=>s+Number(n||0),0);if(pct<0||pct>100)throw Error('Compensation exceeds 100%');
+  const named=round(total*pct/100),cap=round(Math.min(total,2000)*.20+Math.max(0,total-2000)*.15),managementCut=state.gsTaper?Math.min(named,cap):named,distributable=round(total-managementCut);
+  const rows=Object.entries(state.raiders||{}),mutators=state.mutators||{};let flatTotal=0,percentageTotal=0,baseParts=0;
+  for(const [,r] of rows){baseParts+=(r.base===false?0:1)+Number(r.adjustPct||0)/100;flatTotal+=Number(r.adjustGold||0);for(const [id,on] of Object.entries(r.mutators||{})){if(on&&mutators[id]){flatTotal+=Number(mutators[id].flat||0);percentageTotal+=Number(mutators[id].percentage||0);}}}
+  const leftToDistribute=distributable-flatTotal,base=baseParts>0?leftToDistribute*(1-percentageTotal/100)/baseParts:0,cuts={};let totalPayout=0;
+  for(const [key,r] of rows){let cut=(r.base===false?0:base)+base*Number(r.adjustPct||0)/100+Number(r.adjustGold||0);for(const [id,on] of Object.entries(r.mutators||{})){if(on&&mutators[id])cut+=leftToDistribute*Number(mutators[id].percentage||0)/100+Number(mutators[id].flat||0);}cuts[key]=round(cut);totalPayout+=cuts[key];}
+  return {totalPot:total,managementPct:total?managementCut/total*100:0,managementCut,distributable,flatTotal,percentageTotal,baseParts,base,leftToDistribute,cuts,totalPayout:round(totalPayout),balance:round(distributable-totalPayout),named,cap,lines};
+};
+// Embedded into index.html by build.cjs. All GS mutations go through gsCommand.
+const gsAuth=getAuth(fbApp),gsFunctions=getFunctions(fbApp,'us-central1');
+const gsEndpoint='https://us-central1-'+firebaseConfig.projectId+'.cloudfunctions.net/gsDiscordAuth';
+let gsSnapshot=null,gsPoll=null,gsBusy=false;
+const gsContext=()=>['coin','mixed'].includes(settlement?.settlementMode);
+const gsAmount=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:6})+' GS';
+function gsVerify(){location.href=gsEndpoint;}
+async function gsCall(op,data={},id){
+  if(!gsAuth.currentUser)throw Error('Verify Discord for GS first');
+  const token=await gsAuth.currentUser.getIdTokenResult();if(String(token.claims.discordId)!==accountDiscordId())throw Error('Discord account changed. Verify again.');
+  const key=JSON.stringify([accountDiscordId(),op,data]),read=['snapshot','quoteGold'].includes(op),pending=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');
+  id=id||(read?crypto.randomUUID():pending[key]||crypto.randomUUID());if(!read){pending[key]=id;sessionStorage.setItem('gs_pending_ops',JSON.stringify(pending));}
+  try{const response=(await httpsCallable(gsFunctions,'gsCommand')({op,data,id})).data;if(!read){delete pending[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(pending));}return response;}catch(e){if(!read&&!['functions/unavailable','functions/deadline-exceeded','functions/internal','functions/unknown'].includes(e.code)){delete pending[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(pending));}throw e;}
+}
+async function gsRefresh(){try{gsSnapshot=await gsCall('snapshot');const el=document.getElementById('gs-account-state');if(el)el.innerHTML=gsAccountState();const queue=document.getElementById('gs-admin-queue');if(queue)queue.innerHTML=gsAdminQueue();}catch(e){const el=document.getElementById('gs-account-state');if(el)el.textContent=e.message;}}
+async function gsAction(op,data={},confirmText=''){
+  if(gsBusy)return;
+  const perform=async()=>{if(gsBusy)return;gsBusy=true;try{await gsCall(op,data);await gsRefresh();toast('GS change recorded');if(tab==='settlement'||tab==='payout')renderMain();}catch(e){toast(e.message||'GS save failed; nothing was credited');}finally{gsBusy=false;}};
+  if(confirmText)wowConfirm({title:'Confirm GS Change',msg:confirmText,confirmLabel:'Confirm',onConfirm:perform});else await perform();
+}
+function gsField(id){return document.getElementById(id)?.value?.trim()||'';}
+function gsForm(type){
+  const forms={deposit:'<label>Amount USDC<input id="gs-amount" type="number" min="1" step=".000001"></label>',withdraw:'<label>Amount GS<input id="gs-amount" type="number" min=".000001" step=".000001"></label><label>Ethereum destination<input id="gs-address" autocomplete="off"></label>',configure:'<label>House Ethereum USDC address<input id="gs-address" autocomplete="off"></label>',float:'<label>Recipient Discord ID<input id="gs-to"></label><label>Amount GS<input id="gs-amount" type="number" min=".000001" step=".000001"></label>'};
+  document.getElementById('gs-form')?.remove();const el=document.createElement('div');el.id='gs-form';el.className='account-payment-overlay';el.innerHTML=`<div class="account-payment-card"><div class="settlement-section-title">${{deposit:'Deposit USDC',withdraw:'Withdraw GS',configure:'House Settings',float:'Transfer Float'}[type]}</div><div class="gs-fields">${forms[type]}</div><div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="document.getElementById('gs-form').remove()">Cancel</button><button class="btn btn-gold btn-sm" onclick="gsSubmitForm('${type}')">Continue</button></div><div id="gs-form-result" role="status"></div></div>`;document.body.appendChild(el);
+}
+async function gsSubmitForm(type){
+  if(gsBusy)return;gsBusy=true;const box=document.getElementById('gs-form-result');try{
+    if(type==='deposit'){const d=await gsCall('depositRequest',{amount:Number(gsField('gs-amount')),runId});box.innerHTML=`<p>Send exactly <strong>${d.amount.toFixed(6)} USDC</strong> on Ethereum.</p><p>Tag: ${settlementEsc(d.tag)}</p><p class="gs-address">${settlementEsc(d.address)}</p><p>The six-decimal amount identifies this request. A text memo is not transmitted by USDC. Credit appears after confirmation or RL review.</p>`;}
+    else{const op=type==='configure'?'configure':type==='float'?'floatTransfer':'withdraw',data=type==='configure'?{address:gsField('gs-address')}:type==='float'?{to:gsField('gs-to'),amount:Number(gsField('gs-amount'))}:{amount:Number(gsField('gs-amount')),address:gsField('gs-address')};gsBusy=false;await gsAction(op,data,type==='configure'?'Use this address for new USDC deposits?':type==='float'?'Transfer funded house GS to this account?':'Reserve these GS for a USDC withdrawal to the entered address?');}
+    await gsRefresh();
+  }catch(e){box.textContent=e.message;}finally{gsBusy=false;}
+}
+function gsHelp(){const lines=settlement.gsCutLines||{lead:15,treasury:5,risk:5,handling:0};return '<p>Run compensation: '+Object.entries(lines).map(([k,v])=>settlementEsc(k)+' '+v+'%').join(' · ')+(settlement.gsTaper?' · capped at 20% of first 2,000 GS, 15% after.':'.')+' Withdrawal window: 48 hours after the run locks. Expiry fee: '+Number(settlement.gsHaircutPct||0)+'%.</p><details><summary>About Godspeed Coin</summary><p>1 GS = 1 USDC. New runs use coin. Gold is available only when the RL enables it for that mixed run. Each ticket keeps its creation rate through transfers. Remaining coin withdraws as USDC. Cuts are GS unless the run permits gold. A published withdrawal-window fee may apply after the run closes.</p></details>';}
+function gsAccountState(){
+  if(!gsSnapshot)return 'Loading GS account…';const a=gsSnapshot.account;
+  return `<div class="account-stats"><div>Available<br><strong>${gsAmount(a.gsBalance)}</strong></div><div>Withdrawals pending<br>${gsAmount(Object.values(gsSnapshot.withdrawals||{}).filter(w=>w.owner===accountDiscordId()&&w.status==='pending').reduce((s,w)=>s+w.amount,0))}</div></div><div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="gsForm('deposit')" ${!gsSnapshot.config.enabled?'disabled':''}>Deposit</button><button class="btn btn-outline btn-sm" onclick="gsForm('withdraw')" ${!gsSnapshot.config.enabled?'disabled':''}>Withdraw</button><button class="btn btn-outline btn-sm" onclick="gsRefresh()">Refresh</button></div><details><summary>Tickets</summary>${Object.values(a.tickets).filter(t=>t.remainingUsd>0).sort((a,b)=>a.createdAt-b.createdAt).map(t=>`<p>${gsAmount(t.remainingUsd)} · rate ${t.rateUsdPer1000} USDC / 1,000g · ${settlementEsc(t.runId)} · ${t.expiresAt?'window ends '+accountDate(t.expiresAt):'window starts when run locks'}</p>`).join('')||'<p>No unused tickets.</p>'}</details><details><summary>Ledger</summary>${Object.values(a.ledger).sort((a,b)=>b.createdAt-a.createdAt).slice(0,100).map(e=>`<p>${settlementEsc(e.type)} · ${gsAmount(e.gsDelta)} · ${accountDate(e.createdAt)}</p>`).join('')||'<p>No GS activity.</p>'}</details><details><summary>My payable wins</summary>${gsContext()?auctionList().filter(a=>a.status==='sold'&&Object.values(a.bids||{}).filter(b=>!b.retracted).sort((a,b)=>b.amount-a.amount)[0]?.discordId===accountDiscordId()&&settlement.gsPayments?.[a.id]?.status!=='paid').map(a=>`<p>${settlementEsc(a.name)} · ${gsAmount(a.currentBid)} <button class="btn btn-outline btn-sm" onclick="gsPay('${a.id}')">Pay GS</button></p>`).join(''):''}</details><details><summary>My requests</summary>${Object.entries(gsSnapshot.deposits||{}).filter(([,d])=>d.owner===accountDiscordId()).map(([id,d])=>`<p>${gsAmount(d.amount)} · ${settlementEsc(d.status)} · ${settlementEsc(d.tag)} ${d.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="gsHash('${id}',false)">Submit Hash</button><button class="btn btn-outline btn-sm" onclick="gsAction('depositCancel',{id:'${id}'},'Cancel this request? Any later transfer will require RL matching.')">Cancel</button>`:''}</p>`).join('')}${Object.entries(gsSnapshot.withdrawals||{}).filter(([,w])=>w.owner===accountDiscordId()).map(([id,w])=>`<p>${gsAmount(w.amount)} · ${settlementEsc(w.status)} ${w.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="gsAction('withdrawCancel',{id:'${id}'},'Cancel this pending withdrawal?')">Cancel</button>`:''}</p>`).join('')}</details>`;
+}
+function gsAccountSection(){return `<div class="user-settings-sec"><div class="user-settings-sec-label">Godspeed Coin</div>${gsAuth.currentUser?'<div id="gs-account-state">'+gsAccountState()+'</div>':'<p>Verify your Discord identity to access GS.</p><button class="btn btn-outline btn-sm" onclick="gsVerify()">Verify Discord</button>'}${gsHelp()}</div>`;}
+function gsAdminQueue(){if(!gsSnapshot?.house)return '<p>Verify as RL to load treasury.</p>';return `<p>House float: ${gsAmount(gsSnapshot.house.balance)} · reserve: ${gsSnapshot.house.reserved} USDC</p><div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="gsForm('configure')">Wallet Settings</button><button class="btn btn-outline btn-sm" onclick="gsForm('float')">Transfer Float</button><button class="btn btn-outline btn-sm" onclick="gsRefresh()">Refresh</button></div><h4>Deposits awaiting confirmation</h4>${Object.entries(gsSnapshot.deposits||{}).filter(([,d])=>d.status==='pending').map(([id,d])=>`<p>${settlementEsc(d.owner)} · ${gsAmount(d.amount)} · ${settlementEsc(d.tag)} <button class="btn btn-outline btn-sm" onclick="gsHash('${id}',true)">Mark Received</button></p>`).join('')||'<p>None</p>'}<h4>Withdrawals awaiting USDC payment</h4>${Object.entries(gsSnapshot.withdrawals||{}).filter(([,w])=>w.status==='pending').map(([id,w])=>`<p>${settlementEsc(w.owner)} · ${w.amount} USDC<br><span class="gs-address">${settlementEsc(w.address)}</span><button class="btn btn-outline btn-sm" onclick="gsHash('${id}',true,true)">Record Payment</button><button class="btn btn-outline btn-sm" onclick="gsAction('withdrawCancel',{id:'${id}'},'Return reserved GS to the member?')">Cancel</button></p>`).join('')||'<p>None</p>'}<details><summary>Unmatched transfers</summary>${Object.values(gsSnapshot.unmatched||{}).map(e=>`<p>${e.amount} USDC · ${settlementEsc(e.hash)} · log ${e.logIndex}<br>${settlementEsc(e.reason||e.error||'Needs review')}</p>`).join('')||'<p>None</p>'}</details>`;}
+function gsHash(id,admin,withdraw=false){wowConfirm({title:withdraw?'USDC Payment Receipt':'USDC Deposit Receipt',msg:admin?'Enter the transaction hash followed by a space and Transfer log index. The server verifies the amount, network, token, recipient and confirmations.':'Enter the transaction hash for RL review.',confirmLabel:'Submit',input:{type:'text',placeholder:'0x… 0',errorMsg:'Enter transaction hash'},onConfirm:v=>{const [hash,index]=v.trim().split(/\s+/);gsAction(admin?(withdraw?'withdrawPaid':'receive'):'submitHash',{id,hash,logIndex:Number(index)});}});}
+function gsMatchDeposit(){wowConfirm({title:'Match Deposit / Mint Override',msg:'Enter Discord ID, transaction hash, log index, then optionally mint to bypass float. Only a verified, unused USDC receipt can create GS.',confirmLabel:'Review Receipt',input:{type:'text',placeholder:'DiscordID 0x… 0',errorMsg:'Enter recipient and receipt'},onConfirm:v=>{const [owner,hash,index,mode]=v.trim().split(/\s+/);gsAction('assignDeposit',{owner,hash,logIndex:Number(index),forceMint:mode==='mint',runId:settlementRunKey()},'Assign this verified deposit to the selected Discord account?');}});}
+function gsHaircut(){wowConfirm({title:'Apply Published Haircut',msg:'Enter the Discord ID. Only unused tickets past their published deadline qualify; reserved withdrawals are excluded.',confirmLabel:'Review',input:{type:'text',placeholder:'Discord ID',errorMsg:'Enter Discord ID'},onConfirm:owner=>gsAction('haircut',{owner},'Apply the published expiry fee to eligible tickets?')});}
+function gsSetup(){const s=settlement,l=s.gsCutLines||{lead:15,treasury:5,risk:5,handling:0};return `<details class="settlement-section"><summary>Godspeed Coin · Treasury & Run Settings</summary><div class="gs-fields"><label>Run mode<select id="gs-mode"><option value="coin" ${s.settlementMode!=='mixed'?'selected':''}>Coin</option><option value="mixed" ${s.settlementMode==='mixed'?'selected':''}>Mixed</option></select></label><label>USDC per 1,000g<input id="gs-rate" type="number" min=".01" step=".01" value="${runUsdRate()}"></label>${Object.entries(l).map(([k,v])=>`<label>${k} %<input id="gs-line-${k}" type="number" min="0" max="100" step=".01" value="${v}"></label>`).join('')}<label><input type="checkbox" id="gs-gold" ${s.goldEnabled?'checked':''}> Gold / AH handling this run</label><label><input type="checkbox" id="gs-taper" ${s.gsTaper?'checked':''}> Cap fees at 20% of first 2,000 GS and 15% thereafter</label><label>Expired-ticket haircut<select id="gs-haircut">${[0,5,10].map(n=>`<option ${Number(s.gsHaircutPct||0)===n?'selected':''}>${n}</option>`).join('')}</select></label></div><button class="btn btn-outline btn-sm" onclick="gsSaveMode()">Apply & Lock</button><p>Mode changes require an empty current run. New runs default to coin. The withdrawal window is 48 hours after cuts lock.</p><div id="gs-admin-queue">${gsAdminQueue()}</div></details>`;}
+function gsSaveMode(){const lines=Object.fromEntries(['lead','treasury','risk','handling'].map(k=>[k,Number(gsField('gs-line-'+k))]));gsAction('mode',{runId:settlementRunKey(),mode:gsField('gs-mode'),rate:Number(gsField('gs-rate')),lines,haircut:Number(gsField('gs-haircut')),goldEnabled:document.getElementById('gs-gold').checked,taper:document.getElementById('gs-taper').checked},'Apply this run’s mode, ticket rate, compensation and withdrawal-window fee?');}
+function gsCollections(){return auctionList().filter(a=>a.status==='sold').map(a=>{const p=settlement.gsPayments?.[a.id],paid=p?.status==='paid';return `<div class="purchase-collection-card"><div class="purchase-person">${settlementEsc(a.name)}<p>${settlementEsc(settlementWinner(a))} · ${gsAmount(a.currentBid)}</p></div><div class="purchase-actions"><span>${paid?'Received ('+p.method+')':'Payable'}</span>${!paid?`<button class="btn btn-green btn-sm" onclick="gsPay('${a.id}')">Collect GS</button>${settlement.settlementMode==='mixed'&&settlement.goldEnabled?`<label><input type="checkbox" id="gs-gold-${a.id}"> Gold received</label>`:''}`:`<button class="btn btn-outline btn-sm" onclick="gsAction('refundWin',{runId:settlementRunKey(),auctionId:'${a.id}',goldReturned:${p.method==='gold'}},'Reverse this payment? Confirm any collected gold has been returned.')">Reverse</button>`}</div></div>`;}).join('');}
+function gsPay(id){gsAction('payWin',{runId:settlementRunKey(),auctionId:id,gold:!!document.getElementById('gs-gold-'+id)?.checked},'Collect this won item using the winner’s available GS? Gold receipts use funded house GS for the pot.');}
+function gsPayoutQueue(raiders,calc){return `<div class="settlement-section" id="payout-queue"><div class="settlement-section-title">Payout Queue</div>${raiders.map(r=>`<div class="gs-payout-row"><span>${settlementEsc(r.name)} · ${gsAmount(r.gsCut??calc.cuts[r.key])} · credited ${gsAmount(r.gsCredited||0)}</span><div class="uniform-actions"><button class="btn btn-green btn-sm" ${!settlement.payoutStarted||Number(r.gsCredited||0)>=Number(r.gsCut||0)?'disabled':''} onclick="gsCredit('${r.key}')">${r.gsPayoutMethod==='gold'?'Record Gold':'Credit GS'}</button>${r.cutRequest?`<button class="btn btn-outline btn-sm" onclick="openCutRequestReview('${r.key}')">Dispute</button>`:''}<button class="btn btn-outline btn-sm" ${!settlement.payoutStarted?'disabled':''} onclick="gsAdjust('${r.key}')">Modify Cut</button></div></div>`).join('')}</div>`;}
+function gsAdjust(key){wowConfirm({title:'Modify GS Cut',msg:'Enter a signed GS amount and a reason, separated by a space. Positive adjustments use funded house float and affect only this raider.',confirmLabel:'Continue',input:{type:'text',placeholder:'5 Bonus',errorMsg:'Enter amount and reason'},onConfirm:v=>{const [amount,...reason]=v.trim().split(/\s+/);gsAction('adjustCut',{runId:settlementRunKey(),raiderKey:key,amount:Number(amount),reason:reason.join(' ')},'Apply this adjustment to the selected cut?');}});}
+async function gsCredit(key){const data={runId:settlementRunKey(),raiderKey:key};if(settlement.raiders?.[key]?.gsPayoutMethod==='gold'){try{const quote=await gsCall('quoteGold',data);gsAction('creditCut',{...data,goldDelivered:true,expectedGold:quote.gold},'Record delivery of '+quote.gold.toFixed(2)+' gold using the original ticket rates?');}catch(e){toast(e.message);}}else gsAction('creditCut',data,'Credit the locked GS cut to this member?');}
+function gsMyPayout(){const r=payoutCurrentRaider();return `<div class="payout-claim"><div class="settlement-section"><div class="settlement-section-title">My Payout · GS</div><p>${r?gsAmount(r.gsCut??calculateSettlementCuts().cuts[r.key]):'Attendance has not been linked to a cut yet.'}</p><p>${r?.paid?'Credited to your GS account.':'Awaiting settlement credit.'}</p>${r?`<button class="btn btn-outline btn-sm" onclick="openCutRequest()">Dispute Cut</button>`:''}<button class="btn btn-outline btn-sm" onclick="openUserSettings()">Balance & Withdraw</button>${r&&settlement.settlementMode==='mixed'&&settlement.goldEnabled?`<div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="gsAction('payoutChoice',{runId:settlementRunKey(),raiderKey:'${r.key}',method:'gs'})">Choose GS</button><button class="btn btn-outline btn-sm" onclick="gsAction('payoutChoice',{runId:settlementRunKey(),raiderKey:'${r.key}',method:'gold'})">Choose Gold</button></div>`:''}${gsHelp()}</div></div>`;}
+// Hooks retain legacy behavior for every run without an explicit settlementMode.
+const gsOldAccount=openUserSettings;openUserSettings=function(){gsOldAccount();const node=document.querySelector('.user-settings-wrap');if(node)node.insertAdjacentHTML('afterbegin',gsAccountSection());gsRefresh();};
+const gsOldCollections=calculateSettlementCollections;calculateSettlementCollections=function(){if(!gsContext())return gsOldCollections();const sold=auctionList().filter(a=>a.status==='sold'),paid=Object.values(settlement.gsPayments||{}).filter(p=>p.status==='paid'),sum=paid.reduce((s,p)=>s+p.amount,0);return{sold:sold.reduce((s,a)=>s+a.currentBid,0),expected:sold.reduce((s,a)=>s+a.currentBid,0),credited:sum,collected:sum,fee:0,settled:paid.length,purchasers:sold.length};};
+const gsOldCuts=calculateSettlementCutsFrom;calculateSettlementCutsFrom=function(state=settlement){if(!gsContext())return gsOldCuts(state);return GS_CALCULATE(state,calculateSettlementCollections().credited);};
+const gsOldDisplay=displayMoney;displayMoney=function(n,rate=runUsdRate()){if(!gsContext())return gsOldDisplay(n,rate);return settlement.settlementMode==='mixed'?gsAmount(n)+' / '+Math.floor(Number(n)*1000/rate).toLocaleString()+'g':displayCurrency==='usd'?usdText(Number(n)):gsAmount(n);};
+const gsOldGold=goldText;goldText=function(n){return gsContext()?gsAmount(n):gsOldGold(n);};
+const gsOldPayoutText=payoutAmountText;payoutAmountText=function(r,n,method){return gsContext()?gsAmount(n):gsOldPayoutText(r,n,method);};
+const gsOldEffective=effectiveRaiderCut;effectiveRaiderCut=function(r,calc=calculateSettlementCuts()){return gsContext()?Number(r.gsCut??calc.cuts[r.key]??0):gsOldEffective(r,calc);};
+const gsOldDue=payoutStillDue;payoutStillDue=function(r,cut=effectiveRaiderCut(r)){return gsContext()?Math.max(0,Math.round((cut-Number(r.gsCredited||0))*1e6)/1e6):gsOldDue(r,cut);};
+const gsOldQueue=renderPayoutSubmissionQueue;renderPayoutSubmissionQueue=function(r,c){return gsContext()?gsPayoutQueue(r,c):gsOldQueue(r,c);};
+const gsOldMy=renderMyPayoutBody;renderMyPayoutBody=function(){return gsContext()?gsMyPayout():gsOldMy();};
+const gsOldRender=renderSettlement;renderSettlement=function(){const html=gsOldRender();if(!gsContext())return gsSetup()+html;const template=document.createElement('template');template.innerHTML=html;const collection=template.content.querySelector('.purchase-collection-list');if(collection)collection.innerHTML=gsCollections();template.content.querySelectorAll('.cut-setup-controls input').forEach(el=>el.disabled=true);return gsSetup()+template.innerHTML.replaceAll('Gold accounting value','GS value').replaceAll('gold equivalent still unpaid','GS still unpaid').replaceAll('Flat gold','Flat GS').replaceAll('Adjust g','Adjust GS').replaceAll('<div class="lbl">Gold</div>','<div class="lbl">GS</div>');};
+const gsOldLock=toggleSettlementLock;toggleSettlementLock=function(){if(!gsContext()||settlement.payoutStarted)return gsOldLock();gsAction('lockCuts',{runId:settlementRunKey()},'Collect all sold items, lock cuts, and credit the published management lines?');};
+const gsOldPaid=setPayoutPaid;setPayoutPaid=function(key,paid){if(!gsContext())return gsOldPaid(key,paid);if(paid)gsCredit(key);else toast('GS credits remain in the ledger. Use Modify Cut for an unpaid adjustment.');};
+const gsOldAll=setAllPayoutsPaid;setAllPayoutsPaid=function(paid){if(!gsContext())return gsOldAll(paid);toast('Use Credit GS on each payout so each transfer is confirmed.');};
+const gsOldTogglePaid=togglePaid;togglePaid=function(id){if(!gsContext())return gsOldTogglePaid(id);gsPay(id);};
+const gsOldMigration=ensureLockedCutSnapshot;ensureLockedCutSnapshot=async function(){if(!gsContext())return gsOldMigration();};
+const gsOldAccountTotal=accountLedgerTotal;accountLedgerTotal=function(data=accountData){return gsOldAccountTotal({...data,ledger:Object.fromEntries(Object.entries(data.ledger||{}).filter(([,e])=>e.unit!=='GS'))});};
+const gsOldModal=openModal;openModal=function(){gsOldModal();if(gsContext())setTimeout(()=>{for(const [id,value] of Object.entries({'m-start':10,'m-btn1':1,'m-btn2':5,'m-btn3':10})){const e=document.getElementById(id);if(e)e.value=value;}},0);};
+let gsDisplayRun='';const gsOldHeader=renderHdr;renderHdr=function(){if(gsContext()&&gsDisplayRun!==settlementRunKey()){gsDisplayRun=settlementRunKey();displayCurrency='gold';}gsOldHeader();if(gsContext()){const buttons=document.querySelectorAll('#hdr-user .currency-toggle button');if(buttons[1]){buttons[1].textContent='GS';buttons[1].title='Show GS';}document.querySelector('#hdr-user .header-rate-button')?.setAttribute('title','Ticket rate for this run');}};
+const gsOldTasks=collectSettlementTasks;collectSettlementTasks=function(runs,key){const out=gsOldTasks(runs,key).filter(e=>!['coin','mixed'].includes(runs?.[e.key]?.settlement?.settlementMode));for(const [id,run] of Object.entries(runs||{})){const s=run?.settlement;if(!s||!['coin','mixed'].includes(s.settlementMode)||(!run.archived&&id!==key))continue;for(const [raiderKey,r] of Object.entries(s.raiders||{})){const due=Number(r.gsCut||0)-Number(r.gsCredited||0),dispute=r.cutRequest?.status==='pending';if(!dispute&&(!s.payoutStarted||due<=0))continue;out.push({key:id,raiderKey,name:r.name||raiderKey,title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||0,archived:!!run.archived,category:dispute?'dispute':'gs',amount:gsAmount(due),note:r.cutRequest?.note||'',hasProof:!!r.cutRequest?.hasAttachment});}}return out;};
+const gsOldBid=submitBid;submitBid=function(id,val,event){if(!gsContext())return gsOldBid(id,val,event);gsAction('placeBid',{runId,auctionId:id,amount:Number(val)});};
+// Verified OAuth becomes the sign-in route for this release, including legacy UI.
+joinDiscord=gsVerify;
+const gsOldDelete=deleteRun;deleteRun=async function(key){const data=(await get(ref(db,'runs/'+key))).val();if(data?.settlement?.settlementMode){toast('Coin runs retain their ledger. Archive this run instead.');return;}return gsOldDelete(key);};
+const gsOldSubmitAdjustment=submitCutAdjustment;submitCutAdjustment=function(...args){if(gsContext()){toast('Use Modify Cut in the GS payout queue.');return;}return gsOldSubmitAdjustment(...args);};
+const gsOldRunBonus=submitRaiderBonus;submitRaiderBonus=function(...args){if(gsContext()){toast('Use Modify Cut in the GS payout queue.');return;}return gsOldRunBonus(...args);};
+const gsOldLogout=logout;logout=function(){clearInterval(gsPoll);gsSnapshot=null;signOut(gsAuth);gsOldLogout();};
+const gsAdminQueueBase=gsAdminQueue;gsAdminQueue=function(){return gsAdminQueueBase()+(isRL?'<div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="gsMatchDeposit()">Match Deposit</button><button class="btn btn-outline btn-sm" onclick="gsHaircut()">Expired Tickets</button><button class="btn btn-outline btn-sm" onclick="gsClosePot()">Return Remainder</button></div>':'');};
+Object.assign(window,{openUserSettings,toggleSettlementLock,setPayoutPaid,setAllPayoutsPaid,togglePaid,openModal,logout,joinDiscord,deleteRun,submitCutAdjustment,submitRaiderBonus,gsVerify,gsForm,gsSubmitForm,gsAction,gsHash,gsSaveMode,gsRefresh,gsPay,gsAdjust,gsCredit,gsMatchDeposit,gsHaircut,gsClosePot,settlementRunKey});
+onAuthStateChanged(gsAuth,()=>{gsSnapshot=null;clearInterval(gsPoll);if(gsAuth.currentUser){gsRefresh();gsPoll=setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('gs-account-state')||document.getElementById('gs-admin-queue')))gsRefresh();},5000);}});
+const gsFragment=new URLSearchParams(location.hash.slice(1));
+if(gsFragment.has('gs_token')){const token=gsFragment.get('gs_token'),profile=JSON.parse(gsFragment.get('gs_user')||'{}');history.replaceState({},'',location.pathname+location.search);try{await signInWithCustomToken(gsAuth,token);const verified=await gsAuth.currentUser.getIdTokenResult();if(String(verified.claims.discordId)!==String(profile.id))throw Error('Identity mismatch');localStorage.setItem('gdkp_discord',JSON.stringify(profile));localStorage.setItem('gdkp_user',profile.displayName||profile.username);localStorage.setItem('gdkp_isRL',verified.claims.raidLeader?'1':'0');}catch(e){await signOut(gsAuth);toast('GS verification failed. Retry Discord login.');}}
+await gsAuth.authStateReady();
+
+function gsClosePot(){gsAction('closePot',{runId:settlementRunKey()},'Return only the remaining escrow GS after all raider cuts are credited?');}
+
 const _urlParams = new URLSearchParams(window.location.search);
 const _discordUserParam = _urlParams.get('discord_user');
 const _discordError = _urlParams.get('discord_error');
-if (_discordUserParam) {
+if (_discordUserParam && gsAuth.currentUser) {
   try {
     discordUser = JSON.parse(decodeURIComponent(_discordUserParam));
     localStorage.setItem('gdkp_discord', JSON.stringify(discordUser));
@@ -7064,9 +7164,9 @@ if(_initSb)_initSb.classList.add('collapsed');
 if(_initTab){_initTab.textContent='▶';_initTab.classList.add('collapsed');}
 // Restore session on refresh
 subscribeSiteContent();
-const _savedUser = localStorage.getItem('gdkp_user');
+const _savedUser = gsAuth.currentUser ? localStorage.getItem('gdkp_user') : null;
 const _savedIsRL = localStorage.getItem('gdkp_isRL');
-const _savedDiscord = localStorage.getItem('gdkp_discord');
+const _savedDiscord = gsAuth.currentUser ? localStorage.getItem('gdkp_discord') : null;
 if (_savedDiscord && !discordUser) {
   try { discordUser = JSON.parse(_savedDiscord); } catch(e) {}
 }

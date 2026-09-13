@@ -1,0 +1,19 @@
+✔ deposit, won item, cuts, withdrawal: reserve and tickets reconcile (5.614483ms)
+✔ partial float preserves stamps and mints only remainder (1.591989ms)
+✔ replay cannot mint twice; mismatched operation ID cannot be reused (1.352849ms)
+✔ insufficient funds, bans and false receipts leave original state unchanged (0.671662ms)
+✔ FIFO refunds preserve rate, no double payment, retracted winner cannot be charged (4.250237ms)
+✔ withdraw reservation prevents double spend and cancellation restores tickets (1.812036ms)
+✔ archive credit targets only selected run; funded bonus does not change other cut (15.172019ms)
+✔ assigned receipt and explicit mint override remain fully backed (0.728446ms)
+✔ gold pay-in uses house backing and gold payout cannot improve the old rate (1.377501ms)
+✔ haircuts apply once, at the published percentage, to unused lots only (3.273322ms)
+✔ server bidding binds Discord identity and requires live auction and minimum (0.666412ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 176.306892

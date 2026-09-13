@@ -63,7 +63,7 @@
   .logo-center .logo-sub{pointer-events:auto;}
   .logo{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,2.1vw,1.6rem);font-weight:700;color:var(--gold);letter-spacing:.1em;white-space:nowrap;}
   .logo-sub{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.25em;color:var(--text-muted);text-transform:uppercase;margin-top:.1rem;}
-  #hdr-user{display:flex;align-items:center;justify-content:flex-end;gap:clamp(.3rem,.8vw,.6rem);min-width:0;}
+  #hdr-user{display:flex;align-items:center;justify-content:flex-end;gap:clamp(.3rem,.8vw,.6rem);min-width:0;flex-wrap:nowrap;}
   .header-avatar{width:28px;height:28px;border-radius:50%;border:1px solid var(--border-gold);flex-shrink:0;}
   .header-tools-btn{white-space:nowrap;}
   .rl-badge{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.1em;background:rgba(212,169,60,0.18);color:var(--gold);border:1px solid var(--border-gold-strong);padding:.25rem .65rem;border-radius:2px;margin-right:.5rem;}
@@ -1030,6 +1030,16 @@
   @media(max-width:1100px){.account-action-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
   @media(max-width:600px){.purchase-collection-card,.purchase-summary-grid{grid-template-columns:1fr 1fr}.purchase-collection-card .purchase-person,.purchase-collection-card .purchase-actions{grid-column:1/-1}.payout-actions{grid-template-columns:78px 170px}.settlement-footer-actions .btn,.modal-actions .btn{flex:1 1 130px}.modal-actions .modal-cancel{order:3}.grid{grid-template-columns:minmax(0,1fr)}.card-wrap{min-width:0}.card{min-width:0}.currency-toggle{grid-template-columns:repeat(2,36px);height:36px}.currency-toggle button{width:36px;height:34px}.header-state-button{min-width:78px;height:36px;padding:0 .45rem;font-size:.58rem}.account-action-grid{grid-template-columns:1fr 1fr}.account-footer-actions{grid-template-columns:1fr 1fr}.auction-meta-row{grid-template-columns:minmax(96px,112px) minmax(42px,1fr) 76px}.uniform-actions .btn{flex:1 1 130px;min-width:120px}.archive-card-actions{grid-template-columns:1fr 1fr}.archived-settlement-header{align-items:stretch}.archived-header-actions{display:grid;grid-template-columns:1fr;width:100%}.archived-header-actions .btn:last-child{grid-column:auto}.rollout-body{padding:.75rem}.raid-code-field{width:100%!important}.cut-setup-controls{grid-template-columns:1fr}.sec-hdr{grid-template-columns:1fr}.sec-title{text-align:center}.sec-actions{width:100%;justify-content:center}.sec-actions .rl-controls{width:min(100%,340px)}.sec-actions .rl-controls>.btn{white-space:nowrap}.sec-actions .rl-controls>.add-item-btn:only-child{justify-self:center}}
   @media(max-width:600px){.header-rate-button{min-width:82px;height:36px;padding:0 .35rem!important;font-size:.56rem!important}.exchange-rate-readout{grid-template-columns:1fr}.member-history-actions .btn{font-size:.55rem}}
+  /* Live collision detection applies this layout at any resolution or zoom. */
+  .hdr.header-stacked{grid-template-columns:minmax(110px,1fr) minmax(0,3fr);grid-template-rows:auto auto;column-gap:1rem;row-gap:.55rem;}
+  .hdr.header-stacked .logo-center{grid-column:1/-1;grid-row:1;text-align:center;}
+  .hdr.header-stacked .header-left{grid-column:1;grid-row:2;}
+  .hdr.header-stacked #hdr-user{grid-column:2;grid-row:2;flex-wrap:wrap;justify-content:flex-end;overflow:visible;}
+  @media(max-width:600px){
+    .hdr{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;row-gap:.5rem;}
+    .logo-center{grid-column:1;grid-row:1;text-align:center;}
+    #hdr-user{grid-column:1;grid-row:2;justify-content:center;flex-wrap:wrap;}
+  }
 
 </style>
 </head>
@@ -3008,6 +3018,21 @@ function renderAttendanceManager(){
   const scrollBox=overlay.querySelector('[data-scroll-key="attendance-manager"]');if(scrollBox&&savedScroll)scrollBox.scrollTop=savedScroll;
 }
 
+let headerLayoutFrame=0;
+function syncHeaderLayout(){
+  const header=document.querySelector('.hdr'),logo=header?.querySelector('.logo-center'),controls=document.getElementById('hdr-user'),left=header?.querySelector('.header-left');
+  if(!header||!logo||!controls)return;
+  if(window.innerWidth<=600){header.classList.remove('header-stacked');return;}
+  header.classList.remove('header-stacked');
+  const headerBox=header.getBoundingClientRect(),logoBox=logo.getBoundingClientRect(),controlsBox=controls.getBoundingClientRect(),leftBox=left?.getBoundingClientRect(),clearance=24;
+  const collision=controlsBox.left<logoBox.right+clearance||controlsBox.right>headerBox.right+1||(leftBox&&leftBox.width>0&&leftBox.right>logoBox.left-clearance);
+  header.classList.toggle('header-stacked',collision);
+}
+function scheduleHeaderLayout(){cancelAnimationFrame(headerLayoutFrame);headerLayoutFrame=requestAnimationFrame(syncHeaderLayout);}
+window.addEventListener('resize',scheduleHeaderLayout,{passive:true});
+window.addEventListener('orientationchange',scheduleHeaderLayout,{passive:true});
+document.fonts?.ready.then(scheduleHeaderLayout);
+
 function renderHdr(){
   // Show audit tab only to RL
   const auditBtn=document.getElementById('panel-tab-audit');
@@ -3040,6 +3065,7 @@ function renderHdr(){
     ${isRL&&!archivedSettlementContext?`<button type="button" class="btn btn-outline btn-sm header-rate-button ${exchangeRateIsLocked()?'rate-locked':''}" onclick="openExchangeRateControl()" title="Edit or lock this run's exchange rate">${exchangeRateIsLocked()?'&#128274; ':''}${usdText(runUsdRate())} / 1K</button>`:''}
     <button type="button" class="btn btn-outline btn-sm header-state-button ${soundMuted?'is-muted':'is-active'}" onclick="toggleMute()" aria-pressed="${!soundMuted}" title="${soundMuted?'Turn sound on':'Mute sound'}">${soundMuted?'Muted':'Sound On'}</button>
     ${archivedSettlementContext?`<button class="btn btn-outline btn-sm header-tools-btn" onclick="closeArchivedSettlement()">Current Run</button>`:`<button class="btn btn-outline btn-sm header-tools-btn" onclick="openPanel();setPanelTab('${isRL?'raiders':'runs'}')">${isRL?'Raid Tools':'Runs'}</button>`}`;
+  scheduleHeaderLayout();
   // Center logo
   const logoWrap=document.querySelector('.logo-wrap');
   if(logoWrap){logoWrap.style.position='absolute';logoWrap.style.left='50%';logoWrap.style.transform='translateX(-50%)';}

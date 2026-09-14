@@ -42,7 +42,7 @@
     "runs": {
       ".read": "auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()",
       "$run": {
-        ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!root.child('runs').child($run).child('settlement/settlementMode').exists() || (!data.exists() && !newData.child('settlement/gsPayments').exists() && !newData.child('settlement/payoutStarted').val()))",
+        ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!root.child('runs').child($run).child('settlement/settlementMode').exists() || (!data.exists() && !newData.child('settlement/gsPayments').exists() && (newData.child('settlement/payoutStarted').val() !== true)))",
         "settings": {
           ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
         },
@@ -109,17 +109,17 @@
         "settlement": {
           "raiders": {
             "$raider": {
-              ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && !root.child('runs').child($run).child('settlement/payoutStarted').val()",
+              ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (root.child('runs').child($run).child('settlement/payoutStarted').val() !== true)",
               "cutRequest": {
-                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())"
+                ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && auth.uid === 'discord_' + auth.token.discordId && ((!root.child('runs').child($run).child('settlement/settlementMode').exists()) ? (root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').isString() && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()) : (root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').isString() && root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').val() === auth.token.discordId)))"
               },
               "cutDisputeHistory": {
                 "$event": {
-                  ".write": "!data.exists() && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()))"
+                  ".write": "!data.exists() && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && auth.uid === 'discord_' + auth.token.discordId && ((!root.child('runs').child($run).child('settlement/settlementMode').exists()) ? (root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').isString() && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()) : (root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').isString() && root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').val() === auth.token.discordId))))"
                 }
               },
               "submission": {
-                ".write": "(!root.child('runs').child($run).child('settlement/settlementMode').exists()) && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()))"
+                ".write": "(!root.child('runs').child($run).child('settlement/settlementMode').exists()) && ((auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && auth.uid === 'discord_' + auth.token.discordId && ((!root.child('runs').child($run).child('settlement/settlementMode').exists()) ? (root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').isString() && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()) : (root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').isString() && root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').val() === auth.token.discordId))))"
               },
               "base": {
                 ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && root.child('runs').child($run).child('settlement/setupUnlocked').val() === true"
@@ -136,7 +136,7 @@
             }
           },
           "mutators": {
-            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && (!root.child('runs').child($run).child('settlement/payoutStarted').val() || root.child('runs').child($run).child('settlement/setupUnlocked').val() === true)"
+            ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && ((root.child('runs').child($run).child('settlement/payoutStarted').val() !== true) || root.child('runs').child($run).child('settlement/setupUnlocked').val() === true)"
           },
           "setupUnlocked": {
             ".write": "auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()"
@@ -183,8 +183,8 @@
     "cutDisputeAttachments": {
       "$run": {
         "$raider": {
-          ".read": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())",
-          ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || (auth != null && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val())"
+          ".read": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && auth.uid === 'discord_' + auth.token.discordId && ((!root.child('runs').child($run).child('settlement/settlementMode').exists()) ? (root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').isString() && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()) : (root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').isString() && root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').val() === auth.token.discordId)))",
+          ".write": "(auth != null && auth.token.raidLeader === true && !root.child('bans').child('discord_' + auth.token.discordId).exists()) || ((auth != null && auth.token.discordId != null && !root.child('bans').child('discord_' + auth.token.discordId).exists()) && auth.uid === 'discord_' + auth.token.discordId && ((!root.child('runs').child($run).child('settlement/settlementMode').exists()) ? (root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').isString() && root.child('runs').child($run).child('attendance').child('discord_' + auth.token.discordId).child('character').val() === root.child('runs').child($run).child('settlement/raiders').child($raider).child('name').val()) : (root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').isString() && root.child('runs').child($run).child('settlement/raiders').child($raider).child('gsOwner').val() === auth.token.discordId)))"
         }
       }
     }

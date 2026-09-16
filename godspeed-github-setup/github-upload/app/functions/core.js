@@ -44,6 +44,8 @@ function execute(input,actor,op,data,opId,now=Date.now()){
     root.gs.config={...(root.gs.config||{}),enabled:true,houseId:actor.id,address,chainId:1,usdcNetwork:'Ethereum',confirmations:Math.max(12,Number(data.confirmations)||12)};
   }else{
     const cfg=config(root),house=cfg.houseId,houseAccount=account(root,house);
+    const memberGCAction=['manualWithdraw','withdraw','withdrawCancel','depositCancel','depositRequest','submitHash'].includes(op)||(op==='payWin'&&!data.gold&&(!data.method||data.method==='gs'))||(op==='payoutChoice'&&data.method==='gs');
+    need(actor.rl||cfg.memberGCEnabled===true||!memberGCAction,'Member GC actions are temporarily unavailable');
     if(op==='manualCredit'){
       rl();need(cfg.accountingMode==='manual','Manual accounting is not enabled');
       need(/^\d{15,22}$/.test(String(data.owner))&&!banned(root,data.owner),'Enter a valid, unbanned Discord ID');
@@ -169,4 +171,5 @@ function execute(input,actor,op,data,opId,now=Date.now()){
   return {root,result};
 }
 module.exports={execute,units,dollars,balance,calculateCuts,collected};
+
 

@@ -6,12 +6,17 @@ const {getDatabase}=require('firebase-admin/database');
 const {getAuth}=require('firebase-admin/auth');
 const crypto=require('node:crypto');
 const {execute}=require('./core');
+const {validatedTransaction}=require('./transactions');
 const {executeAttendance,attendanceOps}=require('./attendance');
 initializeApp();
 const CLIENT_SECRET=defineSecret('GS_DISCORD_SECRET');
 const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_URL'),RL=defineString('GS_RL_DISCORD_ID',{default:'670939357686923265'});
 const region='us-central1';
-async function commit(actor,op,data,id){let result,error;const now=Date.now();const tx=await getDatabase().ref().transaction(root=>{try{const out=execute(root,actor,op,data,id,now);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);if(error||!tx.committed)throw new HttpsError('failed-precondition',error?.message||'Transaction conflicted; retry');return result;}
+async function commit(actor,op,data,id){
+ const now=Date.now();
+ try{return await validatedTransaction(getDatabase().ref(),root=>execute(root,actor,op,data,id,now));}
+ catch(e){throw new HttpsError('failed-precondition',e.message||'Transaction conflicted; retry');}
+}
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:request.auth.token.raidLeader===true&&String(request.auth.token.discordId)===RL.value()};}
 exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
   const actor=identity(request),{op,data={},id}=request.data||{};
@@ -19,9 +24,10 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
   if(ban.exists())throw new HttpsError('permission-denied','Account banned');
   if(pause.val()===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
   if(attendanceOps.has(op)){
-    let result,error;const now=Date.now(),proposedCode=Array.from({length:6},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(32)]).join('');
-    const tx=await getDatabase().ref().transaction(root=>{if(root===null||(op!=='migrateAttendanceCodes'&&!root.runs?.[data.runId])){error=new Error('Run not found');return root;}try{const out=executeAttendance(root,actor,op,data,now,proposedCode);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);
-    if(error||!tx.committed)throw new HttpsError('failed-precondition',error?.message||'Attendance update conflicted; retry');
+    const now=Date.now(),proposedCode=Array.from({length:6},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(32)]).join('');
+    let result;
+    try{result=await validatedTransaction(getDatabase().ref(),root=>executeAttendance(root,actor,op,data,now,proposedCode));}
+    catch(e){throw new HttpsError('failed-precondition',e.message||'Attendance update conflicted; retry');}
     if(result.error)throw new HttpsError('failed-precondition',result.error);
     return result;
   }
@@ -30,8 +36,14 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
   }
   if(['configure','depositRequest','depositCancel','submitHash','receive','assignDeposit','withdraw','withdrawPaid','haircut'].includes(op))throw new HttpsError('failed-precondition','Automated blockchain operations are disabled. Use manual GC accounting.');
   if(op==='snapshot'){
-    const root=(await getDatabase().ref().get()).val()||{};
-    if(root.bans?.['discord_'+actor.id])throw new HttpsError('permission-denied','Banned account');
+    // Balances do not need auctions, archives, image attachments or the full database.
+    const db=getDatabase();
+    const [configSnap,accountsSnap,depositsSnap,withdrawalsSnap,receiptsSnap]=await Promise.all([
+      db.ref('gs/config').get(),db.ref(actor.rl?'accounts':'accounts/'+actor.id).get(),
+      db.ref('gs/deposits').get(),db.ref('gs/withdrawals').get(),
+      actor.rl?db.ref('gs/manualReceipts').get():Promise.resolve(null)
+    ]);
+    const root={accounts:actor.rl?(accountsSnap.val()||{}):{[actor.id]:accountsSnap.val()||{}},gs:{config:configSnap.val()||{},deposits:depositsSnap.val()||{},withdrawals:withdrawalsSnap.val()||{},manualReceipts:receiptsSnap?.val()||{}}};
     const a=root.accounts?.[actor.id]||{},cfg=root.gs?.config||{};
     return {account:{gsBalance:a.gsBalance||0,tickets:a.tickets||{},ledger:Object.fromEntries(Object.entries(a.ledger||{}).filter(([,e])=>e.unit==='GS'))},config:{enabled:!!cfg.enabled,address:cfg.address||'',accountingMode:'manual',houseId:cfg.houseId||''},deposits:Object.fromEntries(Object.entries(root.gs?.deposits||{}).filter(([,d])=>actor.rl||d.owner===actor.id)),withdrawals:Object.fromEntries(Object.entries(root.gs?.withdrawals||{}).filter(([,w])=>actor.rl||w.owner===actor.id).map(([id,w])=>[id,{...w,pieces:undefined}]).map(([id,w])=>{delete w.pieces;return[id,w];})),house:actor.rl?{balance:root.accounts?.[cfg.houseId]?.gsBalance||0,reserved:root.accounts?.[cfg.houseId]?.usdReserved||0}:null,manualReceipts:actor.rl?root.gs?.manualReceipts||{}:{},members:actor.rl?Object.fromEntries(Object.entries(root.accounts||{}).filter(([id])=>/^\d+$/.test(id)).map(([id,a])=>[id,{name:a.profile?.displayName||a.profile?.discordName||id,balance:a.gsBalance||0}])):{}};
   }

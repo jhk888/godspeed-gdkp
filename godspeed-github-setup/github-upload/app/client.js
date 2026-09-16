@@ -25,7 +25,7 @@ function gsEnsureReady(){
  gsReadyTask=(async()=>{
   const claims=(await account.getIdTokenResult()).claims;
   if(claims.raidLeader===true){
-   const key='gdkp_setup_v1:'+firebaseConfig.projectId+':'+account.uid;
+   const key='gdkp_setup_v2:'+firebaseConfig.projectId+':'+account.uid;
    let complete=false;try{complete=localStorage.getItem(key)==='complete';}catch{}
    if(!complete){
     gsStartupNotice('Preparing raid tools. The page is available while setup finishes.');

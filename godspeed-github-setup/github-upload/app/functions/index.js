@@ -20,7 +20,7 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
   if(pause.val()===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
   if(attendanceOps.has(op)){
     let result,error;const now=Date.now(),proposedCode=Array.from({length:6},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(32)]).join('');
-    const tx=await getDatabase().ref().transaction(root=>{try{const out=executeAttendance(root,actor,op,data,now,proposedCode);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);
+    const tx=await getDatabase().ref().transaction(root=>{if(root===null||(op!=='migrateAttendanceCodes'&&!root.runs?.[data.runId])){error=new Error('Run not found');return root;}try{const out=executeAttendance(root,actor,op,data,now,proposedCode);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);
     if(error||!tx.committed)throw new HttpsError('failed-precondition',error?.message||'Attendance update conflicted; retry');
     if(result.error)throw new HttpsError('failed-precondition',result.error);
     return result;

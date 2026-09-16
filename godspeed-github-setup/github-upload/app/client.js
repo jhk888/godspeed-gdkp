@@ -53,7 +53,7 @@ async function gsCall(op,data={},id){
 async function gsRefresh(){try{gsSnapshot=await gsCall('snapshot');const el=document.getElementById('gs-account-state');if(el)el.innerHTML=gsAccountState();const queue=document.getElementById('gs-admin-queue');if(queue)queue.innerHTML=gsAdminQueue();}catch(e){const el=document.getElementById('gs-account-state');if(el)el.textContent=e.message;}}
 async function gsAction(op,data={},confirmText=''){
   if(gsBusy)return;
-  const perform=async()=>{if(gsBusy)return;gsBusy=true;try{await gsCall(op,data);await gsRefresh();toast('GS change recorded');if(tab==='settlement'||tab==='payout')renderMain();}catch(e){toast(e.message||'GS save failed; nothing was credited');}finally{gsBusy=false;}};
+  const perform=async()=>{if(gsBusy)return;gsBusy=true;try{await gsCall(op,data);void gsRefresh();toast('GS change recorded');if(tab==='settlement'||tab==='payout')renderMain();}catch(e){toast(e.message||'GS save failed; nothing was credited');}finally{gsBusy=false;}};
   if(confirmText)wowConfirm({title:'Confirm GS Change',msg:confirmText,confirmLabel:'Confirm',onConfirm:perform});else await perform();
 }
 function gsField(id){return document.getElementById(id)?.value?.trim()||'';}
@@ -65,7 +65,7 @@ async function gsSubmitForm(type){
   if(gsBusy)return;gsBusy=true;const box=document.getElementById('gs-form-result');try{
     if(type==='deposit'){const d=await gsCall('depositRequest',{amount:Number(gsField('gs-amount')),runId});box.innerHTML=`<p>Send exactly <strong>${d.amount.toFixed(6)} USDC</strong> on Ethereum.</p><p>Tag: ${settlementEsc(d.tag)}</p><p class="gs-address">${settlementEsc(d.address)}</p><p>The six-decimal amount identifies this request. A text memo is not transmitted by USDC. Credit appears after confirmation or RL review.</p>`;}
     else{const op=type==='configure'?'configure':type==='float'?'floatTransfer':'withdraw',data=type==='configure'?{address:gsField('gs-address')}:type==='float'?{to:gsField('gs-to'),amount:Number(gsField('gs-amount'))}:{amount:Number(gsField('gs-amount')),address:gsField('gs-address')};gsBusy=false;await gsAction(op,data,type==='configure'?'Use this address for new USDC deposits?':type==='float'?'Transfer funded house GS to this account?':'Reserve these GS for a USDC withdrawal to the entered address?');}
-    await gsRefresh();
+    void gsRefresh();
   }catch(e){box.textContent=e.message;}finally{gsBusy=false;}
 }
 function gsHelp(){const lines=settlement.gsCutLines||{lead:15,treasury:5,risk:5,handling:0};return '<p>Run compensation: '+Object.entries(lines).map(([k,v])=>settlementEsc(k)+' '+v+'%').join(' · ')+(settlement.gsTaper?' · capped at 20% of first 2,000 GS, 15% after.':'.')+' Withdrawal window: 48 hours after the run locks. Expiry fee: '+Number(settlement.gsHaircutPct||0)+'%.</p><details><summary>About Godspeed Coin</summary><p>1 GS = 1 USDC. New runs use coin. Gold is available only when the RL enables it for that mixed run. Each ticket keeps its creation rate through transfers. Remaining coin withdraws as USDC. Cuts are GS unless the run permits gold. A published withdrawal-window fee may apply after the run closes.</p></details>';}
@@ -229,7 +229,7 @@ const gcOriginalConfirm=wowConfirm;
 wowConfirm=function(options){const form=document.getElementById('gs-form'),previousFocus=document.activeElement;if(form)form.hidden=true;gcOriginalConfirm(options);const dialog=document.getElementById('wow-dialog-overlay');if(!dialog){if(form)form.hidden=false;return;}dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');let accepted=false;const confirm=document.getElementById('wow-confirm');confirm?.addEventListener('click',()=>{if(!options.input)accepted=true;},true);const observer=new MutationObserver(()=>{if(!dialog.isConnected){observer.disconnect();if(form?.isConnected)form.hidden=false;if(!accepted&&previousFocus?.isConnected)previousFocus.focus({preventScroll:true});}});observer.observe(document.body,{childList:true});};
 gsAction=async function(op,data={},confirmText=''){
  if(gsBusy)return;
- const perform=async()=>{if(gsBusy)return;gsBusy=true;const y=window.scrollY;try{await gsCall(op,data);document.getElementById('gs-form')?.remove();await gsRefresh();renderMain();window.scrollTo(0,y);toast(({withdraw:'Withdrawal requested',withdrawCancel:'Withdrawal cancelled',depositCancel:'Deposit request cancelled',payWin:'Payment complete',creditCut:'Payout complete',lockCuts:'Cuts locked',refundWin:'Purchase refunded'})[op]||'Saved');}catch(e){toast(e.message||'Could not complete the request.');}finally{gsBusy=false;}};
+ const perform=async()=>{if(gsBusy)return;gsBusy=true;const y=window.scrollY;try{await gsCall(op,data);document.getElementById('gs-form')?.remove();void gsRefresh();renderMain();window.scrollTo(0,y);toast(({withdraw:'Withdrawal requested',withdrawCancel:'Withdrawal cancelled',depositCancel:'Deposit request cancelled',payWin:'Payment complete',creditCut:'Payout complete',lockCuts:'Cuts locked',refundWin:'Purchase refunded'})[op]||'Saved');}catch(e){toast(e.message||'Could not complete the request.');}finally{gsBusy=false;}};
  if(!confirmText){await perform();return;}
  const withdrawal=op==='withdraw';
  const message=withdrawal?`<p>Request <strong>${Number(data.amount).toLocaleString()} USDC</strong> on Ethereum?</p><p class="gc-address">${gcEsc(data.address)}</p><p>${gcMoney(data.amount)} will be held until this request is completed or cancelled.</p><p>Available after request: <strong>${gcMoney(Number(gsSnapshot?.account?.gsBalance||0)-Number(data.amount))}</strong></p>`:gcEsc(confirmText.replaceAll('GS','GC'));
@@ -723,7 +723,7 @@ function manualGCForm(type,id=''){
  const members=Object.entries(gsSnapshot?.members||{}).map(([id,m])=>`<option value="${id}">${settlementEsc(m.name)} · ${id}</option>`).join('');
  const fields=type==='credit'?`<label>Member Discord ID<input id="mg-owner" list="mg-members" required inputmode="numeric"><datalist id="mg-members">${members}</datalist></label><label>GC to credit<input id="mg-amount" type="number" min="0.000001" step="0.000001" required></label><label>Payment reference<input id="mg-reference" maxlength="120" required placeholder="Unique receipt or bookkeeping reference"></label><label>Reason<input id="mg-reason" maxlength="300" required placeholder="Payment received for GC"></label><label><input id="mg-confirm" type="checkbox" required> I received this payment and verified the member and amount.</label>`:type==='withdraw'?`<label>GC to withdraw<input id="mg-amount" type="number" min="0.000001" step="0.000001" required></label><label>Payout instructions<textarea id="mg-details" maxlength="300" required placeholder="How the leader should arrange your payout"></textarea></label>`:`<p>${gsAmount(gsSnapshot?.withdrawals?.[id]?.amount)} to Discord ${settlementEsc(gsSnapshot?.withdrawals?.[id]?.owner||'')}</p><label>Payout reference<input id="mg-reference" maxlength="120" required></label><label><input id="mg-confirm" type="checkbox" required> I sent the payout and verified the recipient and amount.</label>`;
  const el=document.createElement('div');el.id='manual-gc-form';el.className='account-payment-overlay';el.innerHTML=`<form class="account-payment-card"><h2>${type==='credit'?'Credit GC':type==='withdraw'?'Request payout':'Confirm payout sent'}</h2><div class="gs-fields">${fields}</div><div class="uniform-actions"><button type="button" class="btn btn-outline" onclick="document.getElementById('manual-gc-form').remove()">Cancel</button><button class="btn btn-gold" type="submit">${type==='credit'?'Credit GC':type==='withdraw'?'Request payout':'Record payout'}</button></div><p role="status" id="mg-status"></p></form>`;
- document.body.appendChild(el);el.querySelector('form').onsubmit=async e=>{e.preventDefault();if(gsBusy)return;const value=id=>document.getElementById(id)?.value?.trim()||'';const data=type==='credit'?{owner:value('mg-owner'),amount:Number(value('mg-amount')),reference:value('mg-reference'),reason:value('mg-reason'),received:document.getElementById('mg-confirm').checked,runId}:type==='withdraw'?{amount:Number(value('mg-amount')),details:value('mg-details')}:{id,reference:value('mg-reference'),paid:document.getElementById('mg-confirm').checked};gsBusy=true;const button=el.querySelector('button[type=submit]');button.disabled=true;try{await gsCall(type==='credit'?'manualCredit':type==='withdraw'?'manualWithdraw':'manualWithdrawPaid',data);await gsRefresh();el.remove();toast(type==='credit'?'GC credited':type==='withdraw'?'Payout requested':'Payout recorded');}catch(err){document.getElementById('mg-status').textContent=err.message;}finally{gsBusy=false;button.disabled=false;}};
+ document.body.appendChild(el);el.querySelector('form').onsubmit=async e=>{e.preventDefault();if(gsBusy)return;const value=id=>document.getElementById(id)?.value?.trim()||'';const data=type==='credit'?{owner:value('mg-owner'),amount:Number(value('mg-amount')),reference:value('mg-reference'),reason:value('mg-reason'),received:document.getElementById('mg-confirm').checked,runId}:type==='withdraw'?{amount:Number(value('mg-amount')),details:value('mg-details')}:{id,reference:value('mg-reference'),paid:document.getElementById('mg-confirm').checked};gsBusy=true;const button=el.querySelector('button[type=submit]');button.disabled=true;try{await gsCall(type==='credit'?'manualCredit':type==='withdraw'?'manualWithdraw':'manualWithdrawPaid',data);void gsRefresh();el.remove();toast(type==='credit'?'GC credited':type==='withdraw'?'Payout requested':'Payout recorded');}catch(err){document.getElementById('mg-status').textContent=err.message;}finally{gsBusy=false;button.disabled=false;}};
 }
 gsAccountState=function(){if(!gsSnapshot)return'Loading account…';const a=gsSnapshot.account;return `<div class="account-stats"><div>Available GC<br><strong>${gsAmount(a.gsBalance)}</strong></div></div><div class="uniform-actions"><button class="btn btn-outline" onclick="gsForm('deposit')">Add GC</button><button class="btn btn-outline" onclick="manualGCForm('withdraw')">Request payout</button>${isRL?'<button class="btn btn-gold" onclick="manualGCForm(\'credit\')">Credit member GC</button>':''}<button class="btn btn-outline" onclick="gsRefresh()">Refresh</button></div><h4>Recent activity</h4>${Object.values(a.ledger||{}).sort((a,b)=>b.createdAt-a.createdAt).slice(0,30).map(e=>`<p>${settlementEsc(e.type.replaceAll('_',' '))} · ${gsAmount(e.gsDelta)} · ${accountDate(e.createdAt)}${e.reason?' · '+settlementEsc(e.reason):''}</p>`).join('')||'<p>No activity yet.</p>'}<h4>Payout requests</h4>${Object.entries(gsSnapshot.withdrawals||{}).filter(([,w])=>w.owner===accountDiscordId()).map(([id,w])=>`<p>${gsAmount(w.amount)} · ${settlementEsc(w.status)} ${w.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="gsAction('withdrawCancel',{id:'${id}'},'Cancel this request and return the GC to your balance?')">Cancel</button>`:''}</p>`).join('')||'<p>None</p>'}`;};
 gsAdminQueue=function(){if(!isRL)return'';return `<div class="uniform-actions"><button class="btn btn-gold" onclick="manualGCForm('credit')">Credit member GC</button><button class="btn btn-outline" onclick="gsRefresh()">Refresh</button></div><h4>Payout requests</h4>${Object.entries(gsSnapshot?.withdrawals||{}).filter(([,w])=>w.status==='pending').map(([id,w])=>`<p>${settlementEsc(gsSnapshot?.members?.[w.owner]?.name||w.owner)} · ${gsAmount(w.amount)}<br>${settlementEsc(w.details||'')} <button class="btn btn-outline" onclick="manualGCForm('paid','${id}')">Confirm payout sent</button></p>`).join('')||'<p>None</p>'}<details><summary>Recent manual credits</summary>${Object.values(gsSnapshot?.manualReceipts||{}).sort((a,b)=>b.createdAt-a.createdAt).slice(0,30).map(r=>`<p>${settlementEsc(r.owner)} · ${gsAmount(r.amount)} · ${settlementEsc(r.reference)} · ${accountDate(r.createdAt)}<br>${settlementEsc(r.reason)} · by ${settlementEsc(r.confirmedBy)}</p>`).join('')||'<p>None</p>'}</details>`;};
@@ -767,3 +767,52 @@ setDisplayCurrency=function(next){
  return goldFirstSetCurrency(next);
 };
 Object.assign(window,{renderHdr,setDisplayCurrency});
+
+
+// Shared progress feedback for server commands and remote dialogs.
+let uiLastButton=null,uiLastClick=0,uiProgressId=0;
+const uiPendingCommands=new Map(),uiProgressTasks=new Map();
+document.addEventListener('click',event=>{uiLastButton=event.target.closest?.('button,[role="button"]')||null;uiLastClick=Date.now();},true);
+function uiShowProgress(){
+ let box=document.getElementById('ui-request-progress');
+ if(!uiProgressTasks.size){box?.remove();return;}
+ if(!box){box=document.createElement('div');box.id='ui-request-progress';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:400;background:#19150d;color:#e6c56c;border:1px solid #a78b42;padding:12px 18px;max-width:90vw';document.body.append(box);}
+ box.textContent=Array.from(uiProgressTasks.values()).at(-1);
+}
+function uiProgress(label,work){
+ const id=++uiProgressId,button=Date.now()-uiLastClick<1000?uiLastButton:null,disabled=button?.disabled;
+ uiProgressTasks.set(id,label);uiShowProgress();
+ if(button){button.disabled=true;button.setAttribute('aria-busy','true');}
+ const timer=setTimeout(()=>{if(uiProgressTasks.has(id)){uiProgressTasks.set(id,label+' Still waiting for the server.');uiShowProgress();}},8000);
+ return Promise.resolve().then(work).finally(()=>{clearTimeout(timer);uiProgressTasks.delete(id);if(button){button.disabled=disabled;button.removeAttribute('aria-busy');}uiShowProgress();});
+}
+const uiCommandOriginal=gsCall;
+gsCall=function(op,data={},id){
+ if(op==='snapshot')return uiCommandOriginal(op,data,id);
+ const key=JSON.stringify([gsAuth.currentUser?.uid,op,data]);
+ if(uiPendingCommands.has(key))return uiPendingCommands.get(key);
+ const label=op==='attendanceSettings'?(data.open===true?'Opening check-in…':data.open===false?'Closing check-in…':'Loading raid code…'):({placeBid:'Submitting bid…',payWin:'Recording payment…',creditCut:'Recording payout…',manualCredit:'Recording credit…',manualWithdraw:'Submitting payout request…',manualWithdrawPaid:'Recording payout…',attendanceJoin:'Checking in…',attendanceVerify:'Checking raid code…',attendanceLeave:'Updating attendance…',currencies:'Saving currencies…',mode:'Saving run settings…',lockCuts:'Locking cuts…',refundWin:'Recording refund…'})[op]||'Saving…';
+ const task=uiProgress(label,()=>uiCommandOriginal(op,data,id)).finally(()=>uiPendingCommands.delete(key));
+ uiPendingCommands.set(key,task);return task;
+};
+const uiCheckinPending=new Map(),uiAttendanceRender=renderAttendanceManager;
+renderAttendanceManager=function(){
+ uiAttendanceRender();const desired=uiCheckinPending.get(runId);if(desired===undefined)return;
+ document.querySelectorAll('#attendance-overlay button[onclick*="toggleAttendanceCheckIn"]').forEach(button=>{button.disabled=true;button.textContent=desired?'Opening…':'Closing…';button.setAttribute('aria-busy','true');});
+};
+toggleAttendanceCheckIn=async function(open){
+ if(!isRL||!runId||uiCheckinPending.has(runId))return;
+ const key=runId;uiCheckinPending.set(key,!!open);renderAttendanceManager();
+ try{const settings=await gsCall('attendanceSettings',{runId:key,open:!!open});gsPrivateCodes[key]=settings.code;if(runId===key){const {code,...publicSettings}=settings;attendanceSettings={...attendanceSettings,...publicSettings};if(!open)syncSettlementRaiders(true);toast(open?'Check-in opened':'Check-in closed');}}
+ catch(error){toast(error.message||'Check-in could not be changed. Please retry.');}
+ finally{uiCheckinPending.delete(key);if(runId===key){renderAttendanceManager();refreshPotAndLoot();}}
+};
+function uiRemoteDialog(original,label){let pending=null;return function(...args){if(pending)return pending;pending=uiProgress(label,()=>original(...args)).finally(()=>{pending=null;});return pending;};}
+openArchivedSettlement=uiRemoteDialog(openArchivedSettlement,'Loading archived settlement…');
+openArchivedPayoutByCode=uiRemoteDialog(openArchivedPayoutByCode,'Loading archived payout…');
+openArchivedPayoutByKey=uiRemoteDialog(openArchivedPayoutByKey,'Loading archived payout…');
+openAccountAttachment=uiRemoteDialog(openAccountAttachment,'Loading attachment…');
+openCutRequestReview=uiRemoteDialog(openCutRequestReview,'Loading dispute…');
+openFeedbackAdmin=uiRemoteDialog(openFeedbackAdmin,'Loading reports…');
+openFeedbackAttachment=uiRemoteDialog(openFeedbackAttachment,'Loading screenshot…');
+Object.assign(window,{toggleAttendanceCheckIn,openArchivedSettlement,openArchivedPayoutByCode,openArchivedPayoutByKey,openAccountAttachment,openCutRequestReview,openFeedbackAdmin,openFeedbackAttachment});

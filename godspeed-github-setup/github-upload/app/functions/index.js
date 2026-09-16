@@ -6,6 +6,7 @@ const {getDatabase}=require('firebase-admin/database');
 const {getAuth}=require('firebase-admin/auth');
 const crypto=require('node:crypto');
 const {execute}=require('./core');
+const {executeRunBid}=require('./bids');
 const {validatedTransaction}=require('./transactions');
 const {executeAttendance,attendanceOps}=require('./attendance');
 initializeApp();
@@ -20,9 +21,21 @@ async function commit(actor,op,data,id){
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:request.auth.token.raidLeader===true&&String(request.auth.token.discordId)===RL.value()};}
 exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
   const actor=identity(request),{op,data={},id}=request.data||{};
-  const [ban,pause]=await Promise.all([getDatabase().ref('bans/discord_'+actor.id).get(),getDatabase().ref('gs/config/sitePaused').get()]);
+  const started=Date.now(),db=getDatabase(),isBid=op==='placeBid';
+  if(isBid){safe(data.runId);safe(data.auctionId);if(typeof id!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(id))throw new HttpsError('invalid-argument','Invalid request ID');}
+  const [ban,configSnap,legacyReceipt]=await Promise.all([db.ref('bans/discord_'+actor.id).get(),db.ref(isBid?'gs/config':'gs/config/sitePaused').get(),isBid?db.ref('gs/ops/'+id).get():Promise.resolve(null)]);
   if(ban.exists())throw new HttpsError('permission-denied','Account banned');
-  if(pause.val()===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
+  const paused=isBid?configSnap.val()?.sitePaused:configSnap.val();
+  if(paused===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
+  if(isBid){
+    const checked=Date.now();let result;
+    try{result=await validatedTransaction(db.ref('runs/'+data.runId),run=>executeRunBid(run,actor,data,id,configSnap.val()||{},legacyReceipt.val()));}
+    catch(e){throw new HttpsError('failed-precondition',e.message||'Bid conflicted; retry');}
+    // The durable receipt is committed with the bid; also retain the existing audit view.
+    await db.ref('audit/'+data.runId+'/'+id).set({type:'gs_placeBid',actor:actor.id,ts:started,amount:data.amount,reason:'',operationId:id});
+    console.info('Bid timing',{authorizationMs:checked-started,totalMs:Date.now()-started});
+    return result;
+  }
   if(attendanceOps.has(op)){
     const now=Date.now(),proposedCode=Array.from({length:6},()=> 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[crypto.randomInt(32)]).join('');
     let result;
@@ -52,3 +65,4 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
 function safe(s){if(typeof s!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(s))throw new HttpsError('invalid-argument','Invalid key');return s;}
 const {createHandler}=require('./discordAuth');
 exports.gsDiscordAuth=onRequest({region,secrets:[CLIENT_SECRET],timeoutSeconds:30,minInstances:0,maxInstances:2,invoker:'public'},createHandler({secret:()=>CLIENT_SECRET.value(),database:getDatabase(),auth:getAuth(),site:()=>SITE.value(),leader:()=>RL.value()}));
+

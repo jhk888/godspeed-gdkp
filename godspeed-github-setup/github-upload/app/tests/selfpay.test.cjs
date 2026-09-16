@@ -3,7 +3,7 @@ const {execute,balance,units}=require('../functions/core');
 let seq=0;const house={id:'1',rl:true},alice={id:'2',rl:false},bob={id:'3',rl:false};
 function fixture(){return {runs:{r:{settlement:{},attendance:{a:{character:'Alice',discordId:'2'},b:{character:'Bob',discordId:'3'}}}}};}
 function act(s,a,op,data={},id){return execute(s,a,op,data,id||'request_'+(++seq),1700000000000).root;}
-function start(){let s=act(fixture(),house,'configure',{address:'0x'+'1'.repeat(40)});return act(s,house,'mode',{runId:'r',mode:'coin',rate:10,lines:{lead:15,treasury:5,risk:5,handling:0}});}
+function start(){let s=act(fixture(),house,'configure',{address:'0x'+'1'.repeat(40)});s.gs.config.memberGCEnabled=true;return act(s,house,'mode',{runId:'r',mode:'coin',rate:10,lines:{lead:15,treasury:5,risk:5,handling:0}});}
 function deposit(s,a,amount){const id='deposit_'+(++seq);s=act(s,a,'depositRequest',{runId:'r',amount},id);return act(s,house,'receive',{id,event:{verified:true,id:'event_'+seq,chainId:1,to:s.gs.config.address,amount:s.gs.deposits[id].amount}});}
 function invariant(s){const total=Object.values(s.accounts||{}).reduce((n,a)=>n+balance(a),0)+Object.values(s.gs.withdrawals||{}).filter(w=>w.status==='pending').reduce((n,w)=>n+units(w.amount),0);assert.equal(total,units(s.accounts['1'].usdReserved||0));for(const a of Object.values(s.accounts||{})){assert.equal(balance(a),units(a.gsBalance));assert.equal(balance(a),Object.values(a.tickets||{}).reduce((n,t)=>n+units(t.remainingUsd),0));}}
 

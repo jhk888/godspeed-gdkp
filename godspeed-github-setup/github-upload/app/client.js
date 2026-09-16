@@ -681,3 +681,26 @@ const queueBuildOriginal=buildModal;
 buildModal=function(...args){const html=queueBuildOriginal(...args),t=document.createElement('template');t.innerHTML=html;const start=t.content.querySelector('#m-start');if(!start)return html;const c=queuePreference();const block=document.createElement('div');block.className='fg';block.innerHTML='<label for="queue-currency">Enter bids in</label><select id="queue-currency" onchange="queueSwitch(this.value)" style="width:100%;padding:.6rem;background:var(--bg-input);color:var(--text-bright);border:1px solid var(--border-gold)">'+[['gold','Gold'],['gc','GC'],['usd','USD']].map(([v,l])=>'<option value="'+v+'" '+(v===c?'selected':'')+'>'+l+'</option>').join('')+'</select><p id="queue-conversion" class="settlement-muted">1,000 gold = '+Number(runUsdRate())+' GC = $'+Number(runUsdRate())+' USD. Your selection is remembered.</p>';block.querySelector('select').dataset.previous=c;start.closest('.three-col').before(block);for(const id of ['m-start','m-btn1','m-btn2','m-btn3']){const el=t.content.querySelector('#'+id);if(el){el.setAttribute('value',queueFromStored(Number(el.getAttribute('value')),c));el.setAttribute('min','0.000001');el.setAttribute('step','any');el.removeAttribute('max');}}const unit={gold:'Gold',gc:'GC',usd:'USD'}[c];start.previousElementSibling.innerHTML='Start bid (<span data-queue-unit>'+unit+'</span>)';const buttons=t.content.querySelector('#m-btn1').closest('.fg');buttons.querySelector('.lbl').innerHTML='Bid increments (<span data-queue-unit>'+unit+'</span>)';buttons.querySelector('span').setAttribute('data-queue-unit','');const each=buttons.querySelector('div[style] > span');if(each){each.textContent=unit;each.setAttribute('data-queue-unit','');}return t.innerHTML;};
 for(const name of ['addToQueue','addToQueueAndStart','saveEdit','saveEditAndStart','saveEditAndQueue']){const original=({addToQueue,addToQueueAndStart,saveEdit,saveEditAndStart,saveEditAndQueue})[name];const wrapped=function(...args){try{for(const id of ['m-start','m-btn1','m-btn2','m-btn3'])queueRead(id,1);return original(...args);}catch(e){toast(e.message);}};if(name==='addToQueue')addToQueue=wrapped;if(name==='addToQueueAndStart')addToQueueAndStart=wrapped;if(name==='saveEdit')saveEdit=wrapped;if(name==='saveEditAndStart')saveEditAndStart=wrapped;if(name==='saveEditAndQueue')saveEditAndQueue=wrapped;window[name]=wrapped;}
 Object.assign(window,{queueSwitch,previewStartBid});
+
+ 
+// Gold-first header display; GC follows the current run's acceptance policy.
+let headerCurrencyRun=null;
+const goldFirstHeader=renderHdr;
+renderHdr=function(){
+ if(gsContext()){
+  const key=settlementRunKey();
+  if(headerCurrencyRun!==key){headerCurrencyRun=key;gcGoldView=true;displayCurrency='gold';}
+  if(!cuPolicy().gc&&!gcGoldView&&displayCurrency!=='usd'){gcGoldView=true;displayCurrency='gold';}
+ }
+ goldFirstHeader();
+ if(!gsContext())return;
+ const el=document.querySelector('#hdr-user .currency-toggle');if(!el)return;
+ const gcEnabled=cuPolicy().gc===true;
+ el.innerHTML=`<button onclick="setDisplayCurrency('goldunit')" title="Show amounts in gold" aria-label="Show gold" class="${gcGoldView?'active':''}">&#128176;</button><button onclick="setDisplayCurrency('usd')" title="Show dollars" aria-label="Show dollars" class="${!gcGoldView&&displayCurrency==='usd'?'active':''}">$</button><button onclick="setDisplayCurrency('gc')" title="${gcEnabled?'Show Godspeed Coin':'GC is not accepted for this run'}" aria-label="Show Godspeed Coin (GC)" aria-disabled="${!gcEnabled}" ${gcEnabled?'':'disabled'} class="${!gcGoldView&&displayCurrency!=='usd'?'active':''}"><span class="gc-coin-icon" aria-hidden="true">GC</span></button>`;
+};
+const goldFirstSetCurrency=setDisplayCurrency;
+setDisplayCurrency=function(next){
+ if(gsContext()&&next==='gc'&&cuPolicy().gc!==true)return;
+ return goldFirstSetCurrency(next);
+};
+Object.assign(window,{renderHdr,setDisplayCurrency});

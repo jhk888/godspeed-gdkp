@@ -833,3 +833,60 @@ buildModal=function(title,a,...args){const html=defaultsBuildModal(title,a,...ar
 const auctionBidPending=new Set();
 submitBid=async function(id,val,event){if(!gsContext())return gsOldBid(id,val,event);const key=runId+':'+id;if(auctionBidPending.has(key))return;auctionBidPending.add(key);try{await gsCall('placeBid',{runId,auctionId:id,amount:Number(val)});toast('Bid accepted');}catch(e){toast(e.message||'Bid could not be confirmed.');}finally{auctionBidPending.delete(key);}};
 Object.assign(window,{openAuctionSettings,submitBid});
+
+// Live, read-only purchase display. Opening it never changes run/payment state.
+let lpView=null;
+function lpGroups(data){
+ const buyers=new Map();
+ for(const [id,a] of Object.entries(data?.auctions||{})){
+  if(a.status!=='sold')continue;
+  const winner=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((a,b)=>Number(b.amount)-Number(a.amount))[0];
+  if(!winner?.bidder)continue;
+  const price=Number(a.currentBid);if(!Number.isFinite(price)||price<0)continue;
+  const key=String(winner.bidder);let buyer=buyers.get(key);
+  if(!buyer){buyer={key,name:String(data.nicks?.[key]||key),total:0,items:[]};buyers.set(key,buyer);}
+  buyer.total+=price;buyer.items.push({id,name:String(a.name||'Unnamed item'),price,icon:a.itemIcon,quality:a.quality});
+ }
+ return [...buyers.values()].sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name)||a.key.localeCompare(b.key));
+}
+function lpClose(){const v=lpView;if(!v)return;lpView=null;v.unsub?.();v.connectionUnsub?.();clearInterval(v.monitor);v.root.remove();if(v.popup&&!v.popup.closed)v.popup.close();if(v.opener?.isConnected)v.opener.focus({preventScroll:true});}
+function lpStatus(){const v=lpView;if(!v)return;v.status.textContent=v.error?'Live updates unavailable. Close and reopen Purchases.':!v.connected?'Reconnecting. Displayed purchases may be out of date.':!v.data?'Loading purchases…':'Live updates. Keep the main website tab open.';}
+function lpRender(){
+ const v=lpView;if(!v)return;if(!isRL||!user||settlementRunKey()!==v.runId){lpClose();return;}
+ if(!v.data)return;
+ const groups=lpGroups(v.data),rows=groups.map(g=>({...g,totalText:displayMoney(g.total),items:g.items.map(i=>({...i,priceText:displayMoney(i.price)}))}));
+ const title=String(v.data.settings?.raidTitle||'Current run'),signature=JSON.stringify([title,rows]);if(signature===v.signature)return;v.signature=signature;
+ const scroll=v.list.scrollTop,fragment=v.doc.createDocumentFragment();
+ for(const [rank,g] of rows.entries()){
+  const card=v.doc.createElement('section');card.className='lp-buyer';
+  const head=v.doc.createElement('header'),name=v.doc.createElement('h2'),total=v.doc.createElement('strong');name.textContent=(rank+1)+'. '+g.name;total.textContent=g.totalText;head.append(name,total);card.append(head);
+  const count=v.doc.createElement('p');count.className='lp-count';count.textContent=g.items.length+' item'+(g.items.length===1?'':'s');card.append(count);
+  for(const item of g.items){const row=v.doc.createElement('div');row.className='lp-item';const icon=v.doc.createElement('span');icon.className='lp-icon';if(typeof item.icon==='string'&&/^[a-z0-9_-]+$/i.test(item.icon)){const img=v.doc.createElement('img');img.src=iconUrl(item.icon);img.alt='';img.loading='lazy';img.addEventListener('error',()=>img.remove(),{once:true});icon.append(img);}const label=v.doc.createElement('span');label.className='lp-item-name '+(['legendary','epic','rare','uncommon'].includes(item.quality)?'lp-'+item.quality:'');label.textContent=item.name;const amount=v.doc.createElement('span');amount.className='lp-price';amount.textContent=item.priceText;row.append(icon,label,amount);card.append(row);}fragment.append(card);
+ }
+ if(!rows.length){const empty=v.doc.createElement('p');empty.className='lp-empty';empty.textContent='No purchases yet. Sold items will appear here automatically.';fragment.append(empty);}
+ v.list.replaceChildren(fragment);v.list.scrollTop=scroll;v.heading.textContent=title;
+ const count=rows.reduce((n,g)=>n+g.items.length,0),total=groups.reduce((n,g)=>n+g.total,0);v.summary.textContent=rows.length+' buyers · '+count+' items · '+displayMoney(total)+' total';
+}
+function openPurchases(){
+ if(!isRL||!runId||!user)return;
+ if(lpView&&lpView.runId===settlementRunKey()&&(!lpView.popup||!lpView.popup.closed)){lpView.popup?.focus();lpView.close.focus();return;}lpClose();
+ let popup=null;try{popup=window.open('','godspeed-purchases','popup=yes,width=620,height=850,resizable=yes,scrollbars=yes');if(popup?.closed)popup=null;if(popup){popup.document.title='Purchases | GODSPEED GDKP';popup.document.body.replaceChildren();}}catch{popup=null;}
+ const doc=popup?popup.document:document,root=doc.createElement('section');root.className='lp-shell'+(popup?' lp-window':'');root.setAttribute('role','dialog');root.setAttribute('aria-label','Purchases');
+ root.innerHTML=`<style>
+ .lp-shell{position:fixed;inset:90px 18px 18px auto;width:min(640px,calc(100vw - 36px));z-index:8500;display:flex;flex-direction:column;background:#110f0a;color:#e9dfc7;border:1px solid #8b7331;border-radius:6px;box-shadow:0 15px 55px #000a;font:15px/1.5 system-ui,sans-serif;overflow:hidden;resize:both;min-width:280px;min-height:260px;box-sizing:border-box}
+ .lp-shell.lp-window,.lp-shell.lp-expanded{inset:0;width:100%;height:100%;border-radius:0;resize:none}
+ .lp-top{flex:none;padding:16px 20px;border-bottom:1px solid #655123;background:#211b10}.lp-topline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lp-top h1{margin:0 auto 0 0;color:#d9b448;font:26px/1.2 Georgia,serif}.lp-shell button{cursor:pointer;color:#e9d6a5;background:#312719;border:1px solid #8b7331;border-radius:3px;padding:7px 12px;font:14px system-ui}.lp-shell button:focus-visible{outline:2px solid #f8df81;outline-offset:3px}.lp-heading{margin:10px 0 2px;font-weight:600;overflow-wrap:anywhere}.lp-summary,.lp-status{margin:4px 0;font-size:13px;color:#bba779}.lp-status{color:#aaca9b}.lp-list{flex:1;min-height:0;overflow:auto;padding:16px;overscroll-behavior:contain}.lp-buyer{margin:0 0 14px;background:#201a10;border:1px solid #655123;border-radius:4px;padding:14px}.lp-buyer header{display:flex;align-items:baseline;justify-content:space-between;gap:14px}.lp-buyer h2{margin:0;color:#efcf79;font:20px/1.3 Georgia,serif;overflow-wrap:anywhere}.lp-buyer strong{color:#efcf79;white-space:nowrap;font-size:18px}.lp-count{margin:4px 0 8px;color:#bba779;font-size:12px}.lp-item{display:flex;align-items:center;gap:10px;border-top:1px solid #65512366;padding:10px 0}.lp-item-name{flex:1;min-width:0;overflow-wrap:anywhere}.lp-price{white-space:nowrap;color:#e9cd83}.lp-icon{width:30px;height:30px;background:#ffffff08;border-radius:3px;flex:none}.lp-icon img{width:100%;height:100%;border-radius:3px}.lp-epic{color:#c275f3}.lp-legendary{color:#ffad42}.lp-rare{color:#65b5f1}.lp-uncommon{color:#70d071}.lp-empty{padding:24px;color:#bba779;text-align:center}
+ @media(max-width:480px){.lp-shell{inset:12px;width:calc(100vw - 24px);resize:none}.lp-buyer{padding:10px}.lp-list{padding:10px}.lp-top{padding:12px}.lp-buyer h2{font-size:18px}.lp-buyer strong{font-size:16px}}
+ </style><div class="lp-top"><div class="lp-topline"><h1>Purchases</h1><button type="button" data-expand ${popup?'hidden':''}>Expand</button><button type="button" data-close>Close</button></div><p class="lp-heading"></p><p class="lp-summary"></p><p class="lp-status" role="status"></p></div><div class="lp-list" tabindex="0" aria-label="Purchases by buyer, highest spender first"></div>`;
+ const v={runId:settlementRunKey(),doc,root,popup,opener:document.activeElement,heading:root.querySelector('.lp-heading'),summary:root.querySelector('.lp-summary'),status:root.querySelector('.lp-status'),list:root.querySelector('.lp-list'),close:root.querySelector('[data-close]'),connected:false};lpView=v;
+ doc.body.append(root);v.close.onclick=lpClose;root.querySelector('[data-expand]').onclick=e=>{const expanded=root.classList.toggle('lp-expanded');e.currentTarget.textContent=expanded?'Restore':'Expand';};root.addEventListener('keydown',e=>{if(e.key==='Escape'){e.stopPropagation();lpClose();}});v.close.focus();lpStatus();
+ v.unsub=onValue(ref(db,'runs/'+v.runId),snap=>{if(lpView!==v)return;v.data=snap.val()||{};v.error=false;lpRender();lpStatus();},()=>{if(lpView!==v)return;v.error=true;lpStatus();});
+ v.connectionUnsub=onValue(ref(db,'.info/connected'),snap=>{if(lpView!==v)return;v.connected=snap.val()===true;lpStatus();});
+ v.monitor=setInterval(()=>{if(popup?.closed||!user||!isRL||settlementRunKey()!==v.runId)lpClose();},1000);
+}
+const lpPotOriginal=buildPotBarHTML;
+buildPotBarHTML=function(...args){const html=lpPotOriginal(...args);if(!isRL)return html;const t=document.createElement('template');t.innerHTML=html;t.content.querySelectorAll('[onclick="enterRollout()"],[onclick="openPurchases()"]').forEach(el=>el.remove());const button=document.createElement('button');button.className='btn btn-outline btn-sm';button.textContent='Purchases';button.setAttribute('onclick','openPurchases()');button.title='Live purchases grouped by buyer, highest spender first';const start=t.content.querySelector('[onclick="confirmReset()"]');if(start)start.after(button);else t.content.querySelector('.pot-bar-actions')?.append(button);return t.innerHTML;};
+const lpCurrencyOriginal=setDisplayCurrency;setDisplayCurrency=function(...args){const result=lpCurrencyOriginal(...args);lpRender();return result;};
+const lpLogoutOriginal=logout;logout=function(...args){lpClose();return lpLogoutOriginal(...args);};
+window.addEventListener('pagehide',lpClose);
+Object.assign(window,{openPurchases,buildPotBarHTML,setDisplayCurrency,logout});

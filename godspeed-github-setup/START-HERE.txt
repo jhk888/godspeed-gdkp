@@ -1,0 +1,1 @@
+Upload the CONTENTS of github-upload to the root of https://github.com/jhk888/godspeed-gdkp using Add file > Upload files. Commit to main. Then follow DEPLOYMENT.md for the Cloudflare connection. No terminal commands are required for this setup.

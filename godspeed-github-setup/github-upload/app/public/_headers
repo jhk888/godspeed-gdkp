@@ -1,0 +1,7 @@
+/*
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+/index.html
+  Cache-Control: no-cache
+/release.json
+  Cache-Control: no-store

@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "godspeed-gdkp",
+  "compatibility_date": "2026-05-27",
+  "assets": { "directory": "./app/public" },
+  "routes": [{ "pattern": "godspeedgdkp.bid", "custom_domain": true }],
+  "keep_vars": true,
+  "compatibility_flags": ["nodejs_compat"]
+}

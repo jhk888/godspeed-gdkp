@@ -1,0 +1,1 @@
+{"functions":{"source":"functions"},"database":{"rules":"database.rules.json"},"emulators":{"database":{"port":9105},"auth":{"port":9195},"hub":{"port":4415},"ui":{"enabled":false},"singleProjectMode":true}}

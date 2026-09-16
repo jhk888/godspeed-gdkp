@@ -5,7 +5,45 @@ let gsSnapshot=null,gsPoll=null,gsBusy=false;
 const gsContext=()=>['coin','mixed'].includes(settlement?.settlementMode);
 const gsAmount=n=>Number(n||0).toLocaleString(undefined,{maximumFractionDigits:6})+' GC';
 function gsVerify(){location.href=gsEndpoint;}
+
+let gsReadyTask=null,gsReadyUid='';
+function gsStartupNotice(message,retry){
+ let el=document.getElementById('gs-startup-notice');
+ if(!el){el=document.createElement('div');el.id='gs-startup-notice';el.className='settlement-section';el.setAttribute('role','status');document.body.append(el);el.style.cssText='position:fixed;bottom:16px;right:16px;z-index:250;max-width:360px;background:#19150d;padding:16px;border:1px solid #a78b42';}
+ el.replaceChildren();const text=document.createElement('p');text.textContent=message;el.append(text);
+ if(retry){const button=document.createElement('button');button.className='btn btn-outline';button.textContent='Retry';button.onclick=retry;el.append(button);}
+}
+async function gsStartupWait(task){
+ let timer;try{return await Promise.race([task,new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Sign-in took too long. Please retry.')),15000);})]);}
+ catch(e){gsStartupNotice('Could not finish sign-in. Please retry.',()=>location.reload());throw e;}
+ finally{clearTimeout(timer);}
+}
+function gsEnsureReady(){
+ const account=gsAuth.currentUser;if(!account)return Promise.reject(Error('Sign in with Discord first'));
+ if(gsReadyUid!==account.uid){gsReadyUid=account.uid;gsReadyTask=null;}
+ if(gsReadyTask)return gsReadyTask;
+ gsReadyTask=(async()=>{
+  const claims=(await account.getIdTokenResult()).claims;
+  if(claims.raidLeader===true){
+   const key='gdkp_setup_v1:'+firebaseConfig.projectId+':'+account.uid;
+   let complete=false;try{complete=localStorage.getItem(key)==='complete';}catch{}
+   if(!complete){
+    gsStartupNotice('Preparing raid tools. The page is available while setup finishes.');
+    for(const op of ['manualInitialize','migrateAttendanceCodes']){
+     if(gsAuth.currentUser?.uid!==account.uid)throw Error('Account changed. Sign in again.');
+     await httpsCallable(gsFunctions,'gsCommand')({op,data:{},id:crypto.randomUUID()});
+    }
+    try{localStorage.setItem(key,'complete');}catch{}
+   }
+  }
+  if(gsAuth.currentUser?.uid!==account.uid)throw Error('Account changed. Sign in again.');
+  document.getElementById('gs-startup-notice')?.remove();
+ })().catch(e=>{gsReadyTask=null;gsStartupNotice('Raid tools could not finish loading. Bids and payments must wait for setup.',()=>{gsEnsureReady().then(()=>gsRefresh()).catch(()=>{});});throw e;});
+ return gsReadyTask;
+}
+
 async function gsCall(op,data={},id){
+  await gsEnsureReady();
   if(!gsAuth.currentUser)throw Error('Verify Discord for GS first');
   const token=await gsAuth.currentUser.getIdTokenResult();if(String(token.claims.discordId)!==accountDiscordId())throw Error('Discord account changed. Verify again.');
   const key=JSON.stringify([accountDiscordId(),op,data]),read=['snapshot','quoteGold'].includes(op),pending=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');
@@ -78,14 +116,14 @@ const gsOldRunBonus=submitRaiderBonus;submitRaiderBonus=function(...args){if(gsC
 const gsOldLogout=logout;logout=function(){clearInterval(gsPoll);gsSnapshot=null;signOut(gsAuth);gsOldLogout();};
 const gsAdminQueueBase=gsAdminQueue;gsAdminQueue=function(){return gsAdminQueueBase()+(isRL?'<div class="uniform-actions"><button class="btn btn-outline btn-sm" onclick="gsMatchDeposit()">Match Deposit</button><button class="btn btn-outline btn-sm" onclick="gsHaircut()">Expired Tickets</button><button class="btn btn-outline btn-sm" onclick="gsClosePot()">Return Remainder</button></div>':'');};
 Object.assign(window,{openUserSettings,toggleSettlementLock,setPayoutPaid,setAllPayoutsPaid,togglePaid,openModal,logout,joinDiscord,deleteRun,submitCutAdjustment,submitRaiderBonus,gsVerify,gsForm,gsSubmitForm,gsAction,gsHash,gsSaveMode,gsRefresh,gsPay,gsAdjust,gsCredit,gsMatchDeposit,gsHaircut,gsClosePot,settlementRunKey});
-onAuthStateChanged(gsAuth,()=>{gsSnapshot=null;clearInterval(gsPoll);if(gsAuth.currentUser){gsRefresh();gsPoll=setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('gs-account-state')||document.getElementById('gs-admin-queue')))gsRefresh();},5000);}});
+onAuthStateChanged(gsAuth,()=>{gsSnapshot=null;clearInterval(gsPoll);if(gsAuth.currentUser){setTimeout(()=>gsRefresh(),0);gsPoll=setInterval(()=>{if(document.visibilityState==='visible'&&(document.getElementById('gs-account-state')||document.getElementById('gs-admin-queue')))gsRefresh();},5000);}});
 const gsFragment=new URLSearchParams(location.hash.slice(1));
 if(gsFragment.has('gs_token')){const token=gsFragment.get('gs_token'),profile=JSON.parse(gsFragment.get('gs_user')||'{}');history.replaceState({},'',location.pathname+location.search);try{await signInWithCustomToken(gsAuth,token);const verified=await gsAuth.currentUser.getIdTokenResult();if(String(verified.claims.discordId)!==String(profile.id))throw Error('Identity mismatch');localStorage.setItem('gdkp_discord',JSON.stringify(profile));localStorage.setItem('gdkp_user',profile.displayName||profile.username);localStorage.setItem('gdkp_isRL',verified.claims.raidLeader?'1':'0');}catch(e){await signOut(gsAuth);toast('GS verification failed. Retry Discord login.');}}
-await gsAuth.authStateReady();
-const gsVerifiedClaims=gsAuth.currentUser?(await gsAuth.currentUser.getIdTokenResult()).claims:{};
+await gsStartupWait(gsAuth.authStateReady());
+const gsVerifiedClaims=gsAuth.currentUser?(await gsStartupWait(gsAuth.currentUser.getIdTokenResult())).claims:{};
 const gsPrivateCodes={};
-if(gsVerifiedClaims.raidLeader===true)await httpsCallable(gsFunctions,'gsCommand')({op:'manualInitialize',data:{},id:crypto.randomUUID()});
-if(gsVerifiedClaims.raidLeader===true)await httpsCallable(gsFunctions,'gsCommand')({op:'migrateAttendanceCodes',data:{},id:crypto.randomUUID()});
+// Render the authenticated page before calling the backend. gsCall gates operations on setup.
+setTimeout(()=>{if(gsAuth.currentUser)gsEnsureReady().then(()=>gsRefresh()).catch(()=>{});},0);
 
 function gsClosePot(){gsAction('closePot',{runId:settlementRunKey()},'Return only the remaining escrow GS after all raider cuts are credited?');}
 

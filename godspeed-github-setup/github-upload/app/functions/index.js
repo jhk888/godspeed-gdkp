@@ -13,7 +13,7 @@ const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_
 const region='us-central1';
 async function commit(actor,op,data,id){let result,error;const now=Date.now();const tx=await getDatabase().ref().transaction(root=>{try{const out=execute(root,actor,op,data,id,now);result=out.result;error=null;return out.root;}catch(e){error=e;return;}},undefined,false);if(error||!tx.committed)throw new HttpsError('failed-precondition',error?.message||'Transaction conflicted; retry');return result;}
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:request.auth.token.raidLeader===true&&String(request.auth.token.discordId)===RL.value()};}
-exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:0,maxInstances:2},async request=>{
+exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
   const actor=identity(request),{op,data={},id}=request.data||{};
   const [ban,pause]=await Promise.all([getDatabase().ref('bans/discord_'+actor.id).get(),getDatabase().ref('gs/config/sitePaused').get()]);
   if(ban.exists())throw new HttpsError('permission-denied','Account banned');

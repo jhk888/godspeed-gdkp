@@ -4651,7 +4651,7 @@ function initPanelHover(){ /* Raid Tools opens by click. */ }
 function renderPanel(){
   const body=document.getElementById('side-panel-body');if(!body)return;
   const historySearch=memberHistorySearchHTML();
-  const rlTools=isRL?`<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem;"><button class="btn ${attendanceSettings.open?'btn-green':'btn-outline'} btn-sm" onclick="openAttendanceManager()">Attendance (${attendanceList().length})</button><button class="btn btn-outline btn-sm" onclick="closePanel();setTab('settlement')">Settlement</button></div>`:'';
+  const rlTools=isRL?`<div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem;"><button class="btn ${attendanceSettings.open?'btn-green':'btn-outline'} btn-sm" onclick="openAttendanceManager()">Attendance (${attendanceList().length})</button><button class="btn btn-outline btn-sm" onclick="closePanel();setTab('settlement')">Settlement</button><button class="btn btn-outline btn-sm" onclick="openAuctionSettings()">Auction Settings</button></div>`:'';
   const lootMap=getAllRaiderLoot();
   const raiders=Object.keys(lootMap).sort((a,b)=>{
     const totalA=lootMap[a].reduce((s,i)=>s+i.price,0);
@@ -7069,9 +7069,8 @@ function closeModal(){
   const wasAdding=modal&&!editId;
   const _sc=_saveScroll();
   modal=false;editId=null;selectedItem=null;searchQuery='';
-  if(wasAdding)tab='queued';
   render();
-  if(!wasAdding)_restoreScroll(_sc);
+  _restoreScroll(_sc);
   requestAnimationFrame(syncDialogScrollLock);
 }
 let _dragId=null,_dragEl=null,_dragMode=null,_dragDropped=false,_dragBroadcastTimer=null,_dragLastSignature='';

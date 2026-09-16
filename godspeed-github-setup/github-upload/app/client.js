@@ -685,7 +685,32 @@ Object.assign(window,{confirmReset,gsPay,gsSaveMode,cuOpen,cuClose,cuPayCoin,cuR
 
 // Production check-in uses server-owned approval and private raid codes.
 const gsAttendanceManager=openAttendanceManager;
-openAttendanceManager=async function(){if(!isRL)return;try{const data=await gsCall('attendanceSettings',{runId});gsPrivateCodes[runId]=data.code;gsAttendanceManager();}catch(e){toast(e.message);}};
+const attendanceLoads=new Map();
+const attendanceRenderBase=renderAttendanceManager;
+renderAttendanceManager=function(){
+ attendanceRenderBase();
+ const overlay=document.getElementById('attendance-overlay'),state=attendanceLoads.get(runId);
+ if(!overlay||!state)return;
+ const container=overlay.querySelector('.attendance-manager-scroll');if(!container)return;
+ const status=document.createElement('div');status.setAttribute('role','status');status.className='settlement-muted';
+ status.textContent=state.error?'Could not load the raid code. Please retry.':'Loading raid code…';
+ if(state.error){const retry=document.createElement('button');retry.className='btn btn-outline btn-sm';retry.textContent='Retry';retry.onclick=()=>openAttendanceManager();status.append(retry);}
+ container.prepend(status);
+ container.querySelectorAll('button[onclick*="toggleAttendanceCheckIn"],button[onclick*="copyAttendanceInvite"]').forEach(button=>{button.disabled=true;});
+};
+openAttendanceManager=function(){
+ if(!isRL)return;
+ const key=runId;
+ if(!key){toast('The run is still loading. Try again in a moment.');return;}
+ if(attendanceLoads.get(key)?.pending){gsAttendanceManager();return;}
+ const state={pending:true,error:false};attendanceLoads.set(key,state);
+ gsAttendanceManager();
+ gsCall('attendanceSettings',{runId:key}).then(data=>{
+  gsPrivateCodes[key]=data.code;
+  if(attendanceLoads.get(key)===state)attendanceLoads.delete(key);
+ }).catch(e=>{state.pending=false;state.error=true;toast(e.message||'Could not load attendance');})
+ .finally(()=>{if(runId===key&&document.getElementById('attendance-overlay'))renderAttendanceManager();});
+};
 join=function(){gsVerify();};
 Object.assign(window,{openAttendanceManager,join,verifyAttendanceCode,checkInAttendance,leaveAttendance,toggleAttendanceCheckIn});
 

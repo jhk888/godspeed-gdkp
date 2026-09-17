@@ -995,3 +995,20 @@ openUserSettings=function(){const result=accountPolishOpen();const root=document
 };window.openUserSettings=openUserSettings;
 // Blank values remove custom wording, restoring defaults or hiding the optional note.
 saveSiteTextManager=async function(){if(!isRL||!runId)return;const manager=document.getElementById('site-text-manager'),button=document.getElementById('site-text-save-button'),status=document.getElementById('site-text-save-status');if(!manager||button?.disabled)return;const writes={},now=Date.now();manager.querySelectorAll('[data-site-text-key]').forEach(input=>{const text=String(input.value||'').trim().slice(0,500);writes[input.dataset.siteTextKey]=text?{text,updatedAt:now,updatedBy:user||'Raid Leader'}:null;});if(button){button.disabled=true;button.textContent='Saving...';}if(status)status.textContent='Saving changes';try{await update(runRef('/siteContent'),writes);siteContent={...siteContent,...writes};if(status)status.textContent='All changes saved';toast('All site text saved');}catch(error){if(status)status.textContent='Save failed. Try again.';toast('Could not save site text');console.error('Site text save failed',error);}finally{if(button){button.disabled=false;button.textContent='Save All';}}};window.saveSiteTextManager=saveSiteTextManager;
+
+// Mutator field alignment only.
+const settlementUiStyle=document.createElement('style');settlementUiStyle.textContent=`
+.mutator-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,600px),1fr));gap:16px}
+.mutator-card{grid-template-columns:18px minmax(140px,1fr) 100px 110px auto;align-items:start;gap:12px;padding:16px}
+.mutator-card .fg{margin:0!important;min-width:0}
+.mutator-card .lbl{height:18px;line-height:18px;margin:0 0 8px!important}
+.mutator-card input{box-sizing:border-box;width:100%!important;height:48px;font-size:16px!important;padding:8px!important;min-width:0}
+.mutator-card-info>input{margin-top:26px}
+.mutator-card-rule{margin-top:8px;line-height:1.4}
+.mutator-card>.mutator-mini,.mutator-card>.mutator-drag-handle{margin-top:26px;align-self:start}
+.settlement-toolbar:has(#mutator-name){align-items:end!important;gap:12px!important}
+.settlement-toolbar:has(#mutator-name) .fg{margin:0!important}
+.settlement-toolbar:has(#mutator-name) input,.settlement-toolbar:has(#mutator-name)>.btn{height:48px;box-sizing:border-box;margin:0}
+@media(max-width:650px){.mutator-card{grid-template-columns:18px minmax(0,1fr) minmax(80px,100px) minmax(85px,110px)}.mutator-card>.mutator-mini{grid-column:2/-1;margin-top:0}.mutator-card-info>input{font-size:14px!important}}
+@media(max-width:430px){.mutator-card{grid-template-columns:18px 1fr 1fr}.mutator-card-info{grid-column:2/-1}.mutator-card-info>input{margin-top:0}.mutator-card>.fg:nth-child(3){grid-column:2}.mutator-card>.mutator-drag-handle{margin-top:12px}}
+`;document.head.append(settlementUiStyle);

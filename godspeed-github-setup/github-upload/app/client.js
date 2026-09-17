@@ -1348,9 +1348,20 @@ requestPayoutCorrection=function(key){
  if(!isRL)return;
  wowConfirm({title:'Request Correction',msg:'Explain what the raider should update.',confirmLabel:'Send',input:{type:'text',placeholder:'Correction needed',maxlength:240,errorMsg:'Enter a correction note'},onConfirm:note=>gsAction('claimAdmin',{runId:settlementRunKey(),raiderKey:key,action:'correction',note:String(note).trim()})});
 };
+const originalClaimBreakdown=raiderCutBreakdown;
+raiderCutBreakdown=function(r,calc){
+ const rows=originalClaimBreakdown(r,calc);
+ if(!gsContext())return rows;
+ const known=rows.filter(row=>!row.included).reduce((sum,row)=>sum+Number(row.amount||0),0),difference=Number(effectiveRaiderCut(r,calc))-known;
+ if(Math.abs(difference)>.000001)rows.push({label:Math.abs(difference)<.011?'Rounding':'Other cut adjustments',amount:difference});
+ return rows;
+};
 const claimHero=gsMyPayout;
 gsMyPayout=function(){
- const hero=claimHero(),r=payoutCurrentRaider(),method=r?.gsPayoutMethod;
+ const r=payoutCurrentRaider(),method=r?.gsPayoutMethod;
+ const heroTemplate=document.createElement('template');heroTemplate.innerHTML=claimHero();
+ if(r&&settlement.payoutStarted&&!r.paid&&method)heroTemplate.content.querySelectorAll('[onclick="openCutRequest()"]').forEach(el=>el.remove());
+ const hero=heroTemplate.innerHTML;
  if(!r||!settlement.payoutStarted||r.paid)return hero;
  if(!method)return hero+'<section class="settlement-section"><p>Select a payout method above to open your claim form.</p></section>';
  const prior=payoutDraftMethod;payoutDraftMethod=method==='usd'?'usdc':method;
@@ -1420,3 +1431,4 @@ openPayoutHistory=function(key){
  el.innerHTML='<div class="payout-review-card"><div class="settlement-section-hdr"><h2>'+settlementEsc(r.name)+' · Payout history</h2><button class="btn btn-outline" onclick="closePayoutHistory()">Close</button></div><p>Remaining: '+payoutDisplayAmount(r,payoutStillDue(r))+'</p>'+events.map(e=>'<div class="payout-history-entry"><div><strong>'+settlementEsc(e.type==='paid'?'Payment recorded':'Cut adjustment')+'</strong> · '+(e.method==='gold'?Number(e.goldAmount||0).toLocaleString()+'g':e.method==='usd'?usdText(e.amount):e.method==='gs'?gsAmount(e.amount):payoutDisplayAmount(null,e.amount))+'<p>'+settlementEsc(e.reason||'')+'</p><small>'+settlementEsc(accountDate(e.createdAt))+'</small></div></div>').join('')+(events.length?'':'<p>No payout events recorded.</p>')+'</div>';
  el.onclick=e=>{if(e.target===el)closePayoutHistory();};el.onkeydown=e=>{if(e.key==='Escape')closePayoutHistory();};document.body.append(el);el.querySelector('button').focus();
 };window.openPayoutHistory=openPayoutHistory;
+

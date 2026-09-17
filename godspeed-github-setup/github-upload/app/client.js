@@ -1064,3 +1064,15 @@ renderSettlement=function(...args){const html=settlementUiRender(...args);if(set
 const rtStableRenderPanel=renderPanel;
 renderPanel=function(...args){const body=document.getElementById('side-panel-body'),top=body?.scrollTop||0,left=body?.scrollLeft||0;const result=rtStableRenderPanel(...args);if(body){body.scrollTop=top;body.scrollLeft=left;}return result;};
 const rtStableStyle=document.createElement('style');rtStableStyle.textContent='#side-panel{transition-property:transform,opacity!important}#side-panel .side-panel-body{overflow-anchor:none;scroll-behavior:auto;scrollbar-gutter:stable}#side-panel .raider-item img{width:20px;height:20px;min-width:20px}#rt-receipts .account-payment-card{max-height:88vh;overflow:auto}';document.head.append(rtStableStyle);
+
+// Reports use the report-specific permissions; screenshots remain optional.
+let feedbackSending=false;
+submitFeedbackSafe=async function(){
+ if(feedbackSending)return;
+ const note=String(document.getElementById('feedback-text')?.value||'').trim().slice(0,800);
+ if(!note){toast('Add the report details');return;}
+ const overlay=document.getElementById('feedback-overlay');if(!overlay)return;
+ let status=overlay.querySelector('[data-feedback-status]');if(!status){status=document.createElement('p');status.dataset.feedbackStatus='';status.setAttribute('role','status');overlay.querySelector('.account-payment-card').append(status);}
+ const button=overlay.querySelector('button[onclick="submitFeedback()"]');feedbackSending=true;if(button)button.disabled=true;status.textContent='Sending report…';
+ try{const id=push(ref(db,'siteFeedback')).key,record={type:document.getElementById('feedback-type')?.value||'other',note,status:'open',createdAt:Date.now(),runId:runId||'',raidTitle:raidSettings.raidTitle||'',discordId:accountDiscordId()||'',discordName:discordUser?.username||'',displayName:discordUser?.displayName||user||'',character:currentRaiderName()||user||'',hasAttachment:!!feedbackDraftImage};const writes={};writes['siteFeedback/'+id]=record;if(feedbackDraftImage)writes['siteFeedbackAttachments/'+id]=feedbackDraftImage;await update(ref(db),writes);if(document.getElementById('feedback-overlay')===overlay)closeFeedbackForm();toast('Report sent');}catch(error){status.textContent='Report was not sent. '+(error.code==='PERMISSION_DENIED'?'Please sign in again and retry.':error.message||'Please retry.');}finally{feedbackSending=false;if(button)button.disabled=false;}
+};window.submitFeedback=submitFeedbackSafe;

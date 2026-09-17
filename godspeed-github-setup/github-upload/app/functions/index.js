@@ -45,7 +45,19 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
     return result;
   }
   if(op==='quoteGold'){
-    if(!actor.rl)throw new HttpsError('permission-denied','Raid leader required');const root=(await getDatabase().ref().get()).val()||{},s=root.runs?.[safe(data.runId)]?.settlement,r=s?.raiders?.[safe(data.raiderKey)];if(!r)throw new HttpsError('not-found','Raider missing');let left=Math.round((r.gsCut-(r.gsCredited||0))*1e6),gold=0;for(const t of Object.values(root.accounts?.['_run_'+data.runId]?.tickets||{}).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))){const n=Math.min(left,Math.round(t.remainingUsd*1e6));gold+=n/1e6*1000/t.rateUsdPer1000;left-=n;if(!left)break;}if(left>0)throw new HttpsError('failed-precondition','Insufficient funded pot');return {gold};
+    if(!actor.rl)throw new HttpsError('permission-denied','Raid leader required');
+    const runId=safe(data.runId),key=safe(data.raiderKey),db=getDatabase();
+    const [settlementSnap,ticketsSnap]=await Promise.all([db.ref('runs/'+runId+'/settlement').get(),db.ref('accounts/_run_'+runId+'/tickets').get()]);
+    const s=settlementSnap.val(),r=s?.raiders?.[key];
+    if(!s?.payoutStarted||!r)throw new HttpsError('failed-precondition','Locked raider missing');
+    let left=Math.round((r.gsCut-(r.gsCredited||0))*1e6),gold=0;const due=left;
+    if(left<=0)throw new HttpsError('failed-precondition','No outstanding payout');
+    for(const t of Object.values(ticketsSnap.val()||{}).sort((a,b)=>a.createdAt-b.createdAt||a.id.localeCompare(b.id))){
+      const n=Math.min(left,Math.round(t.remainingUsd*1e6));gold+=n/1e6*1000/t.rateUsdPer1000;left-=n;if(!left)break;
+    }
+    if(left>0)throw new HttpsError('failed-precondition','Insufficient funded pot');
+    if(s.payoutUsdPer1000)gold=due/1e6*1000/s.payoutUsdPer1000;
+    return {gold,payoutRate:s.payoutUsdPer1000??null};
   }
   if(['configure','depositRequest','depositCancel','submitHash','receive','assignDeposit','withdraw','withdrawPaid','haircut'].includes(op))throw new HttpsError('failed-precondition','Automated blockchain operations are disabled. Use manual GC accounting.');
   if(op==='snapshot'){
@@ -65,6 +77,7 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
 function safe(s){if(typeof s!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(s))throw new HttpsError('invalid-argument','Invalid key');return s;}
 const {createHandler}=require('./discordAuth');
 exports.gsDiscordAuth=onRequest({region,secrets:[CLIENT_SECRET],timeoutSeconds:30,minInstances:0,maxInstances:2,invoker:'public'},createHandler({secret:()=>CLIENT_SECRET.value(),database:getDatabase(),auth:getAuth(),site:()=>SITE.value(),leader:()=>RL.value()}));
+
 
 
 

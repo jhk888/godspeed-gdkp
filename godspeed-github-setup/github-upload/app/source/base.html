@@ -4385,7 +4385,7 @@ function renderPayoutSubmissionQueue(raiders,calc){
   const counts=Object.fromEntries(PAYOUT_QUEUE_FILTERS.map(([id])=>[id,0]));counts.all=raiders.length;
   raiders.forEach(r=>counts[payoutQueueCategory(r,calc)]++);
   const query=payoutQueueSearch.trim().toLowerCase(),priority={dispute:0,ready:1,correction:2,unclaimed:3,paid:4};
-  const ordered=raiders.filter(r=>(payoutQueueFilter==='all'||payoutQueueCategory(r,calc)===payoutQueueFilter)&&[r.name,displayName(r.name)].some(n=>String(n||'').toLowerCase().includes(query))).sort((a,b)=>priority[payoutQueueCategory(a,calc)]-priority[payoutQueueCategory(b,calc)]||(a.name||'').localeCompare(b.name||''));
+  const ordered=raiders.filter(r=>(payoutQueueFilter==='all'||payoutQueueCategory(r,calc)===payoutQueueFilter)&&[r.name,displayName(r.name)].some(n=>String(n||'').toLowerCase().includes(query))).sort((a,b)=>Number(payoutQueueCategory(a,calc)==='paid')-Number(payoutQueueCategory(b,calc)==='paid')||Number(b.submission?.updatedAt||b.submission?.submittedAt||0)-Number(a.submission?.updatedAt||a.submission?.submittedAt||0)||(a.name||'').localeCompare(b.name||''));
   const rows=ordered.map(r=>{
     const s=r.submission||{},cr=r.cutRequest||{},cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),complete=payoutIsComplete(r,cut),status=cr.status==='pending'?['Dispute pending','due']:payoutStatusLabel(r,calc),src=payoutSafeImage(s.imageData),method=s.method||'';
     const destination=method==='usdc'?`<div>Ethereum</div><div class="payout-destination">${settlementEsc(s.walletAddress||'No address')}</div>${s.walletAddress?`<button class="mutator-mini" onclick="copyPayoutAddress('${r.key}')">Copy Address</button>`:''}`:s.seller?`<div>${settlementEsc(s.seller)}</div><div>${settlementEsc(s.item||'')}</div>`:'Waiting for claim';
@@ -7543,4 +7543,5 @@ document.addEventListener('wheel',e=>{
 </script>
 </body>
 </html>
+
 

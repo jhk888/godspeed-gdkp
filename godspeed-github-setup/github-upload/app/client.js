@@ -898,7 +898,7 @@ function payoutOptions(type,chosen,allowed,disabled=false){return ['gold','usd',
 const payoutStyle=document.createElement('style');payoutStyle.textContent=`.pot-bar-actions>button[onclick="openPurchases()"]{background:#37e56f!important;color:#082712!important;border-color:#73ff9e!important;font-weight:700!important;box-shadow:0 0 12px #37e56f33}.pot-bar-actions>button[onclick="openPurchases()"]:hover{background:#70ff98!important}.pm-options{display:flex;flex-wrap:wrap;gap:12px;border:0;padding:0;margin:16px 0}.pm-option{display:flex;align-items:center;gap:10px;padding:12px 18px;border:1px solid var(--border-gold);border-radius:3px;background:var(--bg-input);color:var(--text-bright);cursor:pointer;font-family:'Cinzel',serif}.pm-option:has(input:checked){border-color:var(--gold);background:#63501855}.pm-option input{appearance:none;width:20px;height:20px;margin:0;border:2px solid #9c843f;border-radius:3px;display:grid;place-content:center;flex:none}.pm-option input:checked{background:#d4ad39;border-color:#f2d979}.pm-option input:checked:after{content:'✓';color:#191406;font:bold 17px sans-serif}.pm-option input:focus-visible{outline:2px solid #fff0a4;outline-offset:4px}.pm-disabled{opacity:.45;cursor:default}`;document.head.append(payoutStyle);
 let payoutChoicePending=false;
 gsMyPayout=function(){const r=payoutCurrentRaider(),started=!!settlement.payoutStarted,allowed=payoutAllowed(),selected=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':''),cut=r?Number(r.gsCut??calculateSettlementCuts().cuts[r.key]??0):0;return `<div class="payout-claim"><div class="settlement-section"><h2 class="settlement-section-title">My Payout</h2><p>${r?displayMoney(cut):'Your attendance has not been linked to a cut yet.'}</p><p>${r?.paid?'Payout complete.':!started?'Payouts have not started yet.':payoutChoicePending?'Saving your choice…':selected?'Selected: '+payoutLabels[selected]:'Choose how to receive your payout.'}</p><fieldset class="pm-options" aria-label="Payout method">${payoutOptions('radio',[selected],allowed,!r||!started||!!r.paid||payoutChoicePending)}</fieldset>${r?'<button class="btn btn-outline btn-sm" onclick="openCutRequest()">Dispute Cut</button>':''}</div></div>`;};
-document.addEventListener('change',async event=>{const input=event.target;if(!input.matches('.payout-claim input[name="payout-method"]'))return;if(payoutChoicePending)return;const r=payoutCurrentRaider(),key=settlementRunKey();if(!r||!settlement.payoutStarted||r.paid)return;payoutChoicePending=true;renderMain();try{await gsCall('payoutChoice',{runId:key,raiderKey:r.key,method:input.value});toast('Payout choice saved');}catch(e){toast(e.message||'Could not save payout choice');}finally{payoutChoicePending=false;renderMain();}});
+document.addEventListener('change',async event=>{const input=event.target;if(!input.matches('.payout-claim input[name="payout-method"]'))return;if(payoutChoicePending)return;rememberPayoutFields();const r=payoutCurrentRaider(),key=settlementRunKey();if(!r||!settlement.payoutStarted||r.paid)return;payoutChoicePending=true;renderMain();try{await gsCall('payoutChoice',{runId:key,raiderKey:r.key,method:input.value});toast('Payout choice saved');}catch(e){toast(e.message||'Could not save payout choice');}finally{payoutChoicePending=false;renderMain();}});
 toggleSettlementLock=function(){if(!gsContext()||settlement.payoutStarted)return gsOldLock();if(!isRL)return;document.getElementById('pm-start')?.remove();const el=document.createElement('div');el.id='pm-start';el.className='account-payment-overlay';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Start Payouts');const key=settlementRunKey(),policy=cuPolicy(),chosen=['gold','usd','gs'].filter(m=>policy[m==='gs'?'gc':m]);el.innerHTML=`<form class="account-payment-card"><h2>Start Payouts</h2><p>Choose the methods raiders may receive. Each raider selects one.</p><fieldset class="pm-options" aria-label="Allowed payout methods">${payoutOptions('checkbox',chosen,{gold:true,usd:true,gc:true})}</fieldset><p>Starting payouts locks the cuts and records the admin cut.</p><p role="status"></p><button type="submit" class="btn btn-gold">Start Payouts</button> <button type="button" class="btn btn-outline" onclick="document.getElementById('pm-start').remove()">Cancel</button></form>`;document.body.append(el);el.querySelector('form').onsubmit=async e=>{e.preventDefault();const button=el.querySelector('[type=submit]'),status=el.querySelector('[role=status]');if(button.disabled)return;const selected=[...el.querySelectorAll('input:checked')].map(i=>i.value);if(!selected.length){status.textContent='Select at least one payout method.';return;}if(key!==settlementRunKey()){status.textContent='The run changed. Reopen Start Payouts.';return;}button.disabled=true;status.textContent='Starting payouts…';try{await gsCall('lockCuts',{runId:key,payoutMethods:{gold:selected.includes('gold'),usd:selected.includes('usd'),gc:selected.includes('gs')}});el.remove();toast('Payouts started');}catch(err){status.textContent=err.message||'Could not start payouts';button.disabled=false;}};el.querySelector('input')?.focus();};
 const pmQueueOriginal=gsPayoutQueue;gsPayoutQueue=function(...args){const t=document.createElement('template');t.innerHTML=pmQueueOriginal(...args);for(const button of t.content.querySelectorAll('button[onclick]')){const match=button.getAttribute('onclick').match(/^gsCredit\('([^']+)'\)$/);if(!match)continue;const r=settlement.raiders?.[match[1]],method=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':null);button.textContent=method==='gold'?'Record gold paid':method==='usd'?'Record USD/USDC paid':method==='gs'?'Credit GC':'Awaiting payout choice';if(!method)button.disabled=true;}return t.innerHTML;};
 gsCredit=async function(key){const r=settlement.raiders?.[key],method=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':null);if(!r||!method){toast('The raider must choose a payout method first.');return;}const data={runId:settlementRunKey(),raiderKey:key,expectedMethod:method,expectedAmount:Number((Number(r.gsCut||0)-Number(r.gsCredited||0)).toFixed(6))};if(method==='gold'){try{const quote=await gsCall('quoteGold',data);gsAction('creditCut',{...data,goldDelivered:true,expectedGold:quote.gold,expectedPayoutRate:quote.payoutRate},'Confirm you delivered '+quote.gold.toFixed(2)+' gold to '+r.name+'?');}catch(e){toast(e.message);}}else if(method==='usd'){gsAction('creditCut',{...data,externalPaid:true},'Confirm you already paid $'+data.expectedAmount.toFixed(2)+' USD/USDC to '+r.name+' outside the site?');}else gsAction('creditCut',data,'Credit '+gcMoney(data.expectedAmount)+' to '+r.name+'?');};
@@ -1282,3 +1282,141 @@ Object.assign(window,{savePayoutRate,addSettlementMutator,gsAdjust,gsMyPayout,re
 // Center the payout content while retaining the existing green background.
 payoutGardenStyle.textContent+=' .payout-garden{display:flex;align-items:center;justify-content:center;text-align:center}.payout-garden-content{width:100%;margin-inline:auto}.payout-garden .pm-options{justify-content:center}.payout-garden .pm-option{justify-content:center}';
 
+
+
+// Claims are ready only after submission of the required destination and proof.
+function gcClaimCategory(r,state=settlement){
+ const s=r.submission||{},method=r.gsPayoutMethod,submitted=s.method==='usdc'?'usd':s.method;
+ if(['pending','open','reopened'].includes(r.cutRequest?.status))return 'dispute';
+ if(r.paid&&Number(r.gsCredited||0)>=Number(r.gsCut||0))return 'paid';
+ if(s.status==='correction')return 'correction';
+ const allowed=state.payoutMethods||{gc:true,gold:state.settlementMode==='mixed'&&!!state.goldEnabled,usd:false};
+ if(!s.submittedAt||s.status==='draft'||method!==submitted||!allowed[method==='gs'?'gc':method])return 'unclaimed';
+ if(method==='gold'&&s.seller&&s.item&&payoutSafeImage(s.imageData))return 'gold';
+ if(method==='usd'&&validEthAddress(s.walletAddress||''))return 'usdc';
+ return method==='gs'?'gs':'unclaimed';
+}
+const claimStatusOriginal=payoutStatusLabel,claimCategoryOriginal=payoutQueueCategory;
+payoutStatusLabel=function(r,calc){
+ if(!gsContext())return claimStatusOriginal(r,calc);
+ const category=gcClaimCategory(r);
+ return ({paid:['Paid','ok'],dispute:['Dispute pending','due'],correction:['Correction needed','due'],gold:['Purchase ready','ready'],usdc:['USDC ready','ready'],gs:['GC ready','ready']})[category]||[payoutClaimExpired(r)?'Claim expired':'No claim',payoutClaimExpired(r)?'due':'warn'];
+};
+payoutQueueCategory=function(r,calc){if(!gsContext())return claimCategoryOriginal(r,calc);const c=gcClaimCategory(r);return ['gold','usdc','gs'].includes(c)?'ready':c;};
+collectSettlementTasks=function(runs,currentKey){
+ const out=gsOldTasks(runs,currentKey).filter(e=>!['coin','mixed'].includes(runs?.[e.key]?.settlement?.settlementMode));
+ for(const [key,run] of Object.entries(runs||{})){
+  const state=run?.settlement;if(!state||run.deleted||run.deletedAt||!['coin','mixed'].includes(state.settlementMode)||(!run.archived&&key!==currentKey))continue;
+  for(const [raiderKey,r] of Object.entries(state.raiders||{})){
+   const category=gcClaimCategory(r,state),due=Math.max(0,Number(r.gsCut||0)-Number(r.gsCredited||0));
+   if(category==='paid'||(category!=='dispute'&&(!state.payoutStarted||due<=0)))continue;
+   const rate=Number(state.payoutUsdPer1000||state.usdPer1000||state.usdcPer1000||10);
+   const amount=gcGoldView?(due*1000/rate).toLocaleString(undefined,{maximumFractionDigits:2})+'g':displayCurrency==='usd'?usdText(due):gsAmount(due);
+   out.push({key,raiderKey,name:r.name||raiderKey,title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||0,archived:!!run.archived,category,amount,note:category==='dispute'?r.cutRequest?.note||'':r.submission?.correctionNote||'',hasProof:!!r.submission?.imageData||!!r.cutRequest?.hasAttachment});
+  }
+ }
+ for(const e of out){const r=runs?.[e.key]?.settlement?.raiders?.[e.raiderKey];e.claimUpdatedAt=Number(r?.submission?.updatedAt||r?.submission?.submittedAt||0);}
+ return out.sort((a,b)=>b.claimUpdatedAt-a.claimUpdatedAt||b.date-a.date||a.name.localeCompare(b.name));
+};
+gsPayoutQueue=function(raiders,calc){
+ const t=document.createElement('template');t.innerHTML=gsOldQueue(raiders,calc);
+ for(const row of t.content.querySelectorAll('tbody tr')){
+  const checkbox=row.querySelector('input[type=checkbox]'),action=checkbox?.getAttribute('onchange')||'',match=action.match(/setPayoutPaid\('([^']+)'/);
+  if(!match)continue;const r=raiders.find(r=>r.key===match[1]);if(!r)continue;
+  const s=r.submission||{},method=r.gsPayoutMethod,amount=row.querySelector('.payout-value strong');if(amount)amount.textContent=payoutDisplayAmount(r,r.paid?r.gsCut:payoutStillDue(r));
+  const methodLabel=row.querySelector('.payout-value .settlement-muted');if(methodLabel)methodLabel.textContent=method?payoutLabels[method]:'Method not chosen';
+  if(checkbox){checkbox.disabled=!!r.paid||!method;checkbox.title=r.paid?'Payment recorded':!method?'Raider must choose a payout method':'Confirm payment';}
+  const select=row.querySelector('select');
+  if(select){select.querySelector('option[value=reopenCut]')?.remove();if(!r.paid&&!select.querySelector('option[value=reopen]'))select.insertAdjacentHTML('beforeend','<option value="reopen">Reopen 24h</option>');}
+  if(method==='gs'){const details=row.querySelector('.payout-detail-body');if(details)details.textContent='Credit to the linked GC account';}
+ }
+ return t.innerHTML;
+};
+const claimActionOriginal=window.runPayoutAction;
+function restoredClaimAction(key,action){
+ if(!gsContext())return claimActionOriginal(key,action);
+ if(!isRL)return;
+ if(action==='modify')return gsAdjust(key);
+ if(action==='review')return openPayoutReview(key);
+ if(action==='dispute')return openCutRequestReview(key);
+ if(action==='reopen')return gsAction('claimAdmin',{runId:settlementRunKey(),raiderKey:key,action:'reopen'},'Reopen this claim for 24 hours?');
+ if(action==='correction')return requestPayoutCorrection(key);
+}
+const claimCorrectionOriginal=requestPayoutCorrection;
+requestPayoutCorrection=function(key){
+ if(!gsContext())return claimCorrectionOriginal(key);
+ if(!isRL)return;
+ wowConfirm({title:'Request Correction',msg:'Explain what the raider should update.',confirmLabel:'Send',input:{type:'text',placeholder:'Correction needed',maxlength:240,errorMsg:'Enter a correction note'},onConfirm:note=>gsAction('claimAdmin',{runId:settlementRunKey(),raiderKey:key,action:'correction',note:String(note).trim()})});
+};
+const claimHero=gsMyPayout;
+gsMyPayout=function(){
+ const hero=claimHero(),r=payoutCurrentRaider(),method=r?.gsPayoutMethod;
+ if(!r||!settlement.payoutStarted||r.paid)return hero;
+ if(!method)return hero+'<section class="settlement-section"><p>Select a payout method above to open your claim form.</p></section>';
+ const prior=payoutDraftMethod;payoutDraftMethod=method==='usd'?'usdc':method;
+ let html;try{html=gsOldMy();}finally{payoutDraftMethod=prior;}
+ const t=document.createElement('template');t.innerHTML=html;
+ t.content.querySelector('.payout-methods')?.remove();
+ const heading=t.content.querySelector('.settlement-section-title');if(heading)heading.textContent='Submit payout claim';
+ const intro=t.content.querySelector('.settlement-section-note');if(intro)intro.textContent='Complete the details below and submit your claim.';
+ const amount=t.content.querySelector('.payout-amount strong'),due=payoutStillDue(r);
+ if(amount)amount.textContent=method==='gold'?(due*1000/Number(settlement.payoutUsdPer1000||runUsdRate())).toLocaleString(undefined,{maximumFractionDigits:2})+'g':method==='usd'?usdText(due):gsAmount(due);
+ if(method==='gs'){
+  t.content.querySelectorAll('.payout-section-block').forEach(el=>el.remove());
+  const label=t.content.querySelector('.payout-amount .settlement-stat-lbl');if(label)label.textContent='GC payout';
+  const note=t.content.querySelector('.payout-amount .settlement-stat-sub');if(note)note.textContent='Submit to request credit to your linked GC account.';
+ }
+ const rules=t.content.querySelector('.payout-rules');
+ if(rules){
+  const list=rules.querySelector('ol');
+  if(list&&method==='gs')list.innerHTML='<li>Submit your claim within the displayed deadline.</li><li>The leader credits your linked GC account after confirming the claim.</li>';
+  else if(list&&method==='usd'){
+   const last=list.lastElementChild;if(last)last.textContent='Your USD/USDC amount is shown above. Completed payments retain their recorded amount.';
+  }
+ }
+ if(r.submission?.status==='draft'){
+  const badge=t.content.querySelector('.settlement-section-hdr .settlement-status');if(badge){badge.textContent='Details changed · resubmit claim';badge.className='settlement-status warn';}
+  const countdown=t.content.querySelector('#payout-claim-countdown');if(countdown)countdown.textContent='Resubmit payout details';
+ }
+
+ const note=t.content.querySelector('.payout-amount .settlement-stat-sub');if(note&&method==='usd')note.textContent='USDC payout over Ethereum.';
+ if(claimSubmitting)t.content.querySelectorAll('[onclick="submitPayoutListing()"]').forEach(b=>{b.disabled=true;b.textContent='Submitting claim…';});
+ return hero+t.innerHTML;
+};
+let claimSubmitting=false;
+const legacySubmitClaim=submitPayoutListing;
+submitPayoutListing=async function(){
+ if(!gsContext())return legacySubmitClaim();
+ if(claimSubmitting)return;
+ if(payoutImageBusy){payoutAttachmentNotice('Wait for the screenshot to finish preparing.');return;}
+ const r=payoutCurrentRaider(),key=settlementRunKey(),method=r?.gsPayoutMethod;
+ if(!r||!method||r.paid){toast('Choose an available payout method first');return;}
+ rememberPayoutFields();
+ const data={runId:key,raiderKey:r.key,method};
+ if(method==='gold'){
+  const image=payoutDraftImage?.removed?null:(payoutDraftImage||r.submission);
+  Object.assign(data,{seller:payoutDraftFields.seller,item:payoutDraftFields.item,imageData:image?.data||image?.imageData||'',imageName:image?.name||image?.imageName||'auction-screenshot.jpg'});
+  if(!data.seller?.trim()||!data.item?.trim()||!data.imageData){toast('Enter the seller, listed item, and screenshot');return;}
+ }else if(method==='usd'){data.walletAddress=payoutDraftFields.wallet?.trim();if(!validEthAddress(data.walletAddress||'')){toast('Enter an Ethereum wallet address');return;}}
+ const owner=accountDiscordId();claimSubmitting=true;const button=document.querySelector('[onclick="submitPayoutListing()"]');if(button){button.disabled=true;button.textContent='Submitting claim…';}
+ try{
+  await gsCall('submitClaim',data);
+  if(key===settlementRunKey()&&owner===accountDiscordId()){payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';}
+  toast('Claim submitted');
+ }catch(e){
+  const message=/Unknown GS operation/.test(e.message)?'The claim backend update must be deployed. Your details and screenshot are retained.':(e.message||'Could not submit the claim')+'. Your details and screenshot are retained.';
+  payoutAttachmentNotice(message,true);toast(message);
+ }finally{claimSubmitting=false;if(button?.isConnected){button.disabled=false;button.textContent='Submit Claim';}}
+};
+Object.assign(window,{submitPayoutListing,runPayoutAction:restoredClaimAction,requestPayoutCorrection,gsMyPayout});
+const restoredClaimStyle=document.createElement('style');restoredClaimStyle.textContent='.payout-claim+.payout-claim{margin-top:24px}.payout-form-stack{gap:24px}.payout-attach{min-height:140px}.payout-action-select{min-width:160px}';document.head.append(restoredClaimStyle);
+
+const claimHistoryOriginal=openPayoutHistory;
+openPayoutHistory=function(key){
+ if(!gsContext())return claimHistoryOriginal(key);
+ if(!isRL)return;const r=settlement.raiders?.[key];if(!r)return;
+ const events=[...Object.values(r.payoutEvents||{}),...Object.values(settlement.gsAdjustments||{}).filter(e=>e.raiderKey===key).map(e=>({...e,type:'adjustment'}))].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+ closePayoutHistory();const el=document.createElement('div');el.id='payout-history-overlay';el.className='payout-review-overlay';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');
+ el.innerHTML='<div class="payout-review-card"><div class="settlement-section-hdr"><h2>'+settlementEsc(r.name)+' · Payout history</h2><button class="btn btn-outline" onclick="closePayoutHistory()">Close</button></div><p>Remaining: '+payoutDisplayAmount(r,payoutStillDue(r))+'</p>'+events.map(e=>'<div class="payout-history-entry"><div><strong>'+settlementEsc(e.type==='paid'?'Payment recorded':'Cut adjustment')+'</strong> · '+(e.method==='gold'?Number(e.goldAmount||0).toLocaleString()+'g':e.method==='usd'?usdText(e.amount):e.method==='gs'?gsAmount(e.amount):payoutDisplayAmount(null,e.amount))+'<p>'+settlementEsc(e.reason||'')+'</p><small>'+settlementEsc(accountDate(e.createdAt))+'</small></div></div>').join('')+(events.length?'':'<p>No payout events recorded.</p>')+'</div>';
+ el.onclick=e=>{if(e.target===el)closePayoutHistory();};el.onkeydown=e=>{if(e.key==='Escape')closePayoutHistory();};document.body.append(el);el.querySelector('button').focus();
+};window.openPayoutHistory=openPayoutHistory;

@@ -149,8 +149,39 @@ function execute(input,actor,op,data,opId,now=Date.now()){
       s.payoutUsdPer1000=rate;s.payoutRateHistory??={};
       s.payoutRateHistory[opId]={previous,rate,createdAt:now,createdBy:actor.id};
       result={rate,previous};
+    }else if(op==='submitClaim'){
+      const run=runFor(root,data.runId),s=run.settlement,r=s.raiders?.[data.raiderKey];
+      need(s.payoutStarted&&r&&String(r.gsOwner)===actor.id,'Submit your own locked payout claim');
+      need(!r.paid&&units(r.gsCut)>units(r.gsCredited||0),'Payout already completed');
+      const prior=r.submission||{},deadline=Math.max(Number(s.claimDeadline||s.payoutStartedAt+172800000),Number(r.claimExtensionUntil||0));
+      need(prior.submittedAt||now<=deadline,'Claim window expired; ask the leader to reopen it');
+      const method=data.method,allowed=s.payoutMethods||{gc:true,gold:s.settlementMode==='mixed'&&!!s.goldEnabled,usd:false};
+      need(['gold','usd','gs'].includes(method)&&allowed[method==='gs'?'gc':method]===true,'This payout method is disabled');
+      need(r.gsPayoutMethod===method,'Payout choice changed; reload before submitting');
+      need(method!=='gs'||cfg.memberGCEnabled===true,'GC actions are temporarily unavailable');
+      const claim={method:method==='usd'?'usdc':method,status:'submitted',submittedAt:prior.submittedAt||now,updatedAt:now,discordId:actor.id,character:r.name,claimAmount:dollars(units(r.gsCut)-units(r.gsCredited||0)),correctionNote:''};
+      if(method==='gold'){
+        const seller=String(data.seller||'').trim(),item=String(data.item||'').trim(),image=String(data.imageData||'');
+        need(seller.length>0&&seller.length<=24&&item.length>0&&item.length<=60,'Enter the seller and listed item');
+        need(image.length<=1250000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image),'Attach a prepared JPG, PNG or WebP screenshot');
+        const identity=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+        need(!Object.values(run.auctions||{}).some(a=>a.status==='sold'&&identity(a.name)===identity(item)&&Object.values(a.bids||{}).filter(b=>!b.retracted).sort((a,b)=>b.amount-a.amount||a.ts-b.ts)[0]?.discordId===actor.id),'Use a separate item from your raid purchases');
+        Object.assign(claim,{seller,item,imageData:image,imageName:String(data.imageName||'auction-screenshot.jpg').slice(0,80),imageBytes:Math.ceil(image.length*.75)});
+      }else if(method==='usd'){
+        const wallet=String(data.walletAddress||'').trim();need(/^0x[a-fA-F0-9]{40}$/.test(wallet),'Enter an Ethereum wallet address');
+        Object.assign(claim,{walletAddress:wallet,network:'Ethereum'});
+      }
+      r.submission=claim;result={submittedAt:claim.submittedAt,updatedAt:now};
+    }else if(op==='claimAdmin'){
+      rl();const s=runFor(root,data.runId).settlement,r=s.raiders?.[data.raiderKey];
+      need(s.payoutStarted&&r&&!r.paid,'Select an unpaid locked payout');
+      if(data.action==='reopen')r.claimExtensionUntil=now+86400000;
+      else if(data.action==='correction'){
+        const note=String(data.note||'').trim();need(note&&note.length<=240&&r.submission?.submittedAt,'Enter a correction note for a submitted claim');
+        Object.assign(r.submission,{status:'correction',correctionNote:note,correctionRequestedAt:now,correctionRequestedBy:actor.id});
+      }else throw Error('Invalid claim action');
     }else if(op==='payoutChoice'){
-      const run=runFor(root,data.runId),r=run.settlement.raiders?.[data.raiderKey];need(r&&raiderId(run,data.raiderKey)===actor.id,'Select your own cut');need(run.settlement.payoutStarted,'Payouts have not started');need(!r.paid,'Payout already completed');need(['gs','gold','usd'].includes(data.method),'Invalid method');const allowed=run.settlement.payoutMethods||{gc:true,gold:run.settlement.settlementMode==='mixed'&&!!run.settlement.goldEnabled,usd:false};need(allowed[data.method==='gs'?'gc':data.method]===true,'This payout method is disabled');r.gsPayoutMethod=data.method;
+      const run=runFor(root,data.runId),r=run.settlement.raiders?.[data.raiderKey];need(r&&raiderId(run,data.raiderKey)===actor.id,'Select your own cut');need(run.settlement.payoutStarted,'Payouts have not started');need(!r.paid,'Payout already completed');need(['gs','gold','usd'].includes(data.method),'Invalid method');const allowed=run.settlement.payoutMethods||{gc:true,gold:run.settlement.settlementMode==='mixed'&&!!run.settlement.goldEnabled,usd:false};need(allowed[data.method==='gs'?'gc':data.method]===true,'This payout method is disabled');if(r.gsPayoutMethod!==data.method&&r.submission?.submittedAt)r.submission.status='draft';r.gsPayoutMethod=data.method;
     }else if(op==='creditCut'){
       rl();const run=runFor(root,data.runId),s=run.settlement,r=s.raiders?.[data.raiderKey];need(s.payoutStarted&&r?.gsOwner,'Cut is not locked');need(!banned(root,r.gsOwner),'Recipient banned');const n=units(r.gsCut)-units(r.gsCredited||0);need(n>0,'No outstanding GS cut');
       const method=r.gsPayoutMethod||(s.payoutMethods?null:'gs'),allowed=s.payoutMethods||{gc:true,gold:s.settlementMode==='mixed'&&!!s.goldEnabled,usd:false};need(method&&allowed[method==='gs'?'gc':method]===true,'Recipient must select an enabled payout method');need(!s.payoutMethods||data.expectedMethod===method,'Payout method changed; review before paying');need(data.expectedAmount===undefined||units(data.expectedAmount)===n,'Payout amount changed; review before paying');
@@ -186,6 +217,7 @@ function execute(input,actor,op,data,opId,now=Date.now()){
   return {root,result};
 }
 module.exports={execute,units,dollars,balance,calculateCuts,collected};
+
 
 
 

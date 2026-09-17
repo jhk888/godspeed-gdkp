@@ -1,0 +1,33 @@
+name: Verify Google Cloud connection
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/google-cloud-check.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.repository == 'jhk888/godspeed-gdkp' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: godspeed-gdkp
+          workload_identity_provider: projects/750937911840/locations/global/workloadIdentityPools/godspeed-github/providers/github
+          service_account: github-deploy@godspeed-gdkp.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Read function deployment metadata
+        run: |
+          gcloud functions describe gsCommand \
+            --project=godspeed-gdkp \
+            --region=us-central1 \
+            --v2 \
+            --format="yaml(name,state,buildConfig.runtime,buildConfig.serviceAccount,serviceConfig.serviceAccountEmail)"

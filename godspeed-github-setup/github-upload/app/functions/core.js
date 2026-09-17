@@ -1,6 +1,7 @@
 'use strict';
 // Monetary inputs and balances use USDC micro-units internally (six decimals).
 const SCALE=1e6;
+const payloadHash=data=>require('node:crypto').createHash('sha256').update(JSON.stringify(data)).digest('hex');
 function units(n){const v=Number(n);if(!Number.isFinite(v)||Math.abs(v)>1e8||Math.abs(v*SCALE-Math.round(v*SCALE))>.01)throw Error('Invalid amount');return Math.round(v*SCALE);}
 const dollars=n=>n/SCALE;
 function positive(n){const u=units(n);if(u<=0)throw Error('Amount must be positive');return u;}
@@ -29,10 +30,10 @@ function collected(run){return Object.values(run.settlement.gsPayments||{}).filt
 function raiderId(run,key){const r=run.settlement.raiders?.[key];need(r,'Raider missing');const matches=Object.values(run.attendance||{}).filter(a=>String(a.character||'').toLowerCase()===String(r.name||'').toLowerCase());const ids=[...new Set(matches.map(a=>String(a.discordId||'')).filter(Boolean))];need(ids.length===1,'Raider must have one verified attendance Discord ID');return ids[0];}
 function currencyPolicy(s){return s.acceptedCurrencies?validateCurrencies(s.acceptedCurrencies):{gc:true,gold:s.settlementMode==='mixed'&&!!s.goldEnabled,usd:false};}
 function validateCurrencies(c){need(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===3&&['gc','gold','usd'].every(k=>typeof c[k]==='boolean'),'Invalid currency choices');need(c.gc||c.gold||c.usd,'Select at least one currency');return {gc:c.gc,gold:c.gold,usd:c.usd};}
-function execute(input,actor,op,data,opId,now=Date.now()){
+function execute(input,actor,op,data,opId,now=Date.now(),preparedImage){
   const root=structuredClone(input||{});root.gs??={};root.gs.ops??={};
   need(/^[A-Za-z0-9_-]{8,100}$/.test(opId),'Invalid request ID');
-  const prior=root.gs.ops[opId];if(prior){need(prior.actor===actor.id&&prior.op===op&&prior.payload===JSON.stringify(data),'Request ID reused');return {root,result:prior.result};}
+  const prior=root.gs.ops[opId];if(prior){need(prior.actor===actor.id&&prior.op===op&&(prior.payloadHash?prior.payloadHash===payloadHash(data):prior.payload===JSON.stringify(data)),'Request ID reused');return {root,result:prior.result};}
   need(actor.id&&!banned(root,actor.id),'Account is banned or not authenticated');
   const rl=()=>need(actor.rl,'Raid leader required');
   let result={ok:true};const meta={runId:data.runId||'',actor:actor.id};
@@ -161,12 +162,12 @@ function execute(input,actor,op,data,opId,now=Date.now()){
       need(method!=='gs'||cfg.memberGCEnabled===true,'GC actions are temporarily unavailable');
       const claim={method:method==='usd'?'usdc':method,status:'submitted',submittedAt:prior.submittedAt||now,updatedAt:now,discordId:actor.id,character:r.name,claimAmount:dollars(units(r.gsCut)-units(r.gsCredited||0)),correctionNote:''};
       if(method==='gold'){
-        const seller=String(data.seller||'').trim(),item=String(data.item||'').trim(),image=String(data.imageData||'');
+        const seller=String(data.seller||'').trim(),item=String(data.item||'').trim(),image=preparedImage?.url||String(data.imageData||'');
         need(seller.length>0&&seller.length<=24&&item.length>0&&item.length<=60,'Enter the seller and listed item');
-        need(image.length<=1250000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image),'Attach a prepared JPG, PNG or WebP screenshot');
+        need(preparedImage?.url===image||image.length<=1250000&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image),'Attach a prepared JPG, PNG or WebP screenshot');
         const identity=x=>String(x||'').toLowerCase().replace(/[^a-z0-9]/g,'');
         need(!Object.values(run.auctions||{}).some(a=>a.status==='sold'&&identity(a.name)===identity(item)&&Object.values(a.bids||{}).filter(b=>!b.retracted).sort((a,b)=>b.amount-a.amount||a.ts-b.ts)[0]?.discordId===actor.id),'Use a separate item from your raid purchases');
-        Object.assign(claim,{seller,item,imageData:image,imageName:String(data.imageName||'auction-screenshot.jpg').slice(0,80),imageBytes:Math.ceil(image.length*.75)});
+        Object.assign(claim,{seller,item,imageData:image,imageName:String(data.imageName||'auction-screenshot.jpg').slice(0,80),imageBytes:preparedImage?.bytes||Math.ceil(image.length*.75)});
       }else if(method==='usd'){
         const wallet=String(data.walletAddress||'').trim();need(/^0x[a-fA-F0-9]{40}$/.test(wallet),'Enter an Ethereum wallet address');
         Object.assign(claim,{walletAddress:wallet,network:'Ethereum'});
@@ -212,11 +213,12 @@ function execute(input,actor,op,data,opId,now=Date.now()){
       need(fee>0,'No eligible expired tickets');entry(root,data.owner,opId,'haircut',-fee,{reason:'Published withdrawal-window haircut'},now);houseAccount.usdReserved=dollars(units(houseAccount.usdReserved||0)-fee);
     }else throw Error('Unknown GS operation');
   }
-  root.gs.ops[opId]={actor:actor.id,op,payload:JSON.stringify(data),createdAt:now,result};root.gs.audit??={};root.gs.audit[opId]={actor:actor.id,op,runId:data.runId||'',createdAt:now};
+  root.gs.ops[opId]={actor:actor.id,op,payloadHash:payloadHash(data),createdAt:now,result};root.gs.audit??={};root.gs.audit[opId]={actor:actor.id,op,runId:data.runId||'',createdAt:now};
   root.audit??={};root.audit[data.runId||'gs']??={};root.audit[data.runId||'gs'][opId]={type:'gs_'+op,actor:actor.id,ts:now,amount:data.amount||0,reason:data.reason||'',operationId:opId};
   return {root,result};
 }
 module.exports={execute,units,dollars,balance,calculateCuts,collected};
+
 
 
 

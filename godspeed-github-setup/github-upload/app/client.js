@@ -46,9 +46,9 @@ async function gsCall(op,data={},id){
   await gsEnsureReady();
   if(!gsAuth.currentUser)throw Error('Verify Discord first');
   const token=await gsAuth.currentUser.getIdTokenResult();if(String(token.claims.discordId)!==accountDiscordId())throw Error('Discord account changed. Verify again.');
-  const key=JSON.stringify([accountDiscordId(),op,data]),read=['snapshot','quoteGold'].includes(op),pending=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');
-  id=id||(read?crypto.randomUUID():pending[key]||crypto.randomUUID());if(!read){pending[key]=id;sessionStorage.setItem('gs_pending_ops',JSON.stringify(pending));}
-  try{const response=(await httpsCallable(gsFunctions,'gsCommand')({op,data,id})).data;if(!read){const latest=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');if(latest[key]===id)delete latest[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(latest));}return response;}catch(e){if(!read&&!['functions/unavailable','functions/deadline-exceeded','functions/internal','functions/unknown'].includes(e.code)){const latest=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');if(latest[key]===id)delete latest[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(latest));}throw e;}
+  const payload=JSON.stringify([accountDiscordId(),op,data]),digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(payload)),key='v3:'+Array.from(new Uint8Array(digest),b=>b.toString(16).padStart(2,'0')).join(''),read=['snapshot','quoteGold','prepareClaimImage'].includes(op),pending=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');
+  id=id||(read?crypto.randomUUID():pending[key]||pending[payload]||crypto.randomUUID());if(pending[payload])delete pending[payload];if(!read){pending[key]=id;sessionStorage.setItem('gs_pending_ops',JSON.stringify(pending));}
+  const requestStarted=performance.now();try{const response=(await httpsCallable(gsFunctions,'gsCommand')({op,data,id})).data;console.info('Request timing',{op,totalMs:Math.round(performance.now()-requestStarted)});if(!read){const latest=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');if(latest[key]===id)delete latest[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(latest));}return response;}catch(e){if(!read&&!['functions/unavailable','functions/deadline-exceeded','functions/internal','functions/unknown'].includes(e.code)){const latest=JSON.parse(sessionStorage.getItem('gs_pending_ops')||'{}');if(latest[key]===id)delete latest[key];sessionStorage.setItem('gs_pending_ops',JSON.stringify(latest));}throw e;}
 }
 async function gsRefresh(){try{gsSnapshot=await gsCall('snapshot');const el=document.getElementById('gs-account-state');if(el)el.innerHTML=gsAccountState();const queue=document.getElementById('gs-admin-queue');if(queue)queue.innerHTML=gsAdminQueue();}catch(e){const el=document.getElementById('gs-account-state');if(el)el.textContent=e.message;}}
 async function gsAction(op,data={},confirmText=''){
@@ -788,7 +788,7 @@ function uiProgress(label,work){
 }
 const uiCommandOriginal=gsCall;
 gsCall=function(op,data={},id){
- if(op==='snapshot')return uiCommandOriginal(op,data,id);
+ if(['snapshot','prepareClaimImage'].includes(op))return uiCommandOriginal(op,data,id);
  const key=JSON.stringify([gsAuth.currentUser?.uid,op,data]);
  if(uiPendingCommands.has(key))return uiPendingCommands.get(key);
  const label=op==='attendanceSettings'?(data.open===true?'Opening check-in…':data.open===false?'Closing check-in…':'Loading raid code…'):({placeBid:'Submitting bid…',payWin:'Recording payment…',creditCut:'Recording payout…',manualCredit:'Recording credit…',manualWithdraw:'Submitting payout request…',manualWithdrawPaid:'Recording payout…',attendanceJoin:'Checking in…',attendanceVerify:'Checking raid code…',attendanceLeave:'Updating attendance…',currencies:'Saving currencies…',mode:'Saving run settings…',lockCuts:'Locking cuts…',refundWin:'Recording refund…'})[op]||'Saving…';
@@ -1411,6 +1411,12 @@ submitPayoutListing=async function(){
  }else if(method==='usd'){data.walletAddress=payoutDraftFields.wallet?.trim();if(!validEthAddress(data.walletAddress||'')){toast('Enter an Ethereum wallet address');return;}}
  const owner=accountDiscordId();claimSubmitting=true;const button=document.querySelector('[onclick="submitPayoutListing()"]');if(button){button.disabled=true;button.textContent='Submitting claim…';}
  try{
+  const upload=method==='gold'&&payoutDraftImage?claimImageUploads.get(payoutDraftImage):null;
+  if(upload?.path&&upload.runId===key&&upload.owner===owner){data.imageRef=upload.path;delete data.imageData;}
+  // Reusing an already submitted screenshot keeps the update request small.
+  if(method==='gold'&&!data.imageRef&&payoutSafeImage(data.imageData)?.startsWith('https://')){
+   const url=new URL(data.imageData);data.imageRef=decodeURIComponent(url.pathname.split('/o/')[1]);delete data.imageData;
+  }
   await gsCall('submitClaim',data);
   if(key===settlementRunKey()&&owner===accountDiscordId()){payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';}
   toast('Claim submitted');
@@ -1432,3 +1438,27 @@ openPayoutHistory=function(key){
  el.onclick=e=>{if(e.target===el)closePayoutHistory();};el.onkeydown=e=>{if(e.key==='Escape')closePayoutHistory();};document.body.append(el);el.querySelector('button').focus();
 };window.openPayoutHistory=openPayoutHistory;
 
+
+
+// Start the screenshot upload while the member completes the claim form.
+const claimImageUploads=new WeakMap(),claimFileOriginal=handlePayoutFile;
+function prepareClaimScreenshot(image){
+ if(!image?.data||!gsSnapshot?.claimImagesVersion)return null;
+ if(claimImageUploads.has(image))return claimImageUploads.get(image);
+ const runId=settlementRunKey(),owner=accountDiscordId(),raiderKey=payoutCurrentRaider()?.key;
+ const upload={runId,owner,path:null};
+ upload.task=gsCall('prepareClaimImage',{runId,raiderKey,imageData:image.data}).then(result=>{
+  upload.path=result.path;
+  if(payoutDraftImage===image&&runId===settlementRunKey()&&owner===accountDiscordId())payoutAttachmentNotice('Screenshot uploaded. Ready to submit.');
+ }).catch(()=>{
+  if(payoutDraftImage===image)payoutAttachmentNotice('Screenshot attached. It will upload when you submit.');
+ });
+ claimImageUploads.set(image,upload);return upload;
+}
+handlePayoutFile=async function(file){await claimFileOriginal(file);if(gsContext()&&payoutDraftImage?.data)prepareClaimScreenshot(payoutDraftImage);};
+window.handlePayoutFile=handlePayoutFile;
+const claimInlineImage=payoutSafeImage;
+payoutSafeImage=function(value){
+ const text=String(value||'');
+ return /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/godspeed-gdkp\.firebasestorage\.app\/o\/claim-images%2F[A-Za-z0-9_-]+%2F[0-9]+%2F[a-f0-9]{64}\?alt=media&token=[A-Za-z0-9%-]+$/.test(text)?text:claimInlineImage(value);
+};

@@ -1270,19 +1270,14 @@ gsAdjust=function(key){
   gsAction('adjustCut',{runId:settlementRunKey(),raiderKey:key,amount:Math.round(n/unit.factor*1e6)/1e6,reason},'Apply this adjustment to the selected cut?');
  }});
 };
-// Pixel-art coins are decorative SVG, requiring no image download.
-function payoutGoldArt(){
- let coins='';for(let row=0;row<5;row++)for(let col=0;col<9-row;col++){
-  const x=col*22+row*11,y=100-row*15;
-  coins+='<g transform="translate('+x+' '+y+')"><path fill="#826018" d="M4 0h14v4h4v10h-4v4H4v-4H0V4h4z"/><path fill="#e0ac27" d="M4 2h14v3h3v8h-3v3H4v-3H2V5h2z"/><path fill="#ffe184" d="M5 3h12v3H5zM4 6h3v6H4z"/><path fill="#bc8419" d="M10 6h4v7h-4z"/></g>';
- }
- return '<svg class="payout-gold-art" viewBox="0 0 220 125" aria-hidden="true" focusable="false" shape-rendering="crispEdges">'+coins+'</svg>';
-}
 gsMyPayout=function(){
  const r=payoutCurrentRaider(),started=!!settlement.payoutStarted,selected=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':''),cut=r?Number(r.gsCut??calculateSettlementCuts().cuts[r.key]??0):0;
- return '<div class="payout-claim"><section class="settlement-section payout-garden">'+payoutGoldArt()+'<div class="payout-garden-content"><h2 class="settlement-section-title">My Payout</h2>'+(r?.paid?'<h3>Your cut has arrived</h3>':'')+'<p class="payout-garden-amount">'+(r?payoutDisplayAmount(r,cut):'Your attendance has not been linked to a cut yet.')+'</p><p>'+(r?.paid?'Payout complete. Thank you for joining the run.':!started?'Payouts have not started yet.':payoutChoicePending?'Saving your choice…':selected?'Selected: '+payoutLabels[selected]:'Choose how to receive your payout.')+'</p><fieldset class="pm-options" aria-label="Payout method">'+payoutOptions('radio',[selected],payoutAllowed(),!r||!started||!!r.paid||payoutChoicePending)+'</fieldset>'+(r?'<button class="btn btn-outline btn-sm" onclick="openCutRequest()">Dispute Cut</button>':'')+'</div></section></div>';
+ return '<div class="payout-claim"><section class="settlement-section payout-garden"><div class="payout-garden-content"><h2 class="settlement-section-title">My Payout</h2>'+(r?.paid?'<h3>Your cut has arrived</h3>':'')+'<p class="payout-garden-amount">'+(r?payoutDisplayAmount(r,cut):'Your attendance has not been linked to a cut yet.')+'</p><p>'+(r?.paid?'Payout complete. Thank you for joining the run.':!started?'Payouts have not started yet.':payoutChoicePending?'Saving your choice…':selected?'Selected: '+payoutLabels[selected]:'Choose how to receive your payout.')+'</p><fieldset class="pm-options" aria-label="Payout method">'+payoutOptions('radio',[selected],payoutAllowed(),!r||!started||!!r.paid||payoutChoicePending)+'</fieldset>'+(r?'<button class="btn btn-outline btn-sm" onclick="openCutRequest()">Dispute Cut</button>':'')+'</div></section></div>';
 };
 const payoutGardenStyle=document.createElement('style');
 payoutGardenStyle.textContent='.payout-garden{position:relative;isolation:isolate;overflow:hidden;min-height:280px;padding:32px!important;background:linear-gradient(115deg,#092a1c,#124c30 70%,#0b3523)!important;border:1px solid #528e51!important}.payout-garden-content{position:relative;z-index:1;max-width:760px}.payout-garden .settlement-section-title{color:#c8e8a1}.payout-garden h3{font:26px Georgia,serif;color:#e5f4c9;margin:18px 0}.payout-garden-amount{font:38px Georgia,serif;color:#ffe39a;margin:18px 0}.payout-garden p{line-height:1.6}.payout-garden .pm-options{margin:24px 0;gap:16px}.payout-garden .pm-option{background:#102f22e8}.payout-garden .btn{background:#123b29}.payout-gold-art{position:absolute;width:min(45%,420px);right:16px;bottom:-6px;opacity:.23;pointer-events:none;z-index:0}@media(max-width:600px){.payout-garden{padding:22px!important}.payout-gold-art{width:75%;opacity:.12}.payout-garden-amount{font-size:32px}}';
 document.head.append(payoutGardenStyle);
 Object.assign(window,{savePayoutRate,addSettlementMutator,gsAdjust,gsMyPayout,renderSettlement});
+
+// Center the payout content while retaining the existing green background.
+payoutGardenStyle.textContent+=' .payout-garden{display:flex;align-items:center;justify-content:center;text-align:center}.payout-garden-content{width:100%;margin-inline:auto}.payout-garden .pm-options{justify-content:center}.payout-garden .pm-option{justify-content:center}';

@@ -79,6 +79,13 @@ function execute(input,actor,op,data,opId,now=Date.now()){
       s.acceptedCurrencies=next;s.currenciesUpdatedAt=now;s.currenciesUpdatedBy=actor.id;
       if(next.gold){s.goldEnabled=true;s.settlementMode='mixed';}
       result={currencies:next};
+    }else if(op==='runSettings'){
+      rl();const run=runFor(root,data.runId),s=run.settlement;need(!run.archived&&!s.payoutStarted,'Settings are locked after payouts start');
+      const cut=Number(data.adminCut),rate=Number(data.rate);need(Number.isFinite(cut)&&cut>=0&&cut<=100,'Admin cut must be from 0 to 100');need(Number.isFinite(rate)&&rate>0,'Rate must be positive');
+      if(rate!==Number(s.usdPer1000||s.usdcPer1000||10))need(!Object.values(run.auctions||{}).some(a=>a.status==='sold'||Object.keys(a.bids||{}).length),'Exchange rate is locked after bids or sales');
+      const previous={adminCut:Object.values(s.gsCutLines||{lead:15,treasury:5,risk:5,handling:0}).reduce((n,v)=>n+Number(v||0),0),rate:s.usdPer1000};
+      Object.assign(s,{managementCut:cut,gsCutLines:{lead:cut,treasury:0,risk:0,handling:0},gsTaper:false,usdPer1000:rate,usdcPer1000:rate,settingsUpdatedAt:now,settingsUpdatedBy:actor.id});
+      result={adminCut:cut,rate,previous};
     }else if(op==='mode'){
       rl();const run=root.runs?.[data.runId];need(run,'Run not found');need(!run.archived&&!Object.keys(run.auctions||{}).length&&!run.settlement?.payoutStarted,'Set mode on an empty current run');
       const mode=data.mode||'coin';need(['coin','mixed'].includes(mode),'Invalid mode');const rate=Number(data.rate);need(Number.isFinite(rate)&&rate>0,'Rate must be positive');

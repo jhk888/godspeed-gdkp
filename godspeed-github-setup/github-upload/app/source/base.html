@@ -3580,7 +3580,7 @@ function renderAccountPaymentAttachment(){const el=document.getElementById('acco
 async function handleAccountPaymentFile(file){if(!file)return;try{toast('Preparing screenshot');accountPaymentDraftImage=await compressPayoutImage(file);renderAccountPaymentAttachment();toast('Screenshot attached');}catch(error){toast(error.message||'Could not attach screenshot');}}
 function handleAccountPaymentPaste(event){const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();if(file){event.preventDefault();handleAccountPaymentFile(file);}}
 function handleAccountPaymentDrag(event){event.preventDefault();event.currentTarget.classList.add('dragging');}
-function handleAccountPaymentDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/'));if(file)handleAccountPaymentFile(file);}
+function handleAccountPaymentDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(isClaimImage);if(file)handleAccountPaymentFile(file);}
 function removeAccountPaymentAttachment(){accountPaymentDraftImage=null;renderAccountPaymentAttachment();}
 function openDraftAccountAttachment(){const src=payoutSafeImage(accountPaymentDraftImage?.data);if(src)openAccountImage(src,'Attached screenshot');}
 function openAccountImage(src,title='Screenshot'){src=payoutSafeImage(src);if(!src)return;document.getElementById('account-image-overlay')?.remove();const ov=document.createElement('div');ov.id='account-image-overlay';ov.className='payout-review-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="payout-review-card"><div class="settlement-section-hdr"><div class="settlement-section-title">${settlementEsc(title)}</div><button class="btn btn-outline btn-sm" onclick="document.getElementById('account-image-overlay')?.remove()">Close</button></div><img class="payout-review-image" src="${src}" alt="${settlementEsc(title)}" /></div>`;document.body.appendChild(ov);}
@@ -4228,7 +4228,7 @@ async function handleCutRequestFile(file){
  finally{if(request===cutImageRequest){cutImageBusy=false;if(button?.isConnected)button.disabled=cutRequestSubmitting;}}
 }
 function handleCutRequestPaste(event){const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();if(file){event.preventDefault();handleCutRequestFile(file);}}
-function handleCutRequestDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/'));if(file)handleCutRequestFile(file);}
+function handleCutRequestDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(isClaimImage);if(file)handleCutRequestFile(file);}
 async function submitCutRequest(){
   if(cutRequestSubmitting)return;
   if(cutImageBusy){toast('Please wait for the screenshot to finish preparing');return;}
@@ -4250,7 +4250,7 @@ function closeFeedbackForm(){document.getElementById('feedback-overlay')?.remove
 function renderFeedbackAttachment(){const el=document.getElementById('feedback-attach');if(el)el.innerHTML=requestAttachmentHTML(feedbackDraftImage);}
 async function handleFeedbackFile(file){if(!file)return;try{feedbackDraftImage=await compressPayoutImage(file);renderFeedbackAttachment();toast('Screenshot attached');}catch(e){toast(e.message||'Could not attach screenshot');}}
 function handleFeedbackPaste(event){const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();if(file){event.preventDefault();handleFeedbackFile(file);}}
-function handleFeedbackDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(f=>f.type.startsWith('image/'));if(file)handleFeedbackFile(file);}
+function handleFeedbackDrop(event){event.preventDefault();event.currentTarget.classList.remove('dragging');const file=[...(event.dataTransfer?.files||[])].find(isClaimImage);if(file)handleFeedbackFile(file);}
 async function submitFeedback(){const note=String(document.getElementById('feedback-text')?.value||'').trim().slice(0,800),type=document.getElementById('feedback-type')?.value||'other';if(!note){toast('Add the report details');return;}const id=push(ref(db,'siteFeedback')).key,now=Date.now(),writes={};writes[`siteFeedback/${id}`]={type,note,status:'open',createdAt:now,runId:runId||'',raidTitle:raidSettings.raidTitle||'',discordId:accountDiscordId(),discordName:discordUser?.username||'',displayName:discordUser?.displayName||user||'',character:currentRaiderName()||user||'',hasAttachment:!!feedbackDraftImage};if(feedbackDraftImage)writes[`siteFeedbackAttachments/${id}`]=feedbackDraftImage;try{await update(ref(db),writes);closeFeedbackForm();toast('Report sent');}catch(e){toast('Could not send the report');}}
 async function openFeedbackAdmin(){if(!isRL)return;let data={};try{data=(await get(ref(db,'siteFeedback'))).val()||{};}catch(e){toast('Could not load reports');return;}document.getElementById('feedback-admin-overlay')?.remove();const ov=document.createElement('div');ov.id='feedback-admin-overlay';ov.className='account-payment-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};const rows=Object.entries(data).sort(([,a],[,b])=>(b.createdAt||0)-(a.createdAt||0)).map(([id,r])=>`<div class="account-admin-row" style="opacity:${r.status==='done'?.6:1};"><div><div style="font-family:'Cinzel',serif;color:var(--gold-light);">${settlementEsc(r.type==='bug'?'Bug':r.type==='request'?'Feature Request':'Report')} · ${settlementEsc(r.displayName||r.character||r.discordName||'Unknown')}</div><div class="settlement-muted" style="margin-top:.25rem;white-space:pre-wrap;">${settlementEsc(r.note)}</div><div class="settlement-muted" style="margin-top:.25rem;">${accountDate(r.createdAt)}${r.raidTitle?' · '+settlementEsc(r.raidTitle):''}</div></div><div style="display:flex;gap:.4rem;flex-wrap:wrap;justify-content:flex-end;"><button class="mutator-mini" onclick="openFeedbackAttachment('${id}')" ${r.hasAttachment?'':'disabled'}>Screenshot</button><button class="btn ${r.status==='done'?'btn-outline':'btn-green'} btn-sm" onclick="setFeedbackDone('${id}',${r.status==='done'?'false':'true'})">${r.status==='done'?'Reopen':'Done'}</button></div></div>`).join('');ov.innerHTML=`<div class="account-payment-card" style="width:min(900px,97vw);"><div class="settlement-section-hdr"><div><div class="settlement-section-title">Site Reports</div><div class="settlement-section-note">Bugs and feature requests submitted through the site.</div></div><button class="btn btn-outline btn-sm" onclick="document.getElementById('feedback-admin-overlay')?.remove()">Close</button></div><div class="account-admin-list">${rows||'<div class="settlement-empty">No reports yet.</div>'}</div></div>`;document.body.appendChild(ov);}
 async function openFeedbackAttachment(id){if(!isRL)return;try{const image=(await get(ref(db,`siteFeedbackAttachments/${id}`))).val();if(image?.data)openAccountImage(image.data,'Report screenshot');else toast('Screenshot not found');}catch(e){toast('Could not load screenshot');}}
@@ -4299,37 +4299,68 @@ function renderMyPayoutBody(){
   </div></div>`;
 }
 function handlePayoutDrag(event,on){event.preventDefault();document.getElementById('payout-attach')?.classList.toggle('dragging',!!on);}
-function handlePayoutDrop(event){event.preventDefault();handlePayoutDrag(event,false);handlePayoutFile([...event.dataTransfer.files].find(f=>f.type.startsWith('image/')));}
+function handlePayoutDrop(event){event.preventDefault();handlePayoutDrag(event,false);handlePayoutFile([...event.dataTransfer.files].find(isClaimImage));}
 function handlePayoutPaste(event){const file=[...(event.clipboardData?.items||[])].find(i=>i.type.startsWith('image/'))?.getAsFile();if(!file){toast('Clipboard does not contain an image');return;}event.preventDefault();handlePayoutFile(file);}
 function rememberPayoutFields(){const seller=document.getElementById('payout-seller'),item=document.getElementById('payout-item'),wallet=document.getElementById('payout-wallet');payoutDraftFields={seller:seller?seller.value:(payoutDraftFields.seller||''),item:item?item.value:(payoutDraftFields.item||''),wallet:wallet?wallet.value:(payoutDraftFields.wallet||''),dirty:true};}
 function renderPayoutAttachmentDraft(){const box=document.getElementById('payout-attach');if(!box)return;const existing=payoutCurrentRaider()?.submission||{},image=payoutDraftImage?.removed?null:(payoutDraftImage||((existing.imageData&&payoutSafeImage(existing.imageData))?{data:existing.imageData,name:existing.imageName||'Auction screenshot'}:null));box.innerHTML=payoutAttachmentMarkup(image,false);}
+function isClaimImage(file){return !!file&&(/^image\//i.test(file.type||'')||/\.(png|jpe?g|webp|gif|bmp|avif|heic|heif)$/i.test(file.name||''));}
 async function compressPayoutImage(file){
-  if(!file||!file.type.startsWith('image/'))throw new Error('Choose an image file');
-  if(file.size>20*1024*1024)throw new Error('Screenshot is larger than 20 MB');
-  const url=URL.createObjectURL(file);
-  try{
-    const img=await new Promise((resolve,reject)=>{const node=new Image();node.onload=()=>resolve(node);node.onerror=()=>reject(new Error('Could not read that image'));node.src=url;});
-    let scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight)),width=Math.max(1,Math.round(img.naturalWidth*scale)),height=Math.max(1,Math.round(img.naturalHeight*scale)),quality=.84,data='';
-    for(let pass=0;pass<8;pass++){
-      const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;canvas.getContext('2d').drawImage(img,0,0,width,height);data=canvas.toDataURL('image/jpeg',quality);
-      if(data.length<=1250000)break;
-      if(quality>.58)quality-=.08;else{width=Math.max(900,Math.round(width*.82));height=Math.max(500,Math.round(height*.82));}
-    }
-    if(data.length>1600000)throw new Error('Screenshot could not be reduced enough');
-    return{data,name:(String(file.name||'auction-screenshot').replace(/\.[^.]+$/,'').slice(0,55)||'auction-screenshot')+'.jpg',bytes:Math.round(data.length*.75)};
-  }finally{URL.revokeObjectURL(url);}
+ if(!isClaimImage(file))throw Error('Choose a picture or screenshot (JPG, PNG or WebP).');
+ if(file.size>20*1024*1024)throw Error('This image exceeds 20 MB. Crop it or attach a screenshot.');
+ const url=URL.createObjectURL(file);
+ try{
+  const img=await new Promise((resolve,reject)=>{
+   const node=new Image(),timer=setTimeout(()=>{node.onload=node.onerror=null;node.src='';reject(Error('The image took too long to open. Try a screenshot or JPG.'));},15000);
+   node.onload=()=>{clearTimeout(timer);resolve(node);};
+   node.onerror=()=>{clearTimeout(timer);reject(Error('This browser could not open that photo. Attach a screenshot, JPG or PNG instead.'));};node.src=url;
+  });
+  if(!img.naturalWidth||!img.naturalHeight)throw Error('The image is empty or damaged. Choose another picture.');
+  const scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));
+  let width=Math.max(1,Math.round(img.naturalWidth*scale)),height=Math.max(1,Math.round(img.naturalHeight*scale)),quality=.86;
+  const canvas=document.createElement('canvas');
+  for(let pass=0;pass<16;pass++){
+   canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d');
+   if(!ctx)throw Error('Image preparation is unavailable in this browser. Try another browser.');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,width,height);ctx.drawImage(img,0,0,width,height);
+   const data=canvas.toDataURL('image/jpeg',quality);
+   if(data.startsWith('data:image/jpeg;base64,')&&data.length<=1250000){
+    return {data,name:(String(file.name||'auction-screenshot').replace(/\.[^.]+$/,'').slice(0,55)||'auction-screenshot')+'.jpg',bytes:Math.ceil((data.length-data.indexOf(',')-1)*.75)};
+   }
+   if(quality>.58)quality-=.1;
+   else{width=Math.max(1,Math.round(width*.8));height=Math.max(1,Math.round(height*.8));}
+   await new Promise(resolve=>setTimeout(resolve,0));
+  }
+  throw Error('The image is too detailed to attach. Crop to the auction listing and try again.');
+ }finally{URL.revokeObjectURL(url);}
 }
-async function handlePayoutFile(file){if(!file)return;try{toast('Preparing screenshot');payoutDraftImage=await compressPayoutImage(file);renderPayoutAttachmentDraft();toast('Screenshot attached');}catch(error){toast(error.message||'Could not attach screenshot');}}
-function removePayoutAttachment(){payoutDraftImage={removed:true};renderPayoutAttachmentDraft();}
+let payoutImageBusy=false,payoutImageRequest=0;
+function payoutAttachmentNotice(message,error=false){
+ const box=document.getElementById('payout-attach');if(!box)return;
+ let notice=document.getElementById('payout-attachment-status');
+ if(!notice){notice=document.createElement('p');notice.id='payout-attachment-status';box.after(notice);}
+ notice.setAttribute('role',error?'alert':'status');notice.textContent=message;
+}
+async function handlePayoutFile(file){
+ if(!file)return;const request=++payoutImageRequest,key=settlementRunKey(),owner=accountDiscordId(),raider=payoutCurrentRaider()?.key;
+ payoutImageBusy=true;rememberPayoutFields();payoutAttachmentNotice('Preparing screenshot…');
+ try{
+  const image=await compressPayoutImage(file);
+  if(request!==payoutImageRequest||key!==settlementRunKey()||owner!==accountDiscordId()||raider!==payoutCurrentRaider()?.key)return;
+  payoutDraftImage=image;renderPayoutAttachmentDraft();payoutAttachmentNotice('Screenshot attached. Ready to submit.');toast('Screenshot attached');
+ }catch(e){if(request===payoutImageRequest){payoutAttachmentNotice(e.message||'Could not attach screenshot. Please try again.',true);toast(e.message||'Could not attach screenshot');}}
+ finally{if(request===payoutImageRequest){payoutImageBusy=false;const input=document.getElementById('payout-file-input');if(input)input.value='';}}
+}
+function removePayoutAttachment(){payoutImageRequest++;payoutImageBusy=false;payoutAttachmentNotice('Screenshot removed.');payoutDraftImage={removed:true};renderPayoutAttachmentDraft();}
 function openPayoutImage(key=''){
   const r=key?settlement.raiders?.[key]:payoutCurrentRaider(),s=r?.submission||{},src=payoutSafeImage(key?s.imageData:(payoutDraftImage?.data||s.imageData));if(!src)return;
   const ov=document.createElement('div');ov.className='payout-review-overlay';ov.id='payout-image-overlay';ov.onclick=e=>{if(e.target===ov)ov.remove();};ov.innerHTML=`<div class="payout-review-card" style="width:min(1200px,96vw);"><div style="display:flex;justify-content:flex-end;"><button class="btn btn-outline btn-sm" onclick="closePayoutReview()">Close</button></div><img class="payout-review-image" style="max-height:78vh;" src="${src}" alt="Auction listing screenshot" /></div>`;document.body.appendChild(ov);
 }
 async function submitPayoutListing(){
+  if(payoutImageBusy){payoutAttachmentNotice('Wait for the screenshot to finish preparing.');return;}
   const r=payoutCurrentRaider();if(!r||!settlement.payoutStarted||payoutIsComplete(r)||payoutClaimExpired(r))return;const previous=r.submission||{},method=payoutDraftMethod||previous.method||'gold',now=Date.now(),cut=effectiveRaiderCut(r),claimGoldAmount=payoutStillDue(r,cut)||cut,base={method,claimGoldAmount,status:'submitted',submittedAt:previous.submittedAt||now,updatedAt:now,discordId:String(discordUser?.id||''),discordName:discordUser?.username||user||'',character:r.name,correctionNote:''};let submission;
   if(method==='usdc'){const wallet=String(document.getElementById('payout-wallet')?.value||'').trim();if(!validEthAddress(wallet)){toast('Enter a valid Ethereum wallet address');document.getElementById('payout-wallet')?.focus();return;}submission={...base,walletAddress:wallet,network:'Ethereum',usdcAmount:payoutUsdcAmount(claimGoldAmount),rateUsdcPer1000:runUsdRate()};}
   else{const seller=sanitizeNick(document.getElementById('payout-seller')?.value||''),item=String(document.getElementById('payout-item')?.value||'').trim().slice(0,60),image=payoutDraftImage?.removed?null:(payoutDraftImage||((previous.imageData&&payoutSafeImage(previous.imageData))?{data:previous.imageData,name:previous.imageName||'Auction screenshot',bytes:previous.imageBytes||0}:null));if(!seller){toast('Enter the seller character');document.getElementById('payout-seller')?.focus();return;}if(!item){toast('Enter the item name');document.getElementById('payout-item')?.focus();return;}const itemIdentity=item.toLowerCase().replace(/[^a-z0-9]/g,'');if(auctionList().some(a=>a.status==='sold'&&attendanceCharacterIdentity(settlementWinner(a))===attendanceCharacterIdentity(r.name)&&String(a.name||'').toLowerCase().replace(/[^a-z0-9]/g,'')===itemIdentity)){toast('Use a separate item, not an item you bought in this raid');document.getElementById('payout-item')?.focus();return;}if(!image?.data){toast('Paste or attach the auction screenshot');document.getElementById('payout-attach')?.focus();return;}submission={...base,seller,item,imageData:image.data,imageName:image.name||'auction-screenshot.jpg',imageBytes:image.bytes||Math.round(image.data.length*.75)};}
-  try{await set(runRef(`/settlement/raiders/${r.key}/submission`),submission);payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';auditLog('payout_claim_submitted',{raider:r.name,method});toast(previous.submittedAt?'Claim updated':'Claim submitted');}catch(error){toast('Could not save the claim');}
+  try{await set(runRef(`/settlement/raiders/${r.key}/submission`),submission);payoutDraftImage=null;payoutDraftFields={seller:'',item:'',wallet:'',dirty:false};payoutDraftMethod='';auditLog('payout_claim_submitted',{raider:r.name,method});toast(previous.submittedAt?'Claim updated':'Claim submitted');}catch(error){const message=String(error.code||'').includes('permission')?'Your account could not save this claim. Ask the raid leader to verify your payout record. Your screenshot is still attached.':'Could not save the claim. Your screenshot and details are still here. Please retry.';payoutAttachmentNotice(message,true);toast(message);}
 }
 function payoutStatusLabel(r,calc=calculateSettlementCuts()){const cut=effectiveRaiderCut(r,calc),due=payoutStillDue(r,cut),paid=payoutPaidAmount(r,cut),s=r.submission||{};if(payoutIsComplete(r,cut))return['Paid','ok'];if(paid>0&&due>0)return[`Additional ${payoutAmountText(r,due)} due`,'due'];if(s.status==='correction')return['Correction needed','due'];if(s.submittedAt)return[s.method==='usdc'?'USDC ready':'Purchase ready','ready'];if(payoutClaimExpired(r))return['Claim expired','due'];return['Not submitted','warn'];}
 let payoutQueueFilter='all',payoutQueueSearch='',payoutQueueRun=null;
@@ -7512,3 +7543,4 @@ document.addEventListener('wheel',e=>{
 </script>
 </body>
 </html>
+

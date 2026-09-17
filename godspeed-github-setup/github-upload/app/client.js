@@ -935,3 +935,63 @@ let gmFrame=0;new MutationObserver(()=>{if(!gmFrame)gmFrame=requestAnimationFram
 const gmCurrency=setDisplayCurrency;setDisplayCurrency=function(next){if(next==='gc'&&gcMemberPaused())return;return gmCurrency(next);};
 const gmLogout=logout;logout=function(...args){gmClose();return gmLogout(...args);};
 Object.assign(window,{openGCManager,gmClose,gmLoad,gmExport,gmCredit,manualGCForm,gsForm,renderPanel,setDisplayCurrency,logout});
+
+// Account layout and editable account copy.
+const accountCopyFields=[
+ ['account_title','My Account'],['account_subtitle','Characters, raid activity, and settings'],
+ ['account_gc_title','GC Balance'],['account_gc_available','Available GC'],
+ ['account_gc_manage','Manage GC'],['account_gc_add','Add GC'],['account_gc_request','Request payout'],
+ ['account_gc_credit','Credit member GC'],['account_refresh','Refresh'],
+ ['account_gc_activity','Recent activity'],['account_gc_empty','No activity yet.'],
+ ['account_gc_requests','Payout requests'],['account_gc_no_requests','None'],['account_gc_note',''],
+ ['account_run','Current Run'],['account_attending','Attending As'],['account_bids','Auctions Bid'],
+ ['account_wins','Wins / Spend'],['account_payout','Raid Payout'],['account_characters','Saved Characters'],
+ ['account_add_label','Add character'],['account_character_placeholder','Character name'],['account_add_button','Add'],
+ ['account_character_note','Your default character is selected automatically during check-in.'],
+ ['account_history','Past Activity'],['account_sound','Sound'],['account_sound_effects','Sound effects'],
+ ['account_sound_note','Bid sounds and warnings'],['account_help','Help'],['account_feedback','Bug or Feature Request']
+];
+SITE_COPY_FIELDS.push(['My Account',accountCopyFields]);
+Object.assign(SITE_COPY_LABELS,Object.fromEntries(accountCopyFields.map(([key,label])=>[key,label||'Optional GC note (leave blank to hide)'])));
+function accountCopy(key){return siteCopy(key,accountCopyFields.find(f=>f[0]===key)?.[1]||'');}
+const accountPolishStyle=document.createElement('style');accountPolishStyle.textContent=`
+ #user-settings-overlay .account-overlay-card{padding:28px;max-height:92vh;overflow:auto;scrollbar-gutter:stable}
+ #user-settings-overlay .user-settings-wrap{display:flex;flex-direction:column;gap:24px}
+ #user-settings-overlay .user-settings-sec{margin:0;min-width:0}
+ #user-settings-overlay .user-settings-sec-label{margin-bottom:16px;padding-bottom:10px}
+ #user-settings-overlay .account-stats{gap:14px}
+ #user-settings-overlay .account-stat{padding:16px}
+ #user-settings-overlay .account-character-list{display:grid;gap:12px;margin-bottom:20px}
+ #user-settings-overlay .field-action-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px!important;align-items:end!important;margin:16px 0}
+ #user-settings-overlay .field-action-row .fg{margin:0!important;min-width:0}
+ #user-settings-overlay .field-action-row input{box-sizing:border-box;height:50px;min-height:50px;width:100%;margin:0}
+ #user-settings-overlay .field-action-row>.btn{box-sizing:border-box;height:50px;min-height:50px;width:auto;min-width:92px;margin:0;align-self:end}
+ #user-settings-overlay .uniform-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px!important;margin:18px 0;align-items:stretch!important}
+ #user-settings-overlay .uniform-actions>.btn{width:100%;min-height:48px;white-space:normal;overflow-wrap:anywhere}
+ #user-settings-overlay .account-gc-details{padding:14px 0;border-top:1px solid var(--border-gold);line-height:1.6}
+ #user-settings-overlay .account-gc-details summary{cursor:pointer;color:var(--gold-light);padding:4px 0}
+ #user-settings-overlay .account-gc-details p{margin:12px 0;overflow-wrap:anywhere}
+ #user-settings-overlay .account-gc-note{margin:16px 0 0;line-height:1.6}
+ #site-text-manager .fg{margin-bottom:22px}
+ @media(max-width:520px){#user-settings-overlay .account-overlay-card{padding:18px}#user-settings-overlay .uniform-actions{grid-template-columns:1fr}}
+`;document.head.appendChild(accountPolishStyle);
+const accountPolishState=gsAccountState;
+gsAccountState=function(){
+ const t=document.createElement('template');t.innerHTML=accountPolishState();
+ const headings=[...t.content.querySelectorAll('h4')];
+ for(const h of headings){const details=document.createElement('details');details.className='account-gc-details';const summary=document.createElement('summary');summary.innerHTML=accountCopy(h.textContent==='Recent activity'?'account_gc_activity':'account_gc_requests');details.append(summary);h.before(details);let node=h.nextSibling;while(node&&node.nodeName!=='H4'){const next=node.nextSibling;details.append(node);node=next;}h.remove();}
+ const labelKeys={'Manage GC':'account_gc_manage','Add GC':'account_gc_add','Request payout':'account_gc_request','Credit member GC':'account_gc_credit','Refresh':'account_refresh','No activity yet.':'account_gc_empty','None':'account_gc_no_requests'};
+ for(const el of t.content.querySelectorAll('button,p')){const key=labelKeys[el.textContent.trim()];if(key)el.innerHTML=accountCopy(key);}
+ const balance=t.content.querySelector('.account-stats>div');if(balance&&balance.firstChild?.nodeType===3){const span=document.createElement('span');span.innerHTML=accountCopy('account_gc_available');balance.firstChild.replaceWith(span);}
+ return t.innerHTML;
+};
+gsAccountSection=function(){const note=siteText('account_gc_note','');return `<div class="user-settings-sec"><div class="user-settings-sec-label">${accountCopy('account_gc_title')}</div>${gsAuth.currentUser?'<div id="gs-account-state">'+gsAccountState()+'</div>':'<p>Verify your Discord identity to access your account.</p><button class="btn btn-outline btn-sm" onclick="gsVerify()">Verify Discord</button>'}${note?'<p class="account-gc-note">'+accountCopy('account_gc_note')+'</p>':''}</div>`;};
+const accountPolishOpen=openUserSettings;
+openUserSettings=function(){const result=accountPolishOpen();const root=document.getElementById('user-settings-overlay');if(!root)return result;
+ const keys=new Map(accountCopyFields.filter(([key])=>!key.startsWith('account_gc_')).map(([key,label])=>[label,key]));
+ for(const el of root.querySelectorAll('div,button')){if(el.children.length)continue;const key=keys.get(el.textContent.trim());if(key)el.innerHTML=accountCopy(key);}
+ const input=root.querySelector('#account-character-input');if(input){input.placeholder=siteText('account_character_placeholder','Character name');input.setAttribute('aria-label',siteText('account_add_label','Add character'));}
+ return result;
+};window.openUserSettings=openUserSettings;
+// Blank values remove custom wording, restoring defaults or hiding the optional note.
+saveSiteTextManager=async function(){if(!isRL||!runId)return;const manager=document.getElementById('site-text-manager'),button=document.getElementById('site-text-save-button'),status=document.getElementById('site-text-save-status');if(!manager||button?.disabled)return;const writes={},now=Date.now();manager.querySelectorAll('[data-site-text-key]').forEach(input=>{const text=String(input.value||'').trim().slice(0,500);writes[input.dataset.siteTextKey]=text?{text,updatedAt:now,updatedBy:user||'Raid Leader'}:null;});if(button){button.disabled=true;button.textContent='Saving...';}if(status)status.textContent='Saving changes';try{await update(runRef('/siteContent'),writes);siteContent={...siteContent,...writes};if(status)status.textContent='All changes saved';toast('All site text saved');}catch(error){if(status)status.textContent='Save failed. Try again.';toast('Could not save site text');console.error('Site text save failed',error);}finally{if(button){button.disabled=false;button.textContent='Save All';}}};window.saveSiteTextManager=saveSiteTextManager;

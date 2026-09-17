@@ -1367,7 +1367,18 @@ gsMyPayout=function(){
   const note=t.content.querySelector('.payout-amount .settlement-stat-sub');if(note)note.textContent='Submit to request credit to your linked GC account.';
  }
  const rules=t.content.querySelector('.payout-rules');
- if(rules){const list=rules.querySelector('ol');if(list)list.innerHTML=method==='gold'?'<li>List a separate tradeable item for the gold amount shown.</li><li>Do not relist an item bought in this raid.</li><li>You absorb the 5% Auction House fee.</li><li>Attach the listing screenshot and keep the item listed until paid.</li>':method==='usd'?'<li>Enter your Ethereum wallet address.</li><li>USDC is sent on Ethereum. Verify the address before submitting.</li>':'<li>The leader credits your linked GC account after confirming the claim.</li>';}
+ if(rules){
+  const list=rules.querySelector('ol');
+  if(list&&method==='gs')list.innerHTML='<li>Submit your claim within the displayed deadline.</li><li>The leader credits your linked GC account after confirming the claim.</li>';
+  else if(list&&method==='usd'){
+   const last=list.lastElementChild;if(last)last.textContent='Your USD/USDC amount is shown above. Completed payments retain their recorded amount.';
+  }
+ }
+ if(r.submission?.status==='draft'){
+  const badge=t.content.querySelector('.settlement-section-hdr .settlement-status');if(badge){badge.textContent='Details changed · resubmit claim';badge.className='settlement-status warn';}
+  const countdown=t.content.querySelector('#payout-claim-countdown');if(countdown)countdown.textContent='Resubmit payout details';
+ }
+
  const note=t.content.querySelector('.payout-amount .settlement-stat-sub');if(note&&method==='usd')note.textContent='USDC payout over Ethereum.';
  if(claimSubmitting)t.content.querySelectorAll('[onclick="submitPayoutListing()"]').forEach(b=>{b.disabled=true;b.textContent='Submitting claim…';});
  return hero+t.innerHTML;

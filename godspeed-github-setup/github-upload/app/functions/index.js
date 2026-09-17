@@ -14,9 +14,10 @@ const CLIENT_SECRET=defineSecret('GS_DISCORD_SECRET');
 const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_URL'),RL=defineString('GS_RL_DISCORD_ID',{default:'670939357686923265'});
 const region='us-central1';
 async function commit(actor,op,data,id){
- const now=Date.now();
- try{return await validatedTransaction(getDatabase().ref(),root=>execute(root,actor,op,data,id,now));}
+ const now=Date.now();let attempts=0,executionMs=0;
+ try{return await validatedTransaction(getDatabase().ref(),root=>{attempts++;const start=Date.now();try{return execute(root,actor,op,data,id,now);}finally{executionMs+=Date.now()-start;}});}
  catch(e){throw new HttpsError('failed-precondition',e.message||'Transaction conflicted; retry');}
+ finally{console.info('Save timing',{op,totalMs:Date.now()-now,executionMs,attempts});}
 }
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:request.auth.token.raidLeader===true&&String(request.auth.token.discordId)===RL.value()};}
 exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
@@ -62,21 +63,22 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
   if(['configure','depositRequest','depositCancel','submitHash','receive','assignDeposit','withdraw','withdrawPaid','haircut'].includes(op))throw new HttpsError('failed-precondition','Automated blockchain operations are disabled. Use manual GC accounting.');
   if(op==='snapshot'){
     // Balances do not need auctions, archives, image attachments or the full database.
-    const db=getDatabase();
+    const db=getDatabase(),adminView=actor.rl&&data.scope!=='account';
     const [configSnap,accountsSnap,depositsSnap,withdrawalsSnap,receiptsSnap]=await Promise.all([
-      db.ref('gs/config').get(),db.ref(actor.rl?'accounts':'accounts/'+actor.id).get(),
-      db.ref('gs/deposits').get(),db.ref('gs/withdrawals').get(),
-      actor.rl?db.ref('gs/manualReceipts').get():Promise.resolve(null)
+      db.ref('gs/config').get(),db.ref(adminView?'accounts':'accounts/'+actor.id).get(),
+      adminView?db.ref('gs/deposits').get():Promise.resolve(null),db.ref('gs/withdrawals').get(),
+      adminView?db.ref('gs/manualReceipts').get():Promise.resolve(null)
     ]);
-    const root={accounts:actor.rl?(accountsSnap.val()||{}):{[actor.id]:accountsSnap.val()||{}},gs:{config:configSnap.val()||{},deposits:depositsSnap.val()||{},withdrawals:withdrawalsSnap.val()||{},manualReceipts:receiptsSnap?.val()||{}}};
+    const root={accounts:adminView?(accountsSnap.val()||{}):{[actor.id]:accountsSnap.val()||{}},gs:{config:configSnap.val()||{},deposits:depositsSnap?.val()||{},withdrawals:withdrawalsSnap.val()||{},manualReceipts:receiptsSnap?.val()||{}}};
     const a=root.accounts?.[actor.id]||{},cfg=root.gs?.config||{};
-    return {memberActivity:actor.rl?Object.entries(root.accounts||{}).filter(([owner])=>/^\d+$/.test(owner)).flatMap(([owner,a])=>Object.entries(a.ledger||{}).filter(([,e])=>e.unit==='GS').map(([id,e])=>({id,owner,type:e.type,amount:e.gsDelta,createdAt:e.createdAt,reason:e.reason||'',runId:e.runId||''}))).sort((a,b)=>b.createdAt-a.createdAt).slice(0,200):[],payoutMethodsVersion:1,account:{gsBalance:a.gsBalance||0,tickets:a.tickets||{},ledger:Object.fromEntries(Object.entries(a.ledger||{}).filter(([,e])=>e.unit==='GS'))},config:{enabled:!!cfg.enabled,memberGCEnabled:cfg.memberGCEnabled===true,address:cfg.address||'',accountingMode:'manual',houseId:cfg.houseId||''},deposits:Object.fromEntries(Object.entries(root.gs?.deposits||{}).filter(([,d])=>actor.rl||d.owner===actor.id)),withdrawals:Object.fromEntries(Object.entries(root.gs?.withdrawals||{}).filter(([,w])=>actor.rl||w.owner===actor.id).map(([id,w])=>[id,{...w,pieces:undefined}]).map(([id,w])=>{delete w.pieces;return[id,w];})),house:actor.rl?{balance:root.accounts?.[cfg.houseId]?.gsBalance||0,reserved:root.accounts?.[cfg.houseId]?.usdReserved||0}:null,manualReceipts:actor.rl?root.gs?.manualReceipts||{}:{},members:actor.rl?Object.fromEntries(Object.entries(root.accounts||{}).filter(([id])=>/^\d+$/.test(id)).map(([id,a])=>[id,{name:a.profile?.displayName||a.profile?.discordName||id,balance:a.gsBalance||0}])):{}};
+    return {memberActivity:adminView?Object.entries(root.accounts||{}).filter(([owner])=>/^\d+$/.test(owner)).flatMap(([owner,a])=>Object.entries(a.ledger||{}).filter(([,e])=>e.unit==='GS').map(([id,e])=>({id,owner,type:e.type,amount:e.gsDelta,createdAt:e.createdAt,reason:e.reason||'',runId:e.runId||''}))).sort((a,b)=>b.createdAt-a.createdAt).slice(0,200):[],payoutMethodsVersion:1,account:{gsBalance:a.gsBalance||0,tickets:a.tickets||{},ledger:Object.fromEntries(Object.entries(a.ledger||{}).filter(([,e])=>e.unit==='GS'))},config:{enabled:!!cfg.enabled,memberGCEnabled:cfg.memberGCEnabled===true,address:cfg.address||'',accountingMode:'manual',houseId:cfg.houseId||''},deposits:Object.fromEntries(Object.entries(root.gs?.deposits||{}).filter(([,d])=>adminView||d.owner===actor.id)),withdrawals:Object.fromEntries(Object.entries(root.gs?.withdrawals||{}).filter(([,w])=>adminView||w.owner===actor.id).map(([id,w])=>[id,{...w,pieces:undefined}]).map(([id,w])=>{delete w.pieces;return[id,w];})),house:adminView?{balance:root.accounts?.[cfg.houseId]?.gsBalance||0,reserved:root.accounts?.[cfg.houseId]?.usdReserved||0}:null,manualReceipts:adminView?root.gs?.manualReceipts||{}:{},members:adminView?Object.fromEntries(Object.entries(root.accounts||{}).filter(([id])=>/^\d+$/.test(id)).map(([id,a])=>[id,{name:a.profile?.displayName||a.profile?.discordName||id,balance:a.gsBalance||0}])):{}};
   }
   return commit(actor,op,data,id);
 });
 function safe(s){if(typeof s!=='string'||!/^[A-Za-z0-9_-]{1,100}$/.test(s))throw new HttpsError('invalid-argument','Invalid key');return s;}
 const {createHandler}=require('./discordAuth');
 exports.gsDiscordAuth=onRequest({region,secrets:[CLIENT_SECRET],timeoutSeconds:30,minInstances:0,maxInstances:2,invoker:'public'},createHandler({secret:()=>CLIENT_SECRET.value(),database:getDatabase(),auth:getAuth(),site:()=>SITE.value(),leader:()=>RL.value()}));
+
 
 
 

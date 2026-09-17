@@ -369,11 +369,11 @@ Object.assign(window,{renderMain,logout,gsForm,gsSubmitForm});
 rwScheduleRestore();
 
 // Godspeed Raid Tools layout v2. Navigation and presentation only.
-let rtRosterQuery='',rtOpener=null,rtExpanded=false;
+let rtRosterQuery='',rtOpener=null,rtExpanded=false,rtGeometry=null;
 function rtToggleExpanded(){rtExpanded=!rtExpanded;rtLayout();}
 function rtLayout(){
  const panel=document.getElementById('side-panel');if(!panel)return;
- const workspace=rtExpanded;const bounds=document.getElementById('main')?.getBoundingClientRect();const docked=panelOpen&&!workspace&&innerWidth>=1440&&bounds&&innerWidth-bounds.right>=472;const top=workspace?0:Math.max(0,document.querySelector('.hdr')?.getBoundingClientRect().bottom||0);document.documentElement.style.setProperty('--rt-top',top+'px');
+ const workspace=rtExpanded;if(!rtGeometry||rtGeometry.width!==innerWidth||!panelOpen){const bounds=document.getElementById('main')?.getBoundingClientRect();rtGeometry={width:innerWidth,docked:!!(innerWidth>=1440&&bounds&&innerWidth-bounds.right>=472),top:Math.max(0,document.querySelector('.hdr')?.getBoundingClientRect().bottom||0)};}const docked=panelOpen&&!workspace&&rtGeometry.docked;const top=workspace?0:Math.min(rtGeometry.top,Math.max(0,innerHeight-240));document.documentElement.style.setProperty('--rt-top',top+'px');
  document.getElementById('rt-expand').textContent=workspace?'Collapse':'Expand';document.getElementById('rt-expand').setAttribute('aria-expanded',String(workspace));document.getElementById('rt-close').textContent='Close';document.getElementById('rt-close').setAttribute('aria-label',workspace?'Back to raid':'Close Raid Tools');document.getElementById('side-panel-body').setAttribute('aria-labelledby','panel-tab-'+panelTab);panel.classList.toggle('rt-workspace',workspace);panel.inert=!panelOpen;
  document.body.classList.toggle('rt-docked',docked);document.body.classList.toggle('rt-overlay',panelOpen&&!docked);
  document.getElementById('rt-scrim').hidden=!panelOpen||docked;
@@ -1060,3 +1060,7 @@ settlementCutCellHTML=function(r,calc=calculateSettlementCuts()){
 };
 const settlementUiRender=renderSettlement;
 renderSettlement=function(...args){const html=settlementUiRender(...args);if(settlement.payoutStarted)return html;const t=document.createElement('template');t.innerHTML=html;const calc=calculateSettlementCuts();for(const r of settlementRaiders()){const cell=[...t.content.querySelectorAll('[id^="settlement-cut-"]')].find(el=>el.id==='settlement-cut-'+r.key);if(cell)cell.innerHTML=settlementCutCellHTML(r,calc);}return t.innerHTML;};
+
+const rtStableRenderPanel=renderPanel;
+renderPanel=function(...args){const body=document.getElementById('side-panel-body'),top=body?.scrollTop||0,left=body?.scrollLeft||0;const result=rtStableRenderPanel(...args);if(body){body.scrollTop=top;body.scrollLeft=left;}return result;};
+const rtStableStyle=document.createElement('style');rtStableStyle.textContent='#side-panel{transition-property:transform,opacity!important}#side-panel .side-panel-body{overflow-anchor:none;scroll-behavior:auto;scrollbar-gutter:stable}#side-panel .raider-item img{width:20px;height:20px;min-width:20px}#rt-receipts .account-payment-card{max-height:88vh;overflow:auto}';document.head.append(rtStableStyle);

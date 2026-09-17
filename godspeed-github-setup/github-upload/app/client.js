@@ -1051,3 +1051,12 @@ gsCall=function(op,data={},id){
  let notice=document.getElementById('payment-save-status');if(!notice){notice=document.createElement('div');notice.id='payment-save-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');notice.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#211d12;color:#f1d475;border:1px solid #c9a84c;padding:14px 22px;pointer-events:none';document.body.append(notice);}notice.textContent=op==='quoteGold'?'Preparing payout…':'Saving payment…';
  const work=Promise.resolve().then(()=>paymentPendingOriginal(op,data,id)).finally(()=>{paymentPendingCalls.delete(key);if(!paymentPendingCalls.size)document.getElementById('payment-save-status')?.remove();});paymentPendingCalls.set(key,work);return work;
 };
+
+const settlementUiCutCell=settlementCutCellHTML;
+settlementCutCellHTML=function(r,calc=calculateSettlementCuts()){
+ if(settlement.payoutStarted)return settlementUiCutCell(r,calc);
+ const cut=effectiveRaiderCut(r,calc),adjustment=cutAdjustmentTotal(r);
+ return displayMoney(cut)+(adjustment?'<div class="settlement-muted">'+(adjustment>0?'+':'')+displayMoney(Math.abs(adjustment))+' adjusted</div>':'');
+};
+const settlementUiRender=renderSettlement;
+renderSettlement=function(...args){const html=settlementUiRender(...args);if(settlement.payoutStarted)return html;const t=document.createElement('template');t.innerHTML=html;const calc=calculateSettlementCuts();for(const r of settlementRaiders()){const cell=[...t.content.querySelectorAll('[id^="settlement-cut-"]')].find(el=>el.id==='settlement-cut-'+r.key);if(cell)cell.innerHTML=settlementCutCellHTML(r,calc);}return t.innerHTML;};

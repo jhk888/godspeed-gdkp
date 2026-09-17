@@ -25,13 +25,13 @@ function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!
 exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
   const actor=identity(request),{op,data={},id}=request.data||{};
   const started=Date.now(),db=getDatabase(),isBid=op==='placeBid',isRunCommand=runOperations.has(op);
-  if(isBid||isRunCommand){safe(data.runId);if(isBid)safe(data.auctionId);if(data.raiderKey!==undefined)safe(data.raiderKey);if(typeof id!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(id))throw new HttpsError('invalid-argument','Invalid request ID');}
+  if(isBid||isRunCommand){safe(data.runId);if(isBid)safe(data.auctionId);if(data.raiderKey!==undefined)safeRaiderKey(data.raiderKey);if(typeof id!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(id))throw new HttpsError('invalid-argument','Invalid request ID');}
   const [ban,configSnap,legacyReceipt]=await Promise.all([db.ref('bans/discord_'+actor.id).get(),db.ref(isBid||isRunCommand?'gs/config':'gs/config/sitePaused').get(),isBid||isRunCommand?db.ref('gs/ops/'+id).get():Promise.resolve(null)]);
   if(ban.exists())throw new HttpsError('permission-denied','Account banned');
   const paused=isBid||isRunCommand?configSnap.val()?.sitePaused:configSnap.val();
   if(paused===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
   if(op==='prepareClaimImage'){
-    const runId=safe(data.runId),raiderKey=safe(data.raiderKey),image=String(data.imageData||'');
+    const runId=safe(data.runId),raiderKey=safeRaiderKey(data.raiderKey),image=String(data.imageData||'');
     if(image.length>1250000||!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(image))throw new HttpsError('invalid-argument','Attach a prepared screenshot');
     const snap=await db.ref('runs/'+runId+'/settlement').get(),s=snap.val(),r=s?.raiders?.[raiderKey];
     if(!s?.payoutStarted||!r||String(r.gsOwner)!==actor.id||r.paid)throw new HttpsError('permission-denied','Upload for your own unpaid claim');
@@ -104,7 +104,7 @@ exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60
   }
   if(op==='quoteGold'){
     if(!actor.rl)throw new HttpsError('permission-denied','Raid leader required');
-    const runId=safe(data.runId),key=safe(data.raiderKey),db=getDatabase();
+    const runId=safe(data.runId),key=safeRaiderKey(data.raiderKey),db=getDatabase();
     const [settlementSnap,ticketsSnap]=await Promise.all([db.ref('runs/'+runId+'/settlement').get(),db.ref('accounts/_run_'+runId+'/tickets').get()]);
     const s=settlementSnap.val(),r=s?.raiders?.[key];
     if(!s?.payoutStarted||!r)throw new HttpsError('failed-precondition','Locked raider missing');
@@ -141,3 +141,10 @@ exports.gsDiscordAuth=onRequest({region,secrets:[CLIENT_SECRET],timeoutSeconds:3
 
 
 
+
+// Names are already URL-encoded by settlementRaiderKey. Preserve that key
+// exactly; validate the database segment without decoding or renaming records.
+function safeRaiderKey(value){
+ if(typeof value!=='string'||!value.length||Buffer.byteLength(value,'utf8')>768||/[.#$\[\]\/\u0000-\u001f\u007f]/.test(value))throw new HttpsError('invalid-argument','Invalid raider key');
+ return value;
+}

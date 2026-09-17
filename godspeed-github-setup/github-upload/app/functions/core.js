@@ -136,21 +136,29 @@ function execute(input,actor,op,data,opId,now=Date.now()){
       if(data.payoutMethods!==undefined){s.payoutMethods=validateCurrencies(data.payoutMethods);need(!s.payoutMethods.usd||cfg.accountingMode==='manual','Manual USD payouts are unavailable');for(const r of Object.values(s.raiders||{}))delete r.gsPayoutMethod;}
       const calc=calculateCuts(s,dollars(collected(run)));need(calc.totalPot>0,'Pot is empty');need(calc.balance>=0&&Object.values(calc.cuts).every(v=>v>=0),'Mutators exceed available pot');
       for(const [key,r] of Object.entries(s.raiders)){r.gsOwner=raiderId(run,key);r.lockedCut=calc.cuts[key];r.gsCut=calc.cuts[key];r.lockedBreakdown=[{label:'Base cut',amount:calc.base},...Object.entries(r.mutators||{}).filter(([id,on])=>on&&s.mutators?.[id]).map(([id])=>({label:s.mutators[id].name,amount:(calc.leftToDistribute*Number(s.mutators[id].percentage||0)/100)+Number(s.mutators[id].flat||0)}))];}
-      Object.assign(s,{payoutStarted:true,setupUnlocked:false,payoutStartedAt:now,claimDeadline:now+172800000,gsLocked:calc,rateLocked:true,lockedDistributable:calc.distributable,cutSnapshotVersion:3});
+      Object.assign(s,{payoutUsdPer1000:Number(s.payoutUsdPer1000||s.usdPer1000||s.usdcPer1000||10),payoutStarted:true,setupUnlocked:false,payoutStartedAt:now,claimDeadline:now+172800000,gsLocked:calc,rateLocked:true,lockedDistributable:calc.distributable,cutSnapshotVersion:3});
       // End of run starts withdrawal windows for tickets stamped to this run.
       for(const a of Object.values(root.accounts||{}))for(const t of Object.values(a.tickets||{}))if(t.runId===data.runId&&!t.expiresAt)t.expiresAt=now+172800000;
       if(calc.managementCut)transfer(root,'_run_'+data.runId,house,positive(calc.managementCut),opId+'_management','cut',now,{...meta,lines:s.gsCutLines||{lead:15,treasury:5,risk:5,handling:0}});
       result=calc;
+    }else if(op==='payoutRate'){
+      rl();const s=runFor(root,data.runId).settlement,rate=Number(data.rate);
+      need(Number.isFinite(rate)&&rate>0&&rate<=1000000,'Enter a positive payout rate up to 1000000');
+      const previous=s.payoutUsdPer1000??null;
+      need(data.expectedRate===previous,'Payout rate changed; reload before saving');
+      s.payoutUsdPer1000=rate;s.payoutRateHistory??={};
+      s.payoutRateHistory[opId]={previous,rate,createdAt:now,createdBy:actor.id};
+      result={rate,previous};
     }else if(op==='payoutChoice'){
       const run=runFor(root,data.runId),r=run.settlement.raiders?.[data.raiderKey];need(r&&raiderId(run,data.raiderKey)===actor.id,'Select your own cut');need(run.settlement.payoutStarted,'Payouts have not started');need(!r.paid,'Payout already completed');need(['gs','gold','usd'].includes(data.method),'Invalid method');const allowed=run.settlement.payoutMethods||{gc:true,gold:run.settlement.settlementMode==='mixed'&&!!run.settlement.goldEnabled,usd:false};need(allowed[data.method==='gs'?'gc':data.method]===true,'This payout method is disabled');r.gsPayoutMethod=data.method;
     }else if(op==='creditCut'){
       rl();const run=runFor(root,data.runId),s=run.settlement,r=s.raiders?.[data.raiderKey];need(s.payoutStarted&&r?.gsOwner,'Cut is not locked');need(!banned(root,r.gsOwner),'Recipient banned');const n=units(r.gsCut)-units(r.gsCredited||0);need(n>0,'No outstanding GS cut');
       const method=r.gsPayoutMethod||(s.payoutMethods?null:'gs'),allowed=s.payoutMethods||{gc:true,gold:s.settlementMode==='mixed'&&!!s.goldEnabled,usd:false};need(method&&allowed[method==='gs'?'gc':method]===true,'Recipient must select an enabled payout method');need(!s.payoutMethods||data.expectedMethod===method,'Payout method changed; review before paying');need(data.expectedAmount===undefined||units(data.expectedAmount)===n,'Payout amount changed; review before paying');
       const gold=method==='gold';let goldAmount=0;
-      if(gold){need(data.goldDelivered===true,'Confirm delivery of the gold payout');const pieces=take(root,'_run_'+data.runId,n);goldAmount=pieces.reduce((sum,p)=>sum+p.usd*1000/p.rateUsdPer1000,0);need(Number.isFinite(data.expectedGold)&&Math.abs(goldAmount-data.expectedGold)<.000001,'Gold quote changed; review before paying');entry(root,'_run_'+data.runId,opId,'cut',-n,{...meta,method:'gold',owner:r.gsOwner,goldAmount},now);houseAccount.usdReserved=dollars(units(houseAccount.usdReserved||0)-n);}
+      if(gold){need(data.goldDelivered===true,'Confirm delivery of the gold payout');const pieces=take(root,'_run_'+data.runId,n);goldAmount=s.payoutUsdPer1000?n/1e6*1000/s.payoutUsdPer1000:pieces.reduce((sum,p)=>sum+p.usd*1000/p.rateUsdPer1000,0);need(data.expectedPayoutRate===undefined||data.expectedPayoutRate===(s.payoutUsdPer1000??null),'Payout rate changed; review before paying');need(Number.isFinite(data.expectedGold)&&Math.abs(goldAmount-data.expectedGold)<.000001,'Gold quote changed; review before paying');entry(root,'_run_'+data.runId,opId,'cut',-n,{...meta,method:'gold',owner:r.gsOwner,goldAmount},now);houseAccount.usdReserved=dollars(units(houseAccount.usdReserved||0)-n);}
       else if(method==='usd'){need(cfg.accountingMode==='manual'&&data.externalPaid===true,'Confirm the external USD/USDC payout');need(data.expectedAmount!==undefined,'Confirm the payout amount');take(root,'_run_'+data.runId,n);entry(root,'_run_'+data.runId,opId,'cut',-n,{...meta,method:'usd',owner:r.gsOwner,externalPaid:true},now);const reserve=units(houseAccount.usdReserved||0)-n;need(reserve>=0,'Reserve mismatch');houseAccount.usdReserved=dollars(reserve);}
       else transfer(root,'_run_'+data.runId,r.gsOwner,n,opId,'cut',now,meta);
-      r.gsCredited=r.gsCut;r.paid=true;r.paidAmount=r.gsCut;r.paidAt=now;r.submission={...(r.submission||{}),method,status:'paid',discordId:r.gsOwner};r.payoutEvents??={};r.payoutEvents[opId]={type:'paid',method,amount:dollars(n),goldAmount,createdAt:now,createdBy:actor.id};
+      r.gsCredited=r.gsCut;r.paid=true;r.paidAmount=r.gsCut;r.paidAt=now;r.submission={...(r.submission||{}),method,status:'paid',discordId:r.gsOwner};r.payoutEvents??={};r.payoutEvents[opId]={type:'paid',method,amount:dollars(n),goldAmount,rateUsdPer1000:gold?(s.payoutUsdPer1000||((dollars(n)*1000)/goldAmount)):0,createdAt:now,createdBy:actor.id};
     }else if(op==='adjustCut'){
       rl();const run=runFor(root,data.runId),s=run.settlement,r=s.raiders?.[data.raiderKey];need(s.payoutStarted&&r?.gsOwner,'Cut not locked');const delta=units(data.amount);need(delta&&String(data.reason||'').trim(),'Enter adjustment and reason');need(units(r.gsCut)+delta>=units(r.gsCredited||0),'Already credited GS requires a separate voluntary return');
       if(delta>0)transfer(root,house,'_run_'+data.runId,delta,opId+'_fund','transfer',now,{...meta,reason:data.reason});else transfer(root,'_run_'+data.runId,house,-delta,opId+'_return','transfer',now,{...meta,reason:data.reason});
@@ -178,5 +186,6 @@ function execute(input,actor,op,data,opId,now=Date.now()){
   return {root,result};
 }
 module.exports={execute,units,dollars,balance,calculateCuts,collected};
+
 
 

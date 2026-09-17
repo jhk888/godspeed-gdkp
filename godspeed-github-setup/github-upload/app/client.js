@@ -1012,3 +1012,42 @@ const settlementUiStyle=document.createElement('style');settlementUiStyle.textCo
 @media(max-width:650px){.mutator-card{grid-template-columns:18px minmax(0,1fr) minmax(80px,100px) minmax(85px,110px)}.mutator-card>.mutator-mini{grid-column:2/-1;margin-top:0}.mutator-card-info>input{font-size:14px!important}}
 @media(max-width:430px){.mutator-card{grid-template-columns:18px 1fr 1fr}.mutator-card-info{grid-column:2/-1}.mutator-card-info>input{margin-top:0}.mutator-card>.fg:nth-child(3){grid-column:2}.mutator-card>.mutator-drag-handle{margin-top:12px}}
 `;document.head.append(settlementUiStyle);
+
+// Raid Tools: record external receipts through the authoritative payment operation.
+const rtLegacyMarkAllPaid=markAllPaid,rtLegacyTogglePaid=togglePaid,rtLegacyOverlayPaid=togglePaidFromOverlay;
+function rtRecordPurchases(ids){
+ if(!isRL)return;
+ const key=settlementRunKey(),items=[...new Set(ids)].map(id=>auctions[id]&&({...auctions[id],id})).filter(a=>a?.status==='sold'&&settlement.gsPayments?.[a.id]?.status!=='paid');
+ if(!items.length){toast('No unpaid purchases selected');return;}
+ document.getElementById('rt-receipts')?.remove();
+ const el=document.createElement('div');el.id='rt-receipts';el.className='account-payment-overlay';el.style.zIndex='250';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Record payment');
+ el.innerHTML='<form class="account-payment-card"><h2>Record payment</h2><p>Choose the currency received for each purchase.</p><div data-receipt-items></div><label style="display:flex;gap:12px;margin:20px 0"><input type="checkbox" required style="width:18px">I received the payments listed above.</label><p role="status" aria-live="polite"></p><div class="uniform-actions"><button type="submit" class="btn btn-green">Mark Paid</button><button type="button" data-cancel class="btn btn-outline">Cancel</button></div></form>';
+ const fields=new Map();for(const a of items){const row=document.createElement('label');row.style.cssText='display:grid;gap:10px;margin:18px 0';const name=document.createElement('span');name.textContent=a.name;const select=document.createElement('select');select.required=true;select.setAttribute('aria-label','Payment currency for '+a.name);const policy=cuForItem(a);for(const method of ['gold','usd'])if(policy[method]){const option=document.createElement('option');option.value=method;option.textContent=(method==='gold'?'Gold':'USD/USDC')+' · '+cuReceiptAmount(a,method);select.append(option);}if(!select.options.length){const o=document.createElement('option');o.value='';o.textContent='Winner must pay GC from their account';select.append(o);}row.append(name,select);el.querySelector('[data-receipt-items]').append(row);fields.set(a.id,select);}
+ document.body.append(el);const cancel=el.querySelector('[data-cancel]');cancel.onclick=()=>el.remove();let saving=false;const completed=new Set();
+ el.querySelector('form').onsubmit=async event=>{event.preventDefault();if(saving)return;const status=el.querySelector('[role=status]'),button=el.querySelector('[type=submit]');if(key!==settlementRunKey()){status.textContent='The run changed. Close this window and try again.';return;}if([...fields.values()].some(s=>!s.value)){status.textContent='GC purchases must be paid by the winning member.';return;}saving=true;button.disabled=true;cancel.disabled=true;let count=completed.size;try{for(const a of items){if(completed.has(a.id))continue;if(key!==settlementRunKey())throw Error('The run changed. Remaining purchases were not recorded.');const method=fields.get(a.id).value;status.textContent='Recording payment '+(count+1)+' of '+items.length+'…';await gsCall('payWin',{runId:key,auctionId:a.id,method,externalReceived:true,expectedAmount:Number(a.currentBid)});completed.add(a.id);count++;fields.get(a.id).disabled=true;}status.textContent='Payments recorded';toast(count+' purchase'+(count===1?'':'s')+' marked paid');el.remove();if(panelOpen)renderPanel();}catch(error){status.textContent=count+' of '+items.length+' recorded. '+(error.message||'Payment could not be recorded.');}finally{saving=false;button.disabled=false;cancel.disabled=false;}};
+}
+markAllPaid=function(ids){if(!gsContext())return rtLegacyMarkAllPaid(ids);return rtRecordPurchases(ids);};
+togglePaid=function(id){if(!gsContext())return rtLegacyTogglePaid(id);if(!isRL)return;const paid=settlement.gsPayments?.[id]?.status==='paid';if(panelOpen)renderPanel();return paid?cuRefund(id):rtRecordPurchases([id]);};
+togglePaidFromOverlay=function(id,button){if(!gsContext())return rtLegacyOverlayPaid(id,button);return rtRecordPurchases([id]);};
+Object.assign(window,{markAllPaid,togglePaid,togglePaidFromOverlay});
+
+const settlementUiTogglePaid=togglePaid;
+togglePaid=function(id){
+ if(!isRL||!gsContext())return settlementUiTogglePaid(id);
+ const a=auctions[id];if(!a||a.status!=='sold')return;
+ if(settlement.gsPayments?.[id]?.status==='paid')return cuRefund(id);
+ if(settlement.payoutStarted){toast('Collections are locked after payouts start');return;}
+ document.getElementById('leader-receipt-choice')?.remove();const key=settlementRunKey(),policy=cuForItem(a),el=document.createElement('div');el.id='leader-receipt-choice';el.className='account-payment-overlay';el.style.zIndex='250';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Record payment received');
+ el.innerHTML='<div class="account-payment-card"><h2>Record payment received</h2><p data-item></p><div class="uniform-actions" data-methods></div><p data-note></p><button type="button" class="btn btn-outline" data-close>Close</button></div>';el.querySelector('[data-item]').textContent=a.name;
+ for(const method of ['gold','usd'])if(policy[method]){const button=document.createElement('button');button.type='button';button.className='btn btn-green';button.textContent='Record '+(method==='gold'?'Gold':'USD/USDC')+' received: '+cuReceiptAmount(a,method);button.onclick=()=>{if(key!==settlementRunKey()){toast('The run changed. Reopen the purchase.');return;}el.remove();cuRecord(id,method);};el.querySelector('[data-methods]').append(button);}
+ el.querySelector('[data-note]').textContent=policy.gc?'GC payments are made from the winning member’s account.':'';el.querySelector('[data-close]').onclick=()=>el.remove();document.body.append(el);
+};window.togglePaid=togglePaid;
+
+// Surface pending receipts/payouts immediately and coalesce identical clicks.
+const paymentPendingCalls=new Map(),paymentPendingOriginal=gsCall;
+gsCall=function(op,data={},id){
+ if(!['payWin','refundWin','creditCut','quoteGold'].includes(op))return paymentPendingOriginal(op,data,id);
+ const key=JSON.stringify([accountDiscordId(),op,data]);if(paymentPendingCalls.has(key))return paymentPendingCalls.get(key);
+ let notice=document.getElementById('payment-save-status');if(!notice){notice=document.createElement('div');notice.id='payment-save-status';notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');notice.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;background:#211d12;color:#f1d475;border:1px solid #c9a84c;padding:14px 22px;pointer-events:none';document.body.append(notice);}notice.textContent=op==='quoteGold'?'Preparing payout…':'Saving payment…';
+ const work=Promise.resolve().then(()=>paymentPendingOriginal(op,data,id)).finally(()=>{paymentPendingCalls.delete(key);if(!paymentPendingCalls.size)document.getElementById('payment-save-status')?.remove();});paymentPendingCalls.set(key,work);return work;
+};

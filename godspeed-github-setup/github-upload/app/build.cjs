@@ -10,9 +10,9 @@ replace('Bid buttons (g increments)',"Bid buttons (${gsContext()?'GS':'g'} incre
 replace('>g each</span>',">${gsContext()?'GS':'g'} each</span>");
 replace('value="${a?a.currentBid:1000}"', 'value="${a?a.currentBid:gsContext()?10:1000}"');
 replace('const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:raidSettings.defaultBidButtons||[250,500,1000];','const bidBtns=a?a.bidButtons||raidSettings.defaultBidButtons||[250,500,1000]:gsContext()?[1,5,10]:raidSettings.defaultBidButtons||[250,500,1000];');
-replace("gold:'Purchase ready',usdc:'USDC ready'","gold:'Purchase ready',usdc:'USDC ready',gs:'GS ready'");
+replace("gold:'Purchase ready',usdc:'USDC ready'","gold:'Purchase ready',usdc:'USDC ready',gs:'GC ready'");
 html=html.replaceAll("['gold','usdc'].includes(e.category)","['gold','usdc','gs'].includes(e.category)");
-replace('<option value="usdc">USDC ready</option>','<option value="usdc">USDC ready</option><option value="gs">GS ready</option>');
+replace('<option value="usdc">USDC ready</option>','<option value="usdc">USDC ready</option><option value="gs">GC ready</option>');
 replace("const _savedUser = localStorage.getItem('gdkp_user');","const _savedUser = gsAuth.currentUser ? localStorage.getItem('gdkp_user') : null;");
 replace("const _savedDiscord = localStorage.getItem('gdkp_discord');","const _savedDiscord = gsAuth.currentUser ? localStorage.getItem('gdkp_discord') : null;");
 

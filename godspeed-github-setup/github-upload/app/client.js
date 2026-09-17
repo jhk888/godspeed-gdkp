@@ -1076,3 +1076,100 @@ submitFeedbackSafe=async function(){
  const button=overlay.querySelector('button[onclick="submitFeedback()"]');feedbackSending=true;if(button)button.disabled=true;status.textContent='Sending report…';
  try{const id=push(ref(db,'siteFeedback')).key,record={type:document.getElementById('feedback-type')?.value||'other',note,status:'open',createdAt:Date.now(),runId:runId||'',raidTitle:raidSettings.raidTitle||'',discordId:accountDiscordId()||'',discordName:discordUser?.username||'',displayName:discordUser?.displayName||user||'',character:currentRaiderName()||user||'',hasAttachment:!!feedbackDraftImage};const writes={};writes['siteFeedback/'+id]=record;if(feedbackDraftImage)writes['siteFeedbackAttachments/'+id]=feedbackDraftImage;await update(ref(db),writes);if(document.getElementById('feedback-overlay')===overlay)closeFeedbackForm();toast('Report sent');}catch(error){status.textContent='Report was not sent. '+(error.code==='PERMISSION_DENIED'?'Please sign in again and retry.':error.message||'Please retry.');}finally{feedbackSending=false;if(button)button.disabled=false;}
 };window.submitFeedback=submitFeedbackSafe;
+
+function archivedLootMoney(amount,data){
+ const s=data.settlement||{},rate=Number(s.usdPer1000||s.usdcPer1000)||10,coin=['coin','mixed'].includes(s.settlementMode),n=Number(amount)||0;
+ const mode=gsContext()?(gcGoldView?'gold':displayCurrency==='usd'?'usd':'gc'):(displayCurrency==='usd'?'usd':'gold');
+ const dollars=coin?n:n*rate/1000;
+ return mode==='gold'?goldText(coin?n*1000/rate:n):mode==='usd'?usdText(dollars):gsAmount(dollars);
+}
+
+startLootDisplayFromArchive=function(runKey){
+  if(isRL){
+    localStorage.setItem('gdkp_archive_display',runKey);
+    update(runRef(),{archiveDisplay:runKey});
+  }
+  get(ref(db,'runs/'+runKey)).then(snap=>{
+    const data=snap.val()||{};
+    const sold=Object.values(data.auctions||{}).filter(a=>a.status==='sold').sort((a,b)=>(b.currentBid||0)-(a.currentBid||0));
+    if(!sold.length){toast('No sold items in this run');return;}
+    document.getElementById('loot-display-overlay')?.remove();
+    const title=data.settings?.raidTitle||'Archive';
+    const qualityColors={legendary:'#ff8000',epic:'#a335ee',rare:'#0070dd',uncommon:'#1eff00',common:'#fff'};
+    const pot=sold.reduce((s,a)=>s+(a.currentBid||0),0);
+
+    // Build category tabs
+    const cats=['All',...[...new Set(sold.map(a=>a.category||'Other'))].sort()];
+    let activeCat='All';
+
+    const buildCards=(filtered)=>filtered.map((a,i)=>{
+      const bids=Object.values(a.bids||{}).filter(b=>!b.retracted).sort((x,y)=>y.amount-x.amount);
+      const winner=displayName(bids[0]?.bidder)||'Unknown';
+      const qColor=qualityColors[a.quality]||'#c590ff';
+      const icon=getIconImg(a.itemId,a.itemIcon,80);
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
+      return`<a class="loot-card" ${wowAttrs} style="animation-delay:${i*18}ms;">
+        <div class="loot-card-icon-wrap">${icon}</div>
+        <div class="loot-card-name" style="color:${qColor};">${a.name}</div>
+        <div class="loot-card-footer">
+          <div class="loot-card-winner">${winner}</div>
+          <div class="loot-card-price">${archivedLootMoney(a.currentBid||0,data)}</div>
+        </div>
+      </a>`;
+    }).join('');
+
+    const buildCatBtns=(active)=>cats.map(c=>{
+      const count=c==='All'?sold.length:sold.filter(a=>(a.category||'Other')===c).length;
+      return`<button class="loot-display-cat-btn${c===active?' active':''}" onclick="_archiveSwitchCat('${c}')">${c} <span style="opacity:.6;">(${count})</span></button>`;
+    }).join('');
+
+    const overlay=document.createElement('div');
+    overlay.id='loot-display-overlay';
+    overlay.className='loot-display-overlay';
+
+    const rebuildGrid=(cat)=>{
+      const filtered=cat==='All'?sold:sold.filter(a=>(a.category||'Other')===cat);
+      const body=overlay.querySelector('.loot-display-grid-inner');
+      if(body)body.innerHTML=filtered.length?buildCards(filtered):`<div style="grid-column:1/-1;text-align:center;font-family:'Cinzel',serif;font-size:.82rem;color:rgba(201,168,76,0.3);padding:4rem 0;">No items in this category</div>`;
+      overlay.querySelectorAll('.loot-display-cat-btn').forEach(b=>{b.classList.toggle('active',b.textContent.startsWith(cat));});
+    };
+    window._archiveSwitchCat=(cat)=>{activeCat=cat;rebuildGrid(cat);};
+
+    // Build sidebar from archive items
+    const allItems=Object.values(data.auctions||{}).sort((a,b)=>{const o={open:0,queued:1,sold:2,expired:3};return(o[a.status]??4)-(o[b.status]??4);});
+    const statusColors={open:'#60cc80',queued:'#c9a84c',sold:'rgba(201,168,76,0.4)',expired:'#cc6060'};
+    const statusLabels={open:'Live',queued:'Queue',sold:'Sold',expired:'Exp'};
+    const statusBadgeCss={open:'background:rgba(96,204,128,0.15);color:#60cc80;border:1px solid rgba(96,204,128,0.3);',queued:'background:rgba(201,168,76,0.12);color:#c9a84c;border:1px solid rgba(201,168,76,0.25);',sold:'background:rgba(201,168,76,0.08);color:rgba(201,168,76,0.5);border:1px solid rgba(201,168,76,0.15);',expired:'background:rgba(200,60,60,0.12);color:#cc6060;border:1px solid rgba(200,60,60,0.25);'};
+    const sidebarItems=allItems.map(a=>{
+      const wowAttrs=a.itemId?`href="https://www.wowhead.com/tbc/item=${a.itemId}" data-wowhead="item=${a.itemId}&domain=tbc" target="_blank"`:'href="#"';
+      return`<div class="loot-sidebar-item"><a ${wowAttrs} style="display:flex;align-items:center;gap:.4rem;text-decoration:none;width:100%;"><div class="loot-sidebar-dot" style="background:${statusColors[a.status]||'#555'};"></div><span class="loot-sidebar-name">${a.name}</span><span class="loot-sidebar-badge" style="${statusBadgeCss[a.status]||''}">${statusLabels[a.status]||'?'}</span></a></div>`;
+    }).join('');
+
+    const initialFiltered=sold;
+    overlay.innerHTML=`
+      <div class="loot-display-sidebar">
+        <div class="loot-display-sidebar-hdr">Run Loot (${allItems.length})</div>
+        ${sidebarItems}
+      </div>
+      <div class="loot-display-content">
+        <div class="loot-display-hdr">
+          <div style="flex:1;">
+            <div class="loot-display-title">${title}</div>
+            <div class="loot-display-sub">${sold.length} item${sold.length!==1?'s':''} sold${isRL?` &middot; ${archivedLootMoney(pot,data)} pot`:''}</div>
+          </div>
+          ${isRL?`<button class="loot-display-close-btn" onclick="closeArchiveDisplay()">&#x2715; Close</button>`:''}        </div>
+        ${cats.length>1?`<div class="loot-display-cats">${buildCatBtns('All')}</div>`:''}
+        <div class="loot-display-body">
+          <div class="loot-display-grid-inner">
+            ${buildCards(initialFiltered)}
+          </div>
+        </div>
+      </div>`;
+
+    document.body.appendChild(overlay);
+    if(window.$WowheadPower)window.$WowheadPower.refreshLinks();
+    sold.forEach(a=>{if(!a.itemIcon&&a.itemId)fetchIcon(a.itemId);});
+  }).catch(error=>{console.error('Archive display failed',error);toast('Could not open the archived loot display');});
+}
+;
+window.startLootDisplayFromArchive=startLootDisplayFromArchive;

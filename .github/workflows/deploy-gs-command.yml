@@ -1,0 +1,69 @@
+name: Deploy gsCommand
+on:
+  push:
+    branches: [main]
+    paths:
+      - godspeed-github-setup/github-upload/app/functions/**
+      - godspeed-github-setup/github-upload/app/tests/raider-key.test.cjs
+      - .github/workflows/deploy-gs-command.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: godspeed-gs-command-production
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Check syntax and regression tests
+        working-directory: godspeed-github-setup/github-upload/app
+        run: |
+          for file in functions/*.js; do node --check "$file"; done
+          node tests/raider-key.test.cjs
+          node --test tests/core.test.js
+          node tests/run-command-performance.cjs
+          node tests/claim-upload-routing.cjs
+  deploy:
+    needs: test
+    if: github.repository == 'jhk888/godspeed-gdkp' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        with:
+          project_id: godspeed-gdkp
+          workload_identity_provider: projects/750937911840/locations/global/workloadIdentityPools/godspeed-github/providers/github
+          service_account: github-deploy@godspeed-gdkp.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db
+      - name: Require existing function
+        run: |
+          gcloud functions describe gsCommand --project=godspeed-gdkp --region=us-central1 --v2 --format="value(name)"
+      - name: Update gsCommand source
+        run: |
+          gcloud functions deploy gsCommand \
+            --project=godspeed-gdkp \
+            --region=us-central1 \
+            --gen2 \
+            --source=godspeed-github-setup/github-upload/app/functions \
+            --entry-point=gsCommand \
+            --runtime=nodejs22 \
+            --service-account=750937911840-compute@developer.gserviceaccount.com \
+            --build-service-account=projects/godspeed-gdkp/serviceAccounts/750937911840-compute@developer.gserviceaccount.com \
+            --memory=512MiB --timeout=60s --concurrency=8 \
+            --min-instances=1 --max-instances=2 \
+            --quiet --format="value(name,state,updateTime)"
+      - name: Confirm function state
+        run: |
+          state="$(gcloud functions describe gsCommand --project=godspeed-gdkp --region=us-central1 --v2 --format='value(state)')"
+          test "$state" = ACTIVE

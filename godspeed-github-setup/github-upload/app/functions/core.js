@@ -30,10 +30,31 @@ function collected(run){return Object.values(run.settlement.gsPayments||{}).filt
 function raiderId(run,key){const r=run.settlement.raiders?.[key];need(r,'Raider missing');const matches=Object.values(run.attendance||{}).filter(a=>String(a.character||'').toLowerCase()===String(r.name||'').toLowerCase());const ids=[...new Set(matches.map(a=>String(a.discordId||'')).filter(Boolean))];need(ids.length===1,'Raider must have one verified attendance Discord ID');return ids[0];}
 function currencyPolicy(s){return s.acceptedCurrencies?validateCurrencies(s.acceptedCurrencies):{gc:true,gold:s.settlementMode==='mixed'&&!!s.goldEnabled,usd:false};}
 function validateCurrencies(c){need(c&&typeof c==='object'&&!Array.isArray(c)&&Object.keys(c).length===3&&['gc','gold','usd'].every(k=>typeof c[k]==='boolean'),'Invalid currency choices');need(c.gc||c.gold||c.usd,'Select at least one currency');return {gc:c.gc,gold:c.gold,usd:c.usd};}
+// These commands mutate one raider or purchase plus receipts and affected accounts.
+// Keep archived runs and other members' screenshots out of the clone on every retry.
+// The database transaction still atomically covers every financial write.
+function commandDraft(input,op,data){
+  if(!['creditCut','payoutChoice','submitClaim','claimAdmin','payWin','refundWin'].includes(op))return structuredClone(input||{});
+  const source=input||{},run=source.runs?.[data.runId],s=run?.settlement,r=s?.raiders?.[data.raiderKey];
+  const root={...source,gs:{...source.gs,ops:{...source.gs?.ops},audit:{...source.gs?.audit}},accounts:{...source.accounts},runs:{...source.runs},audit:{...source.audit}};
+  root.audit[data.runId||'gs']={...source.audit?.[data.runId||'gs']};
+  if(run){root.runs[data.runId]={...run};if(s)root.runs[data.runId].settlement={...s};}
+  const accounts=new Set([source.gs?.config?.houseId]);
+  if(['payWin','refundWin'].includes(op)){
+    const auction=run?.auctions?.[data.auctionId],payment=s?.gsPayments?.[data.auctionId];
+    if(run){root.runs[data.runId].auctions={...run.auctions};if(auction)root.runs[data.runId].auctions[data.auctionId]={...auction};}
+    if(s){root.runs[data.runId].settlement.gsPayments={...s.gsPayments};if(payment)root.runs[data.runId].settlement.gsPayments[data.auctionId]={...payment};}
+    const winner=Object.values(auction?.bids||{}).filter(b=>!b.retracted).sort((a,b)=>b.amount-a.amount||a.ts-b.ts)[0];
+    accounts.add('_run_'+data.runId);if(winner?.discordId)accounts.add(String(winner.discordId));accounts.add(payment?.owner);
+  }else if(s){root.runs[data.runId].settlement.raiders={...s.raiders};if(r)root.runs[data.runId].settlement.raiders[data.raiderKey]=structuredClone(r);}
+  if(op==='creditCut'){accounts.add('_run_'+data.runId);accounts.add(r?.gsOwner);}
+  for(const id of accounts)if(id!==undefined&&source.accounts?.[id])root.accounts[id]=structuredClone(source.accounts[id]);
+  return root;
+}
 function execute(input,actor,op,data,opId,now=Date.now(),preparedImage){
-  const root=structuredClone(input||{});root.gs??={};root.gs.ops??={};
   need(/^[A-Za-z0-9_-]{8,100}$/.test(opId),'Invalid request ID');
-  const prior=root.gs.ops[opId];if(prior){need(prior.actor===actor.id&&prior.op===op&&(prior.payloadHash?prior.payloadHash===payloadHash(data):prior.payload===JSON.stringify(data)),'Request ID reused');return {root,result:prior.result};}
+  const prior=input?.gs?.ops?.[opId];if(prior){need(prior.actor===actor.id&&prior.op===op&&(prior.payloadHash?prior.payloadHash===payloadHash(data):prior.payload===JSON.stringify(data)),'Request ID reused');return {root:input,result:prior.result};}
+  const root=commandDraft(input,op,data);root.gs??={};root.gs.ops??={};
   need(actor.id&&!banned(root,actor.id),'Account is banned or not authenticated');
   const rl=()=>need(actor.rl,'Raid leader required');
   let result={ok:true};const meta={runId:data.runId||'',actor:actor.id};
@@ -218,7 +239,6 @@ function execute(input,actor,op,data,opId,now=Date.now(),preparedImage){
   return {root,result};
 }
 module.exports={execute,units,dollars,balance,calculateCuts,collected};
-
 
 
 

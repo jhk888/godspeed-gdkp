@@ -25,8 +25,7 @@ function executeRunCommand(run,actor,op,data,id,config,legacyReceipt,now=Date.no
  const receipt=run.commandReceipts?.[id]||legacyReceipt;
  const input={gs:{config,ops:receipt?{[id]:receipt}:{}},runs:{[data.runId]:run}};
  const out=execute(input,actor,op,data,id,now,preparedImage),updated=out.root.runs[data.runId];
- updated.commandReceipts={...(updated.commandReceipts||{}),[id]:out.root.gs.ops[id]};
- return {root:updated,result:out.result};
+  return {root:{...updated,commandReceipts:{...(updated.commandReceipts||{}),[id]:out.root.gs.ops[id]}},result:out.result};
 }
 module.exports.runOperations=runOperations;
 module.exports.executeRunCommand=executeRunCommand;

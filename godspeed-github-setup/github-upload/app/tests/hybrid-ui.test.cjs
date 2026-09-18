@@ -1,0 +1,16 @@
+const {JSDOM}=require('jsdom');
+const fs=require('node:fs'),assert=require('node:assert/strict');
+const dom=new JSDOM('<main id="main"></main>',{runScripts:'outside-only'}),w=dom.window;
+w.eval(fs.readFileSync(require('node:path').join(__dirname,'../ui/runtime.js'),'utf8'));
+const root=w.document.getElementById('main');
+const html=(amount,order=['a','b'])=>`<input id="seller" value="Saved"><details id="proof"><summary>Proof</summary><span>${amount}</span></details><div>${order.map(k=>`<article data-hybrid-key="${k}"><a data-wowhead="item=1">${k}</a><span>${amount}</span><input type="checkbox" ${amount===2?'checked':''}></article>`).join('')}</div>`;
+w.hybridRender(root,html(1),'run1');
+const input=root.querySelector('input'),link=root.querySelector('a'),row=link.parentElement;
+input.focus();input.value='Draft seller';input.setSelectionRange(3,6);root.querySelector('details').open=true;row.scrollTop=12;
+w.hybridRender(root,html(2,['b','a']),'run1');
+assert.equal(root.querySelector('#seller'),input);assert.equal(w.document.activeElement,input);assert.equal(input.value,'Draft seller');assert.equal(input.selectionStart,3);
+assert.equal(root.querySelector('[data-hybrid-key=a]'),row);assert.equal(row.querySelector('a'),link);assert.equal(row.querySelector('span').textContent,'2');assert.equal(row.querySelector('input').checked,true);assert.equal(row.scrollTop,12);assert.equal(root.querySelector('details').open,true);
+w.hybridRender(root,html(3,['a']),'run1');assert.equal(root.querySelectorAll('article').length,1);
+w.hybridRender(root,html(1),'run2');assert.notEqual(root.querySelector('#seller'),input);assert.equal(root.querySelector('#seller').value,'Saved');
+w.hybridError('<b>Invalid key</b>');w.hybridRender(root,html(4),'run2');const error=w.document.querySelector('#hybrid-save-error');assert.equal(error.querySelector('b'),null);assert.equal(error.querySelector('p').textContent,'<b>Invalid key</b>');error.querySelector('button').click();assert.equal(w.document.querySelector('#hybrid-save-error'),null);
+console.log('PASS: live updates retain focus, draft, selection, rows, tooltip links, details and scroll; run changes reset view; errors persist and dismiss.');

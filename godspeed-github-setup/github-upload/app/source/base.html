@@ -3927,10 +3927,10 @@ function renderMain(){
 
   const mHTML=modal?(editId?buildModal('Edit Item',auctions[editId],'saveEdit'):buildModal('Add Item to Queue',null,'addToQueue')):'';
 
-  document.getElementById('main').innerHTML=`
+  hybridRender(document.getElementById('main'),`
     ${archivedSettlementContext?'':membersBar+potBar+myLootHTML+settingsBar+attendanceBanner}${tabs}
     ${tab!=='splits'&&tab!=='settlement'&&tab!=='payout'?`<div class="sec-hdr"><div class="sec-hdr-spacer" aria-hidden="true"></div><div class="sec-title">${tab==='active'?'Live Auctions':tab==='queued'?'Auction Queue':tab==='expired'?'Expired (No Bids)':'Sold Items'}</div><div class="sec-actions">${secActions||''}</div></div>`:''}
-    <div id="auction-grid-bg">${content}</div>${mHTML}`;
+    <div id="auction-grid-bg">${content}</div>${mHTML}`,JSON.stringify([accountDiscordId(),settlementRunKey(),tab,!!archivedSettlementContext]));
 
   if(cardDragPreview&&!isRL)requestAnimationFrame(applyCardDragPreviewToDOM);
 
@@ -4391,7 +4391,7 @@ function renderPayoutSubmissionQueue(raiders,calc){
     const destination=method==='usdc'?`<div>Ethereum</div><div class="payout-destination">${settlementEsc(s.walletAddress||'No address')}</div>${s.walletAddress?`<button class="mutator-mini" onclick="copyPayoutAddress('${r.key}')">Copy Address</button>`:''}`:s.seller?`<div>${settlementEsc(s.seller)}</div><div>${settlementEsc(s.item||'')}</div>`:'Waiting for claim';
     const amount=method?payoutAmountText(r,complete?cut:due,method):goldText(complete?cut:due);
     const options=[src?'<option value="review">Review Screenshot</option>':'',s.submittedAt&&!complete?'<option value="correction">Request Correction</option>':'','<option value="modify">Modify Cut</option>',cr.submittedAt?'<option value="dispute">Review Dispute</option>':'',complete?'<option value="reopenCut">Reopen Cut</option>':'',payoutClaimExpired(r)?'<option value="reopen">Reopen 24h</option>':''].filter(Boolean).join('');
-    return `<tr><td class="payout-person"><strong>${settlementEsc(displayName(r.name)||r.name)}</strong><button class="mutator-mini" onclick="openPayoutHistory('${r.key}')">Payout history</button></td><td class="payout-value"><strong>${amount}</strong><div class="settlement-muted">${method==='usdc'?'USDC':method==='gold'?'Gold':'Method not chosen'}${!complete?' · Remaining':''}</div></td><td class="payout-state"><span class="settlement-status ${status[1]}">${status[0]}</span></td><td class="payout-detail"><details ${openPayoutDetailKeys.has(r.key)?'open':''} ontoggle="rememberPayoutDetail('${r.key}',this.open)"><summary>Destination &amp; proof</summary><div class="payout-detail-body">${destination}${src?`<button class="payout-proof-button" onclick="openPayoutImage('${r.key}')"><img class="payout-thumb" src="${src}" alt="Screenshot from ${settlementEsc(r.name)}" /></button>`:'<div class="settlement-muted">No screenshot</div>'}${s.correctionNote&&s.status==='correction'?`<div>${settlementEsc(s.correctionNote)}</div>`:''}</div></details></td><td class="payout-controls"><div class="payout-actions"><label><input type="checkbox" ${complete?'checked':''} onchange="setPayoutPaid('${r.key}',this.checked)" /> Paid</label><select class="payout-action-select" aria-label="Actions for ${settlementEsc(r.name)}" onchange="runPayoutAction('${r.key}',this.value);this.value='';"><option value="">Actions...</option>${options}</select></div></td></tr>`;
+    return `<tr data-hybrid-key="payout-${settlementEsc(r.key)}"><td class="payout-person"><strong>${settlementEsc(displayName(r.name)||r.name)}</strong><button class="mutator-mini" onclick="openPayoutHistory('${r.key}')">Payout history</button></td><td class="payout-value"><strong>${amount}</strong><div class="settlement-muted">${method==='usdc'?'USDC':method==='gold'?'Gold':'Method not chosen'}${!complete?' · Remaining':''}</div></td><td class="payout-state"><span class="settlement-status ${status[1]}">${status[0]}</span></td><td class="payout-detail"><details ${openPayoutDetailKeys.has(r.key)?'open':''} ontoggle="rememberPayoutDetail('${r.key}',this.open)"><summary>Destination &amp; proof</summary><div class="payout-detail-body">${destination}${src?`<button class="payout-proof-button" onclick="openPayoutImage('${r.key}')"><img class="payout-thumb" src="${src}" alt="Screenshot from ${settlementEsc(r.name)}" /></button>`:'<div class="settlement-muted">No screenshot</div>'}${s.correctionNote&&s.status==='correction'?`<div>${settlementEsc(s.correctionNote)}</div>`:''}</div></details></td><td class="payout-controls"><div class="payout-actions"><label><input type="checkbox" ${complete?'checked':''} onchange="setPayoutPaid('${r.key}',this.checked)" /> Paid</label><select class="payout-action-select" aria-label="Actions for ${settlementEsc(r.name)}" onchange="runPayoutAction('${r.key}',this.value);this.value='';"><option value="">Actions...</option>${options}</select></div></td></tr>`;
   }).join('');
   return `<div class="settlement-section" id="payout-queue"><div class="settlement-section-hdr"><div><div class="settlement-section-title">${siteCopy('payout_queue_title','Payout Queue')}</div><div class="settlement-section-note">${counts.ready} ready to pay · ${raiders.filter(r=>!payoutIsComplete(r,effectiveRaiderCut(r,calc))).length} unpaid. Paid can be checked without reviewing a claim.</div></div></div><div class="payout-queue-filters" role="group" aria-label="Filter payout status">${PAYOUT_QUEUE_FILTERS.map(([id,label])=>`<button class="btn btn-sm ${payoutQueueFilter===id?'btn-gold':'btn-neutral'}" aria-pressed="${payoutQueueFilter===id}" onclick="setPayoutQueueFilter('${id}')">${label} (${counts[id]})</button>`).join('')}</div><label class="payout-search-label" for="payout-queue-search">Find character</label><input id="payout-queue-search" type="text" value="${settlementEsc(payoutQueueSearch)}" placeholder="Character name" oninput="setPayoutQueueSearch(this.value)" /><div class="settlement-muted" aria-live="polite">${ordered.length} of ${raiders.length} raiders shown</div><div class="payout-queue-table-wrap" data-scroll-key="payout-submissions"><table class="settlement-table payout-submission-table"><thead><tr><th>Raider</th><th>Amount</th><th>Status</th><th>Details</th><th>Actions</th></tr></thead><tbody>${rows||'<tr><td colspan="5" class="settlement-empty">No raiders match this view.</td></tr>'}</tbody></table></div></div>`;
 }
@@ -4695,7 +4695,7 @@ function renderPanel(){
   const unpaidBanner=unpaidRaiders.length?`<div style="background:rgba(226,96,96,0.1);border:1px solid rgba(226,96,96,0.3);border-radius:3px;padding:.5rem .75rem;margin-bottom:.75rem;font-size:.78rem;font-family:'Cinzel',serif;">
     <span style="color:var(--red);">&#9888; Unpaid:</span> <span style="color:var(--text-bright);">${unpaidRaiders.join(', ')}</span>
   </div>`:'';
-  body.innerHTML=historySearch+rlTools+unpaidBanner+raiders.map(name=>{
+  hybridRender(body,historySearch+rlTools+unpaidBanner+raiders.map(name=>{
     const items=lootMap[name];
     const total=items.reduce((s,i)=>s+i.price,0);
     const owed=items.filter(i=>!i.paid).reduce((s,i)=>s+i.price,0);
@@ -4707,19 +4707,19 @@ function renderPanel(){
       :`<div style="font-size:.75rem;color:var(--red);margin-bottom:.4rem;">Owed: ${displayMoney(owed)}</div>`;
     const rowBorder=allPaid?'var(--border-gold)':'rgba(226,96,96,0.4)';
     const itemRows=items.map(i=>`
-      <div class="raider-item" style="gap:.5rem;">
+      <div data-hybrid-key="purchase-${settlementEsc(i.auctionId)}" class="raider-item" style="gap:.5rem;">
         <input type="checkbox" ${i.paid?'checked':''} ${isRL?`onchange="togglePaid('${i.auctionId}')"`:'disabled'}
           style="width:15px;height:15px;flex-shrink:0;cursor:${isRL?'pointer':'default'};accent-color:var(--green);" />
         ${i.icon?`<img loading="lazy" decoding="async" src="${iconUrl(i.icon)}" style="width:20px;height:20px;border-radius:2px;flex-shrink:0;" />`:''}
         <span class="raider-item-name item-name ${i.quality}" style="font-size:.78rem;flex:1;">${i.name}</span>
         <span class="raider-item-price" style="${i.paid?'color:var(--text-muted);text-decoration:line-through;':''}">${displayMoney(i.price)}</span>
       </div>`).join('');
-    return`<div class="raider-row" style="border-color:${rowBorder};">
+    return`<div data-hybrid-key="buyer-${settlementEsc(name)}" class="raider-row" style="border-color:${rowBorder};">
       <div class="raider-name" style="margin-bottom:.25rem;"><span>${displayName(name)}</span><span class="raider-total">${displayMoney(total)} total</span></div>
       ${statusLine}${selectAllBtn}
       ${itemRows}
     </div>`;
-  }).join('');
+  }).join(''),JSON.stringify([accountDiscordId(),settlementRunKey(),'raiders']));
   renderMemberHistoryResults();
 }
 
@@ -7543,6 +7543,7 @@ document.addEventListener('wheel',e=>{
 </script>
 </body>
 </html>
+
 
 
 

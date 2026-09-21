@@ -1333,6 +1333,7 @@ collectSettlementTasks=function(runs,currentKey){
  }
  for(const e of out){
   const state=runs[e.key].settlement,r=state.raiders[e.raiderKey];
+  const submission=r.submission||{};e.submittedAt=Number(submission.submittedAt||0);e.seller=submission.seller||'';e.item=submission.item||'';e.walletAddress=submission.walletAddress||'';e.imageData=payoutSafeImage(submission.imageData);
   e.claimUpdatedAt=Number(r.submission?.updatedAt||r.submission?.submittedAt||0);
   const base=Number(state.claimDeadline)||(Number(state.payoutStartedAt)||0)+Math.max(1,Number(state.claimWindowHours)||48)*3600000;
   e.deadline=state.payoutStarted?Math.max(base,Number(r.claimExtensionUntil)||0):0;

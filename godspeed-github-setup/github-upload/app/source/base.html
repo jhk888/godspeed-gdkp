@@ -1242,6 +1242,13 @@ html[data-gc-text="large"] .main,html[data-gc-text="larger"] .main{max-width: mi
 .dashboard-table th:nth-child(1){width:26%}.dashboard-table th:nth-child(2){width:17%}.dashboard-table th:nth-child(3){width:16%}.dashboard-table th:nth-child(4){width:25%}.dashboard-table th:nth-child(5){width:16%}
 .dashboard-table td{vertical-align:middle;overflow-wrap:anywhere;padding:.9rem .6rem}
 .dashboard-table .settlement-muted{margin-top:.35rem}
+.dashboard-claim summary{cursor:var(--gs-action-cursor,pointer);color:var(--gold-light);font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.03em}
+.dashboard-claim-body{display:grid;gap:.45rem;margin-top:.6rem;padding:.7rem;border:1px solid rgba(212,169,60,.18);background:rgba(9,8,5,.38)}
+.dashboard-claim-body img{display:block;width:min(260px,100%);max-height:170px;object-fit:contain;border:1px solid var(--border-gold);background:#080704;cursor:var(--gs-action-cursor,pointer)}
+.dashboard-row-actions{display:grid;grid-template-columns:max-content minmax(150px,1fr);align-items:center;gap:.55rem}
+.dashboard-row-actions label{display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+.dashboard-row-actions input[type=checkbox]{width:20px;height:20px;flex:none}
+.dashboard-row-actions select{box-sizing:border-box;min-width:150px;width:100%}
 @media(max-width:1000px){.dashboard-table,.dashboard-table tbody,.dashboard-table tr,.dashboard-table td{display:block;width:auto}.dashboard-table thead{display:none}.dashboard-table tr{border-bottom:1px solid var(--border-gold);padding:.7rem 0}.dashboard-table td{border:0;padding:.35rem .4rem}.dashboard-table td:last-child{text-align:right}.dashboard-toolbar label{flex-wrap:wrap}}
 
 </style>
@@ -3352,7 +3359,7 @@ function collectSettlementTasks(runs,currentKey){
       if(!category)return;
       const due=cut===null?null:Math.max(0,cut-paid),rate=Number(r.paidRateUsdPer1000||s.rateUsdcPer1000||state.usdPer1000||state.usdcPer1000)||10;
       const amount=due===null?'Amount available in settlement':s.method==='usdc'?`${(due*rate/1000).toFixed(2)} USDC`:`${due.toLocaleString()}g${s.method?'':' · method not chosen'}`;
-      entries.push({key,raiderKey,name:r.name||'Unnamed raider',title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||run.archivedAt||0,archived:!!run.archived,category,amount,note:dispute?request.note||'':s.status==='correction'?s.correctionNote||'':'',hasProof:!!s.imageData||!!request.hasAttachment});
+      entries.push({key,raiderKey,name:r.name||'Unnamed raider',title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||run.archivedAt||0,archived:!!run.archived,category,amount,note:dispute?request.note||'':s.status==='correction'?s.correctionNote||'':'',hasProof:!!s.imageData||!!request.hasAttachment,submittedAt:Number(s.submittedAt||0),seller:s.seller||'',item:s.item||'',walletAddress:s.walletAddress||'',imageData:payoutSafeImage(s.imageData)});
     });
   });
   const priority={dispute:0,gold:1,usdc:1,correction:2,unclaimed:3};
@@ -3369,6 +3376,15 @@ function dashboardMatches(entry,filter){
   if(filter==='expired')return entry.expired;
   return entry.category===filter;
 }
+function settlementElapsedText(timestamp){
+  const elapsed=Math.max(0,Date.now()-Number(timestamp||0)),totalMinutes=Math.floor(elapsed/60000),hours=Math.floor(totalMinutes/60),minutes=totalMinutes%60;
+  return timestamp?`${hours}h ${minutes}m since claim`:'No claim submitted';
+}
+function openPayoutImageFromSource(src,alt='Claim attachment'){
+  src=payoutSafeImage(src);if(!src)return;
+  document.getElementById('payout-image-overlay')?.remove();
+  const overlay=document.createElement('div');overlay.className='payout-review-overlay';overlay.id='payout-image-overlay';overlay.onclick=event=>{if(event.target===overlay)overlay.remove();};overlay.innerHTML=`<div class="payout-review-card" style="width:min(1200px,96vw);"><div style="display:flex;justify-content:flex-end;"><button class="btn btn-outline btn-sm" onclick="closePayoutReview()">Close</button></div><img class="payout-review-image" style="max-height:78vh;" src="${settlementEsc(src)}" alt="${settlementEsc(alt)}" /></div>`;document.body.appendChild(overlay);
+}
 function renderSettlementsDashboard(){
   const dialog=document.getElementById('settlements-dashboard');if(!dialog)return;
   if(!isRL){closeSettlementsDashboard();return;}
@@ -3384,25 +3400,26 @@ function renderSettlementsDashboard(){
   visible.sort(({entry:a},{entry:b})=>(sort==='newest'?b.date-a.date:sort==='name'?a.name.localeCompare(b.name):sort==='amount'?Number(b.sortAmount||0)-Number(a.sortAmount||0):a.date-b.date)||a.name.localeCompare(b.name)||a.raiderKey.localeCompare(b.raiderKey));
   dialog.querySelector('[data-dashboard-counts]').textContent=visible.length+' settlements shown · '+entries.filter(e=>e.category!=='paid').length+' open across all runs';
   const list=dialog.querySelector('[data-dashboard-list]'),scroll=dialog.scrollTop;
-  list.innerHTML='<table class="settlement-table dashboard-table"><thead><tr><th>Raider / Run</th><th>Amount</th><th>Status</th><th>Details</th><th>Actions</th></tr></thead><tbody>'+visible.map(({entry:e,index})=>`<tr><td><strong>${settlementEsc(e.name)}</strong><div class="settlement-muted">${settlementEsc(e.title)}</div><div class="settlement-muted">${e.date?settlementEsc(new Date(e.date).toLocaleDateString()):'Date unavailable'} · ${e.archived?'Archived':e.key===runId?'Current run':'Previous run'}</div></td><td><strong>${settlementEsc(e.amount)}</strong></td><td><span class="settlement-status ${e.category==='paid'?'ok':['gold','usdc','gs'].includes(e.category)?'ready':'warn'}">${e.expired&&e.category==='unclaimed'?'Claim expired':labels[e.category]}</span>${e.expired&&e.category!=='unclaimed'?'<div class="settlement-muted">Claim expired</div>':''}</td><td>${e.note?settlementEsc(e.note):e.hasProof?'Proof attached':'No proof attached'}${e.deadline&&e.category!=='paid'?`<div class="settlement-muted">Claim deadline: ${settlementEsc(new Date(e.deadline).toLocaleString())}</div>`:''}</td><td><button class="btn btn-outline" data-dashboard-entry="${index}">${e.category==='dispute'?'Review Dispute':'Open Payout'}</button></td></tr>`).join('')+'</tbody></table>';
+  list.innerHTML='<table class="settlement-table dashboard-table"><thead><tr><th>Raider / Run</th><th>Amount</th><th>Status</th><th>Claim</th><th>Actions</th></tr></thead><tbody>'+visible.map(({entry:e,index})=>{const claimDetails=[e.seller?`Seller: ${settlementEsc(e.seller)}`:'',e.item?`Item: ${settlementEsc(e.item)}`:'',e.walletAddress?`Wallet: ${settlementEsc(e.walletAddress)}`:'',e.note?settlementEsc(e.note):''].filter(Boolean).map(text=>`<div>${text}</div>`).join(''),proof=e.imageData?`<img src="${settlementEsc(e.imageData)}" alt="Claim attachment from ${settlementEsc(e.name)}" data-dashboard-proof="${index}" />`:e.hasProof?'<div class="settlement-muted">Attachment available in the full payout view</div>':'<div class="settlement-muted">No attachment</div>',options=e.category==='paid'?'<option value="reopenCut">Re-open paid cut</option>':'<option value="modify">Modify cut</option><option value="correction">Needs correction</option><option value="reopen">Re-open claim window</option>'+(e.category==='dispute'?'<option value="dispute">Review dispute</option>':'');return `<tr><td><strong>${settlementEsc(e.name)}</strong><div class="settlement-muted">${settlementEsc(e.title)}</div><div class="settlement-muted">${e.date?settlementEsc(new Date(e.date).toLocaleDateString()):'Date unavailable'} · ${e.archived?'Archived':e.key===runId?'Current run':'Previous run'}</div></td><td><strong>${settlementEsc(e.amount)}</strong></td><td><span class="settlement-status ${e.category==='paid'?'ok':['gold','usdc','gs'].includes(e.category)?'ready':'warn'}">${e.expired&&e.category==='unclaimed'?'Claim expired':labels[e.category]}</span><div class="settlement-muted">${settlementEsc(settlementElapsedText(e.submittedAt))}</div>${e.expired&&e.category!=='unclaimed'?'<div class="settlement-muted">Claim expired</div>':''}</td><td><details class="dashboard-claim"><summary>${e.hasProof||claimDetails?'View claim details':'No claim details'}</summary><div class="dashboard-claim-body">${claimDetails}${proof}${e.deadline&&e.category!=='paid'?`<div class="settlement-muted">Claim deadline: ${settlementEsc(new Date(e.deadline).toLocaleString())}</div>`:''}</div></details></td><td><div class="dashboard-row-actions"><label><input type="checkbox" data-dashboard-paid="${index}" ${e.category==='paid'?'checked':''}> Paid</label><select data-dashboard-action="${index}" aria-label="Actions for ${settlementEsc(e.name)}"><option value="">Actions...</option>${options}<option value="open">Open full payout</option></select></div></td></tr>`;}).join('')+'</tbody></table>';
   if(!visible.length)list.innerHTML='<p class="settlement-empty">No settlements match this view.</p>';
   dialog.scrollTop=scroll;
 }
 function openSettlementsDashboard(){
   if(!isRL)return;closeSettlementsDashboard();closeUserSettings();closePanel();
   const dialog=document.createElement('dialog');dialog.id='settlements-dashboard';dialog.setAttribute('aria-labelledby','settlements-dashboard-title');
-  dialog.innerHTML='<div class="settlement-section-hdr"><div><h2 id="settlements-dashboard-title" class="settlement-section-title">Settlements</h2><p class="settlement-section-note">Payouts across current and previous runs, including expired claims.</p></div><button class="btn btn-outline" data-dashboard-close>Close</button></div><div class="dashboard-navigation"><button class="btn btn-gold" data-dashboard-open>Open settlements</button></div><section data-dashboard-queue hidden><div class="dashboard-toolbar"><input aria-label="Search raider or run" placeholder="Search raider or run"><select data-dashboard-filter aria-label="Settlement status" hidden>'+SETTLEMENT_DASHBOARD_FILTERS.map(([id,label])=>'<option value="'+id+'">'+label+'</option>').join('')+'</select><label>Sort <select data-dashboard-sort aria-label="Sort settlements"><option value="oldest">Oldest first</option><option value="newest">Newest first</option><option value="name">Raider name</option><option value="amount">Largest amount (USD equivalent)</option></select></label></div><div class="payout-queue-filters" data-dashboard-filters role="group" aria-label="Filter settlement status">'+SETTLEMENT_DASHBOARD_FILTERS.map(([id,label])=>'<button class="btn btn-neutral" data-dashboard-filter-button="'+id+'">'+label+'</button>').join('')+'</div><p data-dashboard-counts class="settlement-muted" aria-live="polite">Loading runs…</p><div data-dashboard-list></div></section>';
+  dialog.innerHTML='<div class="settlement-section-hdr"><div><h2 id="settlements-dashboard-title" class="settlement-section-title">Settlements</h2><p class="settlement-section-note">Payouts across current and previous runs, including expired claims.</p></div><button class="btn btn-outline" data-dashboard-close>Close</button></div><div class="dashboard-navigation"><button class="btn btn-gold" data-dashboard-open>Open Payouts</button></div><section data-dashboard-queue hidden><div class="dashboard-toolbar"><input aria-label="Search raider or run" placeholder="Search raider or run"><select data-dashboard-filter aria-label="Settlement status" hidden>'+SETTLEMENT_DASHBOARD_FILTERS.map(([id,label])=>'<option value="'+id+'">'+label+'</option>').join('')+'</select><label>Sort <select data-dashboard-sort aria-label="Sort settlements"><option value="oldest">Oldest first</option><option value="newest">Newest first</option><option value="name">Raider name</option><option value="amount">Largest amount (USD equivalent)</option></select></label></div><div class="payout-queue-filters" data-dashboard-filters role="group" aria-label="Filter settlement status">'+SETTLEMENT_DASHBOARD_FILTERS.map(([id,label])=>'<button class="btn btn-neutral" data-dashboard-filter-button="'+id+'">'+label+'</button>').join('')+'</div><p data-dashboard-counts class="settlement-muted" aria-live="polite">Loading runs…</p><div data-dashboard-list></div></section>';
   dialog.querySelector('[data-dashboard-close]').onclick=closeSettlementsDashboard;
   dialog.querySelector('[data-dashboard-open]').onclick=()=>{dialog.dataset.queueOpen='true';dialog.querySelector('[data-dashboard-queue]').hidden=false;dialog.querySelector('[data-dashboard-open]').setAttribute('aria-expanded','true');dialog.querySelector('input').focus();};
   dialog.querySelector('[data-dashboard-open]').setAttribute('aria-expanded','false');
   dialog.querySelector('input').oninput=renderSettlementsDashboard;dialog.querySelector('[data-dashboard-sort]').onchange=renderSettlementsDashboard;
   dialog.querySelector('[data-dashboard-filters]').onclick=event=>{const button=event.target.closest('[data-dashboard-filter-button]');if(!button)return;dialog.querySelector('[data-dashboard-filter]').value=button.dataset.dashboardFilterButton;renderSettlementsDashboard();};
   dialog.addEventListener('cancel',event=>{event.preventDefault();closeSettlementsDashboard();});
-  dialog.querySelector('[data-dashboard-list]').onclick=event=>{const button=event.target.closest('[data-dashboard-entry]');if(button)openDashboardSettlement(Number(button.dataset.dashboardEntry));};
+  dialog.querySelector('[data-dashboard-list]').onclick=event=>{const proof=event.target.closest('[data-dashboard-proof]');if(proof){openPayoutImageFromSource(proof.src,proof.alt);return;}const checkbox=event.target.closest('[data-dashboard-paid]');if(checkbox){openDashboardSettlement(Number(checkbox.dataset.dashboardPaid),checkbox.checked?'paid':'reopenCut');return;}};
+  dialog.querySelector('[data-dashboard-list]').onchange=event=>{const select=event.target.closest('[data-dashboard-action]');if(!select||!select.value)return;openDashboardSettlement(Number(select.dataset.dashboardAction),select.value);select.value='';};
   document.body.appendChild(dialog);dialog.showModal();dialog.querySelector('[data-dashboard-open]').focus();
   settlementsDashboardUnsubscribe=onValue(ref(db,'runs'),snapshot=>{if(!dialog.isConnected)return;if(!isRL){closeSettlementsDashboard();return;}settlementsDashboardEntries=collectSettlementTasks(snapshot.val(),runId);renderSettlementsDashboard();},()=>{if(!dialog.isConnected)return;settlementsDashboardEntries=[];dialog.querySelector('[data-dashboard-counts]').textContent='Could not load runs. Close and reopen to retry.';dialog.querySelector('[data-dashboard-list]').replaceChildren();});
 }
-async function openDashboardSettlement(index){
+async function openDashboardSettlement(index,action='open'){
   if(!isRL)return;const entry=settlementsDashboardEntries[index];if(!entry)return;
   closeSettlementsDashboard();
   if(entry.key===runId){if(archivedSettlementContext)await closeArchivedSettlement();setTab('settlement');}
@@ -3410,7 +3427,10 @@ async function openDashboardSettlement(index){
   if(!isRL||!settlement.raiders?.[entry.raiderKey]){toast('This entry is no longer available');return;}
   payoutQueueRun=settlementRunKey();payoutQueueFilter=entry.category==='paid'?'paid':'all';payoutQueueSearch=entry.name;refreshPayoutQueue();
   requestAnimationFrame(()=>document.getElementById('payout-queue')?.scrollIntoView({block:'start'}));
-  if(entry.category==='dispute')openCutRequestReview(entry.raiderKey);
+  if(action==='paid')setPayoutPaid(entry.raiderKey,true);
+  else if(action==='reopenCut')reopenPaidCut(entry.raiderKey);
+  else if(action!=='open')runPayoutAction(entry.raiderKey,action);
+  else if(entry.category==='dispute')openCutRequestReview(entry.raiderKey);
 }
 Object.assign(window,{openSettlementsDashboard});
 let headerLayoutFrame=0;
@@ -7572,7 +7592,5 @@ document.addEventListener('wheel',e=>{
 </script>
 </body>
 </html>
-
-
 
 

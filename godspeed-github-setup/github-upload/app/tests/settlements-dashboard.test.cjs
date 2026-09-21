@@ -15,8 +15,8 @@ test('includes current, archived, and older unarchived settlements; omits delete
  const entries=c.collectSettlementTasks(data,'current');assert.deepEqual(Array.from(entries,e=>e.name),['A','B','C']);assert.equal(entries.filter(e=>c.dashboardMatches(e,'expired')).length,3);
 });
 test('claim extensions and submitted claims use the owning run deadline',()=>{
- const c=setup(),data={a:run({expired:raider('Expired'),extended:raider('Extended',{claimExtensionUntil:now+3600000}),ready:raider('Ready',{submission:{method:'usd',submittedAt:now-5000,walletAddress:'0x'+'a'.repeat(40)}})},{archived:true})};
- const entries=c.collectSettlementTasks(data,'other');assert.deepEqual(Array.from(entries.filter(e=>e.expired),e=>e.name),['Expired']);assert.equal(entries.find(e=>e.name==='Ready').category,'usdc');
+ const image='data:image/png;base64,AAAA',submittedAt=now-5000,c=setup(),data={a:run({expired:raider('Expired'),extended:raider('Extended',{claimExtensionUntil:now+3600000}),ready:raider('Ready',{submission:{method:'usd',submittedAt,walletAddress:'0x'+'a'.repeat(40),seller:'Seller',item:'Item',imageData:image}})},{archived:true})};
+ const entries=c.collectSettlementTasks(data,'other'),ready=entries.find(e=>e.name==='Ready');assert.deepEqual(Array.from(entries.filter(e=>e.expired),e=>e.name),['Expired']);assert.equal(ready.category,'usdc');assert.equal(ready.submittedAt,submittedAt);assert.equal(ready.walletAddress,'0x'+'a'.repeat(40));assert.equal(ready.seller,'Seller');assert.equal(ready.item,'Item');assert.equal(ready.imageData,image);
 });
 test('paid filter preserves history while open filter excludes completed entries; disputes remain actionable',()=>{
  const c=setup(),data={a:run({paid:raider('Paid',{paid:true,gsCredited:10}),dispute:raider('Dispute',{paid:true,gsCredited:10,cutRequest:{status:'open'}})},{archived:true})};
@@ -32,4 +32,7 @@ test('legacy expired and paid settlements are included with correct amounts',()=
 
 test('paid gold displays the recorded delivery after the run rate changes',()=>{
  const c=setup(),entries=c.collectSettlementTasks({a:run({gold:raider('Gold',{gsPayoutMethod:'gold',paid:true,gsCredited:10,payoutEvents:{p:{type:'paid',method:'gold',goldAmount:1250}}})})},'a');assert.equal(entries[0].amount,'1,250g');
+});
+test('dashboard exposes claim expansion, elapsed time, paid checkbox, and payout actions',()=>{
+ assert.match(base,/Open Payouts/);assert.match(base,/settlementElapsedText/);assert.match(base,/data-dashboard-proof/);assert.match(base,/data-dashboard-paid/);assert.match(base,/data-dashboard-action/);assert.match(base,/Modify cut/);assert.match(base,/Re-open paid cut/);
 });

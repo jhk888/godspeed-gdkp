@@ -4,7 +4,7 @@ function replace(a,b){if(!html.includes(a))throw Error('Missing integration anch
 replace("import { initializeApp }", "import {getAuth,signInWithCustomToken,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';\nimport {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';\nimport { initializeApp }");
 replace('const _urlParams = new URLSearchParams(window.location.search);','const GS_CALCULATE='+calculateCuts.toString()+';\n'+['ui/runtime.js','client.js','ui/settlements.js','ui/navigation.js'].map(file=>fs.readFileSync(path.join(__dirname,file),'utf8')).join('\n')+'\nconst _urlParams = new URLSearchParams(window.location.search);');
 replace('</style>','.gs-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin:1rem 0}.gs-fields label{display:flex;flex-direction:column;gap:.35rem}.gs-fields input,.gs-fields select{min-width:0;width:100%;box-sizing:border-box;background:var(--bg-input);color:var(--text-bright);padding:.5rem;border:1px solid var(--border-gold)}.gs-address{overflow-wrap:anywhere}.gs-payout-row{padding:.8rem 0;border-bottom:1px solid var(--border-gold)}\n</style>');
-replace('Build 45','Build 62 · In-place settlements');
+replace('Build 45','Build 63 · Claim sorting and totals');
 replace('Start bid (g)',"Start bid (${gsContext()?'GS':'g'})");
 replace('Bid buttons (g increments)',"Bid buttons (${gsContext()?'GS':'g'} increments)");
 replace('>g each</span>',">${gsContext()?'GS':'g'} each</span>");
@@ -21,4 +21,3 @@ replace('const initialSettlement={...DEFAULT_SETTLEMENT,managementCut:','const i
 replace("function accountActivityRows(){","function accountActivityRows(){");
 fs.mkdirSync(path.join(__dirname,'public'),{recursive:true});fs.writeFileSync(path.join(__dirname,'public/index.html'),html);
 console.log('Built full index.html with GS extension');
-

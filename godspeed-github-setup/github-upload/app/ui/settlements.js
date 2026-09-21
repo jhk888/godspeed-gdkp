@@ -1,4 +1,38 @@
 // Cross-run controls must never borrow the currently displayed run's accounting state.
+function dashboardCompare(a,b,sort){
+ let order=0;
+ if(sort==='claim-oldest'||sort==='claim-newest'){
+  const at=Number(a.submittedAt)||0,bt=Number(b.submittedAt)||0;
+  if(!at!==!bt)return at?-1:1;
+  order=sort==='claim-oldest'?at-bt:bt-at;
+ }else order=sort==='newest'?b.date-a.date:sort==='name'?a.name.localeCompare(b.name):sort==='amount'?Number(b.sortAmount||0)-Number(a.sortAmount||0):a.date-b.date;
+ return order||a.name.localeCompare(b.name)||a.key.localeCompare(b.key)||a.raiderKey.localeCompare(b.raiderKey);
+}
+function dashboardTotals(entries,runs){
+ const total={gold:0,usdc:0,gc:0,unselected:0,unavailable:0,estimatedGold:false};
+ for(const e of entries){
+  if(e.category==='paid'||e.saving)continue;
+  const s=runs[e.key]?.settlement,r=s?.raiders?.[e.raiderKey];if(!r){total.unavailable++;continue;}
+  const coin=['coin','mixed'].includes(s.settlementMode),method=coin?r.gsPayoutMethod||r.submission?.method:r.submission?.method;
+  let due,rate;
+  if(coin){due=Math.max(0,Number(r.gsCut||0)-Number(r.gsCredited||0));rate=Number(s.payoutUsdPer1000||s.usdPer1000||s.usdcPer1000||10);}
+  else{
+   if(r.lockedCut==null||!Number.isFinite(Number(r.lockedCut))){total.unavailable++;continue;}
+   const cut=dashboardLegacyCut(r);due=Math.max(0,cut-Number(r.paidAmount??(r.paid?cut:0)));rate=Math.max(.01,Number(s.usdPer1000||s.usdcPer1000)||10);
+  }
+  if(!Number.isFinite(due)||!Number.isFinite(rate)||rate<=0){total.unavailable++;continue;}
+  if(due<=0)continue;
+  if(method==='gold'){total.gold+=Math.round((coin?due*1000/rate:due)*100);if(coin&&!s.payoutUsdPer1000)total.estimatedGold=true;}
+  else if(method==='usd'||method==='usdc')total.usdc+=Math.round((coin?due:due*rate/1000)*100);
+  else if(method==='gs')total.gc+=Math.round(due*1000000);
+  else total.unselected++;
+ }
+ total.gold/=100;total.usdc/=100;total.gc/=1000000;return total;
+}
+function dashboardTotalsHTML(shown,all,runs){
+ const card=(label,t)=>`<div class="dashboard-total"><div class="settlement-muted">${label}</div><strong>Gold due: ${t.gold.toLocaleString(undefined,{maximumFractionDigits:2})}g${t.estimatedGold?' (estimate)':''}</strong><div>USDC due: ${t.usdc.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})} · GC due: ${t.gc.toLocaleString(undefined,{maximumFractionDigits:6})}</div>${t.unselected?`<div class="settlement-muted">${t.unselected} awaiting payout method, excluded from totals</div>`:''}${t.unavailable?`<div class="settlement-muted">${t.unavailable} amounts unavailable, excluded from totals</div>`:''}${t.estimatedGold?'<div class="settlement-muted">Some gold payouts require a rate quote before payment.</div>':''}</div>`;
+ return card('Due in this view',dashboardTotals(shown,runs))+card('Due across all runs',dashboardTotals(all,runs));
+}
 const dashboardPayments=new Map();
 function dashboardPaymentKey(entry){return JSON.stringify([accountDiscordId(),entry.key,entry.raiderKey]);}
 function dashboardPaymentPending(entry){
@@ -105,5 +139,6 @@ openPayoutImageFromSource=function(src,alt='Claim attachment'){
 const dashboardStyle=document.createElement('style');
 dashboardStyle.textContent='.dashboard-action-dialog{width:min(900px,94vw);max-height:90vh;overflow:auto;background:var(--bg-card,#17140d);color:var(--text-bright);border:1px solid var(--gold);padding:24px}.dashboard-action-dialog::backdrop{background:#0009}.dashboard-action-dialog label{display:grid;gap:8px;margin:16px 0}.dashboard-action-dialog input{padding:12px;background:var(--bg-input);color:inherit;border:1px solid var(--gold)}.dashboard-row-actions label{white-space:nowrap;flex-shrink:0}.dashboard-row-actions input{flex-shrink:0}';
 document.head.append(dashboardStyle);
+dashboardStyle.textContent+='.dashboard-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:16px 0}.dashboard-total{padding:14px;border:1px solid var(--border-gold);background:var(--bg-input)}.dashboard-total strong{display:block;color:var(--gold);font-size:1.25rem;margin:6px 0}.dashboard-total>div{margin-top:4px}';
 // Update age labels without rerendering or closing the user's disclosures.
 setInterval(()=>{for(const label of document.querySelectorAll('#settlements-dashboard [data-claim-elapsed]'))label.textContent=settlementElapsedText(Number(label.dataset.claimElapsed));},60000);

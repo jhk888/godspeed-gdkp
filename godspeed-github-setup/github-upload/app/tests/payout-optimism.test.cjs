@@ -3,7 +3,7 @@ const {test}=require('node:test'),assert=require('node:assert/strict'),fs=requir
 const source=fs.readFileSync(require.resolve('../client.js'),'utf8');
 function setup(){
  let resolve,reject;const errors=[],credits=[],r={key:'a',gsCut:12,gsCredited:0,paid:false};
- const ctx={owner:'123',run:'r',tab:'settlement',settlement:{raiders:{a:r}},window:{},document:{createElement:()=>({}),head:{append(){}}},accountDiscordId:()=>ctx.owner,settlementRunKey:()=>ctx.run,payoutQueueCategory:()=> 'ready',gsPayoutQueue:()=>'',setPayoutPaid:()=>{},gsContext:()=>true,gsCredit:(...args)=>credits.push(args),renderMain:()=>{},hybridError:message=>errors.push(message),gsCall:()=>new Promise((yes,no)=>{resolve=yes;reject=no;})};
+ const ctx={owner:'123',run:'r',tab:'settlement',settlement:{raiders:{a:r}},window:{scrollY:240,scrollTo:()=>{}},document:{createElement:()=>({}),head:{append(){}}},accountDiscordId:()=>ctx.owner,settlementRunKey:()=>ctx.run,payoutQueueCategory:()=> 'ready',gsPayoutQueue:()=>'',setPayoutPaid:()=>{},gsContext:()=>true,gsCredit:(...args)=>credits.push(args),renderMain:()=>{},hybridError:message=>errors.push(message),gsCall:()=>new Promise((yes,no)=>{resolve=yes;reject=no;})};
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('// Hide a checked payout while saving')),ctx);
  return {ctx,r,errors,credits,resolve:()=>resolve({ok:true}),reject:()=>reject(Error('Connection lost'))};
 }

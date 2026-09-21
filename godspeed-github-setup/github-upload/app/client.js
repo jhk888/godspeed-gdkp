@@ -317,7 +317,7 @@ const rwViews={
 let rwActiveKey='',rwQueuedKey='',rwRestoring=false;
 function rwKey(){return user&&runId?'gdkp_windows_v1:'+JSON.stringify([String(discordUser?.id||user),String(runId)]):'';}
 function rwScrollNodes(root){return [root,...root.querySelectorAll('.gp-settings-card,.account-payment-card,[data-scroll-key],.panel-body')];}
-function rwViewState(root){return {id:root.id,...(root.id==='gs-form'?{type:root.dataset.rwType,fields:Object.fromEntries(['gs-amount','gs-address','gs-to'].map(id=>[id,root.querySelector('#'+id)?.value??'']))}:{}),scroll:rwScrollNodes(root).map(el=>[el.scrollLeft,el.scrollTop]),details:[...root.querySelectorAll('details')].map(el=>el.open),...(root.id==='settlements-dashboard'?{search:root.querySelector('input')?.value||'',filter:root.querySelector('select')?.value||'all'}:{})};}
+function rwViewState(root){return {id:root.id,...(root.id==='gs-form'?{type:root.dataset.rwType,fields:Object.fromEntries(['gs-amount','gs-address','gs-to'].map(id=>[id,root.querySelector('#'+id)?.value??'']))}:{}),scroll:rwScrollNodes(root).map(el=>[el.scrollLeft,el.scrollTop]),details:[...root.querySelectorAll('details')].map(el=>el.open),...(root.id==='settlements-dashboard'?{search:root.querySelector('input')?.value||'',filter:root.querySelector('[data-dashboard-filter]')?.value||'all',sort:root.querySelector('[data-dashboard-sort]')?.value||'oldest',queueOpen:root.dataset.queueOpen==='true'}:{})};}
 function rwCapture(){
  const key=rwKey();if(!key||key!==rwActiveKey||rwRestoring||rwQueuedKey)return;
  const state={views:[...document.querySelectorAll(Object.keys(rwViews).map(id=>'#'+id).join(','))].filter(el=>(el.id!=='settlements-dashboard'||el.open)&&(el.id!=='gs-form'||(el.dataset.rwPhase==='draft'&&rwDraftTypes.includes(el.dataset.rwType)))).map(rwViewState),panel:panelOpen?{tab:panelTab,scroll:document.getElementById('side-panel')?rwViewState(document.getElementById('side-panel')).scroll:[]}:null};
@@ -327,7 +327,9 @@ function rwApplyViewState(root,saved){
  if(!root)return;
  if(root.id==='gs-form'){for(const id of ['gs-amount','gs-address','gs-to']){const field=root.querySelector('#'+id);if(field&&typeof saved.fields?.[id]==='string')field.value=saved.fields[id];}}
  if(root.id==='settlements-dashboard'){
-  const search=root.querySelector('input'),filter=root.querySelector('select');
+  const search=root.querySelector('input'),filter=root.querySelector('[data-dashboard-filter]'),sort=root.querySelector('[data-dashboard-sort]');
+  if(saved.queueOpen)root.querySelector('[data-dashboard-open]')?.click();
+  if(sort&&[...sort.options].some(o=>o.value===saved.sort))sort.value=saved.sort;
   if(search)search.value=String(saved.search||'');
   if(filter&&[...filter.options].some(o=>o.value===saved.filter))filter.value=saved.filter;
   renderSettlementsDashboard();
@@ -1317,17 +1319,32 @@ payoutQueueCategory=function(r,calc){if(!gsContext())return claimCategoryOrigina
 collectSettlementTasks=function(runs,currentKey){
  const out=gsOldTasks(runs,currentKey).filter(e=>!['coin','mixed'].includes(runs?.[e.key]?.settlement?.settlementMode));
  for(const [key,run] of Object.entries(runs||{})){
-  const state=run?.settlement;if(!state||run.deleted||run.deletedAt||!['coin','mixed'].includes(state.settlementMode)||(!run.archived&&key!==currentKey))continue;
+  const state=run?.settlement;if(!state||run.deleted||run.deletedAt||!['coin','mixed'].includes(state.settlementMode))continue;
   for(const [raiderKey,r] of Object.entries(state.raiders||{})){
+   if(!r)continue;
    const category=gcClaimCategory(r,state),due=Math.max(0,Number(r.gsCut||0)-Number(r.gsCredited||0));
-   if(category==='paid'||(category!=='dispute'&&(!state.payoutStarted||due<=0)))continue;
-   const rate=Number(state.payoutUsdPer1000||state.usdPer1000||state.usdcPer1000||10);
-   const amount=gcGoldView?(due*1000/rate).toLocaleString(undefined,{maximumFractionDigits:2})+'g':displayCurrency==='usd'?usdText(due):gsAmount(due);
-   out.push({key,raiderKey,name:r.name||raiderKey,title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||0,archived:!!run.archived,category,amount,note:category==='dispute'?r.cutRequest?.note||'':r.submission?.correctionNote||'',hasProof:!!r.submission?.imageData||!!r.cutRequest?.hasAttachment});
+   if(category!=='dispute'&&category!=='paid'&&(!state.payoutStarted||due<=0))continue;
+   const rate=Number(r.paidRateUsdPer1000||state.payoutUsdPer1000||state.usdPer1000||state.usdcPer1000||10),value=category==='paid'?Number(r.gsCredited||0):due;
+   const method=r.gsPayoutMethod||r.submission?.method;
+   const recordedGold=category==='paid'?Object.values(r.payoutEvents||{}).filter(e=>e.type==='paid'&&e.method==='gold').reduce((sum,e)=>sum+Number(e.goldAmount||0),0):0;
+   const amount=method==='gold'?(recordedGold||value*1000/rate).toLocaleString(undefined,{maximumFractionDigits:2})+'g':method==='gs'?gsAmount(value):method==='usd'||method==='usdc'?value.toFixed(2)+' USDC':usdText(value)+' · method not chosen';
+   out.push({key,raiderKey,name:r.name||raiderKey,title:run.settings?.raidTitle||'Untitled Run',date:run.createdAt||run.archivedAt||0,archived:!!run.archived,category,amount,sortAmount:value,note:category==='dispute'?r.cutRequest?.note||'':r.submission?.correctionNote||'',hasProof:!!r.submission?.imageData||!!r.cutRequest?.hasAttachment});
   }
  }
- for(const e of out){const r=runs?.[e.key]?.settlement?.raiders?.[e.raiderKey];e.claimUpdatedAt=Number(r?.submission?.updatedAt||r?.submission?.submittedAt||0);}
- return out.sort((a,b)=>b.claimUpdatedAt-a.claimUpdatedAt||b.date-a.date||a.name.localeCompare(b.name));
+ for(const e of out){
+  const state=runs[e.key].settlement,r=state.raiders[e.raiderKey];
+  e.claimUpdatedAt=Number(r.submission?.updatedAt||r.submission?.submittedAt||0);
+  const base=Number(state.claimDeadline)||(Number(state.payoutStartedAt)||0)+Math.max(1,Number(state.claimWindowHours)||48)*3600000;
+  e.deadline=state.payoutStarted?Math.max(base,Number(r.claimExtensionUntil)||0):0;
+  e.expired=!!e.deadline&&e.category!=='paid'&&!r.paid&&!r.submission?.submittedAt&&Date.now()>e.deadline;
+  if(e.sortAmount===undefined){
+   const adjustments=Object.values(r.cutAdjustments||{}).filter(a=>a&&!a.reversedAt).reduce((n,a)=>n+(Number(a.amount)||0),0);
+   const cut=Math.max(0,Math.floor(Number(r.lockedCut||0)+adjustments)),paid=Number(r.paidAmount||(r.paid?cut:0));
+   e.sortAmount=(e.category==='paid'?paid:Math.max(0,cut-paid))*Number(state.usdPer1000||state.usdcPer1000||10)/1000;
+   if(e.category==='paid')e.amount=r.submission?.method==='usdc'?(paid*Number(r.paidRateUsdPer1000||state.usdPer1000||state.usdcPer1000||10)/1000).toFixed(2)+' USDC':paid.toLocaleString()+'g';
+  }
+ }
+ return out.sort((a,b)=>a.date-b.date||a.name.localeCompare(b.name));
 };
 gsPayoutQueue=function(raiders,calc){
  const t=document.createElement('template');t.innerHTML=gsOldQueue(raiders.map(r=>({...r,submission:r.submission?{...r.submission,method:r.submission.method==='usd'?'usdc':r.submission.method}:r.submission})),calc);
@@ -1501,6 +1518,12 @@ gsPayoutQueue=function(raiders,calc){
  }
  const all=t.content.querySelector('[onclick="setPayoutQueueFilter(\'all\')"]');
  if(all)all.textContent='Unpaid ('+raiders.filter(r=>!hidden.has(r.key)).length+')';
+ for(const category of ['ready','unclaimed','correction','dispute']){
+  const button=t.content.querySelector('[onclick="setPayoutQueueFilter(\''+category+'\')"]');
+  if(button)button.textContent=button.textContent.replace(/\(\d+\)/,'('+raiders.filter(r=>!hidden.has(r.key)&&payoutQueueCategory(r,calc)===category).length+')');
+ }
+ const note=t.content.querySelector('.settlement-section-note');
+ if(note)note.textContent=raiders.filter(r=>!hidden.has(r.key)&&payoutQueueCategory(r,calc)==='ready').length+' ready to pay · '+raiders.filter(r=>!hidden.has(r.key)).length+' unpaid. Paid can be checked without reviewing a claim.';
  const body=t.content.querySelector('tbody');
  if(body&&!body.children.length)body.innerHTML='<tr><td colspan="5" class="settlement-empty">No payouts in this view.</td></tr>';
  const shown=t.content.querySelector('.settlement-muted[aria-live="polite"]');
@@ -1522,7 +1545,7 @@ gsCall=function(op,data={},id){
  const key=fastPayoutKey(data.runId,data.raiderKey),owner=accountDiscordId();
  const cut=Number(settlement.raiders?.[data.raiderKey]?.gsCut);
  fastPayoutPending.add(key);
- const refresh=()=>{if(owner===accountDiscordId()&&data.runId===settlementRunKey()&&tab==='settlement')renderMain();};
+ const refresh=()=>{if(owner===accountDiscordId()&&data.runId===settlementRunKey()&&tab==='settlement'){const y=window.scrollY;renderMain();window.scrollTo(0,y);}};
  refresh();
  return Promise.resolve().then(()=>fastPayoutCallOriginal(op,data,id)).then(result=>{
   fastPayoutSaved.set(key,cut);return result;

@@ -9,6 +9,24 @@ function setup(runs={}){
 const coin=(method='usd')=>({settlement:{settlementMode:'coin',payoutStarted:true,payoutMethods:{usd:true,gold:true,gc:true},payoutUsdPer1000:5,raiders:{same:{name:'Raider',gsPayoutMethod:method,gsCut:20,gsCredited:3}}}});
 const legacy=()=>({archived:true,settlement:{payoutStarted:true,usdPer1000:5,raiders:{same:{name:'Raider',lockedCut:2000,cutAdjustments:{a:{amount:100},b:{amount:500,reversedAt:1}},submission:{method:'usdc',submittedAt:1}}}},auctions:{sold:{status:'sold',bids:{b:{bidder:'Raider',amount:100}}},other:{status:'sold',bids:{b:{bidder:'Else',amount:100}}}}});
 const entry={key:'archive',raiderKey:'same',name:'Raider'};
+test('claim age sorting uses submission time, with missing claims last in both directions',()=>{
+ const {ctx}=setup(),rows=[{...entry,name:'Run old',date:1,submittedAt:300},{...entry,name:'Claim old',date:300,submittedAt:100},{...entry,name:'No claim',date:0,submittedAt:0}];
+ assert.deepEqual(rows.toSorted((a,b)=>ctx.dashboardCompare(a,b,'claim-oldest')).map(e=>e.name),['Claim old','Run old','No claim']);
+ assert.deepEqual(rows.toSorted((a,b)=>ctx.dashboardCompare(a,b,'claim-newest')).map(e=>e.name),['Run old','Claim old','No claim']);
+});
+test('due totals separate currencies, subtract payments, use each run rate and exclude paid or saving rows',()=>{
+ const gold=coin('gold'),usd=coin('usd'),gc=coin('gs'),unknown=coin();delete unknown.settlement.raiders.same.gsPayoutMethod;
+ const old=legacy();old.settlement.raiders.same.submission.method='gold';old.settlement.raiders.same.paidAmount=100;
+ const runs={gold,usd,gc,unknown,old,paid:coin('gold'),saving:coin('gold')},rows=Object.keys(runs).map(key=>({...entry,key,category:key==='paid'?'paid':'gold',saving:key==='saving'}));
+ const {ctx}=setup(),t=ctx.dashboardTotals(rows,runs);assert.equal(t.gold,5400);assert.equal(t.usdc,17);assert.equal(t.gc,17);assert.equal(t.unselected,1);
+ assert.equal(ctx.dashboardTotals(rows.filter(e=>e.key==='gold'),runs).gold,3400);
+});
+test('gold total matches displayed cents, paid disputes owe zero, and missing amounts are flagged',()=>{
+ const a=coin('gold');a.settlement.payoutUsdPer1000=3;a.settlement.raiders.same.gsCut=4;
+ const paid=coin('gold');Object.assign(paid.settlement.raiders.same,{paid:true,gsCredited:20});
+ const missing=legacy();delete missing.settlement.raiders.same.lockedCut;
+ const {ctx}=setup(),t=ctx.dashboardTotals(['a','b','paid','missing'].map(key=>({...entry,key,category:'dispute'})),{a,b:structuredClone(a),paid,missing});assert.equal(t.gold,666.66);assert.equal(t.unavailable,1);
+});
 test('cross-run USDC paid command uses the archive, not the current run with the same raider key',async()=>{
  const {ctx,calls}=setup({archive:coin(),current:coin('gold')});await ctx.dashboardSavePaid(entry);
  const command=calls.find(c=>c[0]==='creditCut');assert.equal(command[1].runId,'archive');assert.equal(command[1].expectedMethod,'usd');assert.equal(command[1].expectedAmount,17);assert.equal(command[1].externalPaid,true);

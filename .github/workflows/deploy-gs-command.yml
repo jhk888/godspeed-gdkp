@@ -25,8 +25,8 @@ jobs:
         run: |
           for file in functions/*.js; do node --check "$file"; done
           node tests/raider-key.test.cjs
-          node --check client.js
-          node --test tests/core.test.js tests/payout-methods.test.cjs tests/save-speed.test.cjs
+          node --input-type=module --check < client.js
+          node --test tests/core.test.js tests/payout-methods.test.cjs tests/save-speed.test.cjs tests/payout-optimism.test.cjs tests/payment-routing.test.cjs
           node tests/run-command-performance.cjs
           node tests/claim-upload-routing.cjs
   deploy:

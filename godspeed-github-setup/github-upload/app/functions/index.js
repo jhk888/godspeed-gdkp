@@ -17,14 +17,26 @@ const CLIENT_ID=defineString('GS_DISCORD_CLIENT_ID'),SITE=defineString('GS_SITE_
 const region='us-central1';
 async function commit(actor,op,data,id){
  const now=Date.now();let attempts=0,executionMs=0;
- try{return await validatedTransaction(getDatabase().ref(),root=>{attempts++;const start=Date.now();try{return execute(root,actor,op,data,id,now);}finally{executionMs+=Date.now()-start;}});}
- catch(e){throw new HttpsError('failed-precondition',e.message||'Transaction conflicted; retry');}
+ try{return await validatedTransaction(getDatabase().ref(),root=>{
+   attempts++;const start=Date.now();
+   try{
+     // Check the same authoritative snapshot used to commit the money movement.
+     // Recheck on retries and before receipt replay, including false-valued bans.
+     if(root?.bans?.['discord_'+actor.id]!=null)throw new HttpsError('permission-denied','Account banned');
+     if(root?.gs?.config?.sitePaused===true&&!actor.rl)throw new HttpsError('unavailable','The site is temporarily paused by the leader');
+     return execute(root,actor,op,data,id,now);
+   }finally{executionMs+=Date.now()-start;}
+ });}
+ catch(e){if(e instanceof HttpsError)throw e;throw new HttpsError('failed-precondition',e.message||'Transaction conflicted; retry');}
  finally{console.info('Save timing',{op,totalMs:Date.now()-now,executionMs,attempts});}
 }
 function identity(request){if(!request.auth?.token?.discordId||request.auth.uid!=='discord_'+request.auth.token.discordId)throw new HttpsError('unauthenticated','Verify Discord for GS');return {id:String(request.auth.token.discordId),rl:request.auth.token.raidLeader===true&&String(request.auth.token.discordId)===RL.value()};}
 exports.gsCommand=onCall({region,memory:'512MiB',concurrency:8,timeoutSeconds:60,minInstances:1,maxInstances:2},async request=>{
   const actor=identity(request),{op,data={},id}=request.data||{};
   const started=Date.now(),db=getDatabase(),isBid=op==='placeBid',isRunCommand=runOperations.has(op);
+  // These commands already load the root atomically. Avoid separate ban/pause
+  // reads before that transaction; commit enforces both restrictions itself.
+  if(['creditCut','payWin','refundWin','lockCuts','adjustCut'].includes(op))return commit(actor,op,data,id);
   if(isBid||isRunCommand){safe(data.runId);if(isBid)safe(data.auctionId);if(data.raiderKey!==undefined)safeRaiderKey(data.raiderKey);if(typeof id!=='string'||!/^[A-Za-z0-9_-]{8,100}$/.test(id))throw new HttpsError('invalid-argument','Invalid request ID');}
   const [ban,configSnap,legacyReceipt]=await Promise.all([db.ref('bans/discord_'+actor.id).get(),db.ref(isBid||isRunCommand?'gs/config':'gs/config/sitePaused').get(),isBid||isRunCommand?db.ref('gs/ops/'+id).get():Promise.resolve(null)]);
   if(ban.exists())throw new HttpsError('permission-denied','Account banned');

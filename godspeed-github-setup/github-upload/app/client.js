@@ -912,7 +912,7 @@ document.addEventListener('change',async event=>{
 });
 toggleSettlementLock=function(){if(!gsContext()||settlement.payoutStarted)return gsOldLock();if(!isRL)return;document.getElementById('pm-start')?.remove();const el=document.createElement('div');el.id='pm-start';el.className='account-payment-overlay';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','Start Payouts');const key=settlementRunKey(),policy=cuPolicy(),chosen=['gold','usd','gs'].filter(m=>policy[m==='gs'?'gc':m]);el.innerHTML=`<form class="account-payment-card"><h2>Start Payouts</h2><p>Choose the methods raiders may receive. Each raider selects one.</p><fieldset class="pm-options" aria-label="Allowed payout methods">${payoutOptions('checkbox',chosen,{gold:true,usd:true,gc:true})}</fieldset><p>Starting payouts locks the cuts and records the admin cut.</p><p role="status"></p><button type="submit" class="btn btn-gold">Start Payouts</button> <button type="button" class="btn btn-outline" onclick="document.getElementById('pm-start').remove()">Cancel</button></form>`;document.body.append(el);el.querySelector('form').onsubmit=async e=>{e.preventDefault();const button=el.querySelector('[type=submit]'),status=el.querySelector('[role=status]');if(button.disabled)return;const selected=[...el.querySelectorAll('input:checked')].map(i=>i.value);if(!selected.length){status.textContent='Select at least one payout method.';return;}if(key!==settlementRunKey()){status.textContent='The run changed. Reopen Start Payouts.';return;}button.disabled=true;status.textContent='Starting payouts…';try{await gsCall('lockCuts',{runId:key,payoutMethods:{gold:selected.includes('gold'),usd:selected.includes('usd'),gc:selected.includes('gs')}});el.remove();toast('Payouts started');}catch(err){status.textContent=err.message||'Could not start payouts';button.disabled=false;}};el.querySelector('input')?.focus();};
 const pmQueueOriginal=gsPayoutQueue;gsPayoutQueue=function(...args){const t=document.createElement('template');t.innerHTML=pmQueueOriginal(...args);for(const button of t.content.querySelectorAll('button[onclick]')){const match=button.getAttribute('onclick').match(/^gsCredit\('([^']+)'\)$/);if(!match)continue;const r=settlement.raiders?.[match[1]],method=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':null);button.textContent=method==='gold'?'Record gold paid':method==='usd'?'Record USD/USDC paid':method==='gs'?'Credit GC':'Awaiting payout choice';if(!method)button.disabled=true;}return t.innerHTML;};
-gsCredit=async function(key){const r=settlement.raiders?.[key],method=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':null);if(!r||!method){toast('The raider must choose a payout method first.');return;}const data={runId:settlementRunKey(),raiderKey:key,expectedMethod:method,expectedAmount:Number((Number(r.gsCut||0)-Number(r.gsCredited||0)).toFixed(6))};if(method==='gold'){try{const rate=settlement.payoutUsdPer1000,quote=typeof rate==='number'&&Number.isFinite(rate)&&rate>0?{gold:data.expectedAmount*1000/rate,payoutRate:rate}:await gsCall('quoteGold',data);gsAction('creditCut',{...data,goldDelivered:true,expectedGold:quote.gold,expectedPayoutRate:quote.payoutRate},'Confirm you delivered '+quote.gold.toFixed(2)+' gold to '+r.name+'?');}catch(e){toast(e.message);}}else if(method==='usd'){gsAction('creditCut',{...data,externalPaid:true},'Confirm you already paid $'+data.expectedAmount.toFixed(2)+' USD/USDC to '+r.name+' outside the site?');}else gsAction('creditCut',data,'Credit '+gcMoney(data.expectedAmount)+' to '+r.name+'?');};
+gsCredit=async function(key,immediate=false){const confirm=message=>immediate?'':message;const r=settlement.raiders?.[key],method=r?.gsPayoutMethod||(!settlement.payoutMethods?'gs':null);if(!r||!method){toast('The raider must choose a payout method first.');return;}const data={runId:settlementRunKey(),raiderKey:key,expectedMethod:method,expectedAmount:Number((Number(r.gsCut||0)-Number(r.gsCredited||0)).toFixed(6))};if(method==='gold'){try{const rate=settlement.payoutUsdPer1000,quote=typeof rate==='number'&&Number.isFinite(rate)&&rate>0?{gold:data.expectedAmount*1000/rate,payoutRate:rate}:await gsCall('quoteGold',data);gsAction('creditCut',{...data,goldDelivered:true,expectedGold:quote.gold,expectedPayoutRate:quote.payoutRate},confirm('Confirm you delivered '+quote.gold.toFixed(2)+' gold to '+r.name+'?'));}catch(e){toast(e.message);}}else if(method==='usd'){gsAction('creditCut',{...data,externalPaid:true},confirm('Confirm you already paid $'+data.expectedAmount.toFixed(2)+' USD/USDC to '+r.name+' outside the site?'));}else gsAction('creditCut',data,confirm('Credit '+gcMoney(data.expectedAmount)+' to '+r.name+'?'));};
 Object.assign(window,{toggleSettlementLock,gsCredit});
 
 // GC management uses the existing audited credit and payout operations.
@@ -1474,29 +1474,45 @@ payoutSafeImage=function(value){
  return /^https:\/\/firebasestorage\.googleapis\.com\/v0\/b\/godspeed-gdkp\.firebasestorage\.app\/o\/claim-images%2F[A-Za-z0-9_-]+%2F[0-9]+%2F[a-f0-9]{64}\?alt=media&token=[A-Za-z0-9%-]+$/.test(text)?text:claimInlineImage(value);
 };
 
-// A payout in flight belongs to one account/run/raider, not the whole page.
-const fastPayoutPending=new Set();
+// Hide a checked payout while saving without changing authoritative balances.
+const fastPayoutPending=new Set(),fastPayoutSaved=new Map();
 const fastPayoutKey=(run,key)=>JSON.stringify([accountDiscordId(),run,key]);
+const fastPayoutCategoryOriginal=payoutQueueCategory;
+payoutQueueCategory=function(r,calc){
+ if(gsContext()&&r.paid&&Number(r.gsCredited||0)>=Number(r.gsCut||0))return 'paid';
+ return fastPayoutCategoryOriginal(r,calc);
+};
+function fastPayoutHidden(r){
+ const key=fastPayoutKey(settlementRunKey(),r.key),saved=fastPayoutSaved.get(key);
+ const complete=!!r.paid&&Number(r.gsCredited||0)>=Number(r.gsCut||0);
+ if(saved!==undefined&&(complete||Number(r.gsCut)!==saved))fastPayoutSaved.delete(key);
+ return fastPayoutPending.has(key)||fastPayoutSaved.has(key)||complete;
+}
 const fastPayoutQueueOriginal=gsPayoutQueue;
-gsPayoutQueue=function(...args){
- const t=document.createElement('template');t.innerHTML=fastPayoutQueueOriginal(...args);
+gsPayoutQueue=function(raiders,calc){
+ const t=document.createElement('template');t.innerHTML=fastPayoutQueueOriginal(raiders,calc);
+ const hidden=new Set(raiders.filter(fastPayoutHidden).map(r=>r.key));
  for(const checkbox of t.content.querySelectorAll('input[type=checkbox][onchange]')){
   const match=checkbox.getAttribute('onchange').match(/setPayoutPaid\('([^']+)'/);
-  if(!match||!fastPayoutPending.has(fastPayoutKey(settlementRunKey(),match[1])))continue;
-  checkbox.checked=!!settlement.raiders?.[match[1]]?.paid;checkbox.disabled=true;
-  checkbox.setAttribute('aria-busy','true');
-  const status=document.createElement('span');status.className='settlement-muted';status.setAttribute('role','status');status.textContent=' Recording…';checkbox.after(status);
+  if(!match)continue;
+  checkbox.title='Record payment already delivered';
+  const key=fastPayoutKey(settlementRunKey(),match[1]);
+  if(fastPayoutPending.has(key)||fastPayoutSaved.has(key)||(payoutQueueFilter!=='paid'&&hidden.has(match[1])))checkbox.closest('tr')?.remove();
  }
+ const all=t.content.querySelector('[onclick="setPayoutQueueFilter(\'all\')"]');
+ if(all)all.textContent='Unpaid ('+raiders.filter(r=>!hidden.has(r.key)).length+')';
+ const body=t.content.querySelector('tbody');
+ if(body&&!body.children.length)body.innerHTML='<tr><td colspan="5" class="settlement-empty">No payouts in this view.</td></tr>';
+ const shown=t.content.querySelector('.settlement-muted[aria-live="polite"]');
+ if(shown)shown.textContent=t.content.querySelectorAll('tbody input[type=checkbox]').length+' raiders shown';
  return t.innerHTML;
 };
 const fastPaidOriginal=setPayoutPaid;
 setPayoutPaid=function(key,paid){
- if(gsContext()){
-  for(const checkbox of document.querySelectorAll('input[type=checkbox][onchange]')){
-   const match=checkbox.getAttribute('onchange').match(/setPayoutPaid\('([^']+)'/);
-   if(match?.[1]===key)checkbox.checked=!!settlement.raiders?.[key]?.paid;
-  }
-  if(fastPayoutPending.has(fastPayoutKey(settlementRunKey(),key)))return;
+ if(gsContext()&&paid){
+  const id=fastPayoutKey(settlementRunKey(),key);
+  if(fastPayoutPending.has(id)||fastPayoutSaved.has(id))return;
+  return gsCredit(key,true);
  }
  return fastPaidOriginal(key,paid);
 };window.setPayoutPaid=setPayoutPaid;
@@ -1504,9 +1520,18 @@ const fastPayoutCallOriginal=gsCall;
 gsCall=function(op,data={},id){
  if(op!=='creditCut')return fastPayoutCallOriginal(op,data,id);
  const key=fastPayoutKey(data.runId,data.raiderKey),owner=accountDiscordId();
+ const cut=Number(settlement.raiders?.[data.raiderKey]?.gsCut);
  fastPayoutPending.add(key);
  const refresh=()=>{if(owner===accountDiscordId()&&data.runId===settlementRunKey()&&tab==='settlement')renderMain();};
  refresh();
- return Promise.resolve().then(()=>fastPayoutCallOriginal(op,data,id)).finally(()=>{fastPayoutPending.delete(key);refresh();});
+ return Promise.resolve().then(()=>fastPayoutCallOriginal(op,data,id)).then(result=>{
+  fastPayoutSaved.set(key,cut);return result;
+ }).catch(error=>{
+  fastPayoutSaved.delete(key);
+  hybridError('Payment save was not confirmed. The row has been restored. '+(error.message||'Check its status before retrying.'));
+  throw error;
+ }).finally(()=>{fastPayoutPending.delete(key);refresh();});
 };
-
+const fastPayoutStyle=document.createElement('style');
+fastPayoutStyle.textContent='.payout-actions{grid-template-columns:max-content minmax(130px,170px);gap:.75rem}.payout-actions label{white-space:nowrap;word-break:normal;overflow-wrap:normal;flex-shrink:0}.payout-actions input[type=checkbox]{flex:0 0 auto}';
+document.head.append(fastPayoutStyle);

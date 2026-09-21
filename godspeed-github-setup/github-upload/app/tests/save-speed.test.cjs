@@ -55,7 +55,7 @@ test('claim choice, submission, correction and scoped replay never mutate snapsh
 });
 const client=fs.readFileSync(require.resolve('../client.js'),'utf8');
 test('Gold confirmation uses loaded rate immediately, retaining legacy quote fallback',async()=>{
- const start=client.indexOf('gsCredit=async function(key){const r=settlement.raiders?.[key],method='),end=client.indexOf('\n',start);
+ const start=client.indexOf('gsCredit=async function(key,immediate=false){'),end=client.indexOf('\n',start);
  const calls=[],actions=[],context={settlement:fixture().runs.r.settlement,settlementRunKey:()=> 'r',gsCall:async(op,data)=>{calls.push(op);return {gold:2000,payoutRate:null};},gsAction:(...args)=>actions.push(args),toast:()=>{},gcMoney:String};
  vm.createContext(context);vm.runInContext(client.slice(start,end),context);
  const task=context.gsCredit('a');assert.equal(actions.length,1);await task;

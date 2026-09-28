@@ -88,22 +88,117 @@ async function dashboardSavePaid(entry,reopen=false){
 }
 async function dashboardMarkPaid(entry){
  const key=dashboardPaymentKey(entry);if(dashboardPayments.has(key))return;
- const pending={saved:false};dashboardPayments.set(key,pending);renderSettlementsDashboard();
- try{await dashboardSavePaid(entry);pending.saved=true;renderSettlementsDashboard();toast(entry.name+' marked paid');}
- catch(error){dashboardPayments.delete(key);renderSettlementsDashboard();dashboardPaymentError('Payment was not confirmed. The row has been restored. '+(error.message||'Check its status before retrying.'));}
+ const owner=dashboardOwner(),feedback=dashboardFeedbackState(owner),pending={saved:false};
+ feedback.pending++;feedback.errors=feedback.errors.filter(e=>e.entry.key!==entry.key||e.entry.raiderKey!==entry.raiderKey);
+ dashboardPayments.set(key,pending);renderSettlementsDashboard();dashboardRenderFeedback();
+ try{
+  await dashboardSavePaid(entry);pending.saved=true;
+  feedback.receipts.push({...entry});feedback.receipts=feedback.receipts.slice(-3);
+  if(owner===dashboardOwner()){renderSettlementsDashboard();toast(entry.name+' marked paid');}
+ }catch(error){
+  dashboardPayments.delete(key);
+  const message=entry.name+': Payment was not confirmed. Review the restored row before retrying. '+(error.message||'');
+  feedback.errors.push({entry:{...entry},message});
+  if(owner===dashboardOwner()){renderSettlementsDashboard();dashboardPaymentError(message);}
+ }finally{feedback.pending--;if(owner===dashboardOwner())dashboardRenderFeedback();}
 }
 function dashboardPaymentError(message){
  const dialog=document.getElementById('settlements-dashboard');if(!dialog){hybridError(message);return;}
+ if(dialog.querySelector('[data-dashboard-feedback]')){dashboardRenderFeedback();return;}
  let error=dialog.querySelector('[data-payment-error]');
  if(!error){error=document.createElement('p');error.dataset.paymentError='';error.setAttribute('role','alert');dialog.prepend(error);}
  error.textContent=message;error.scrollIntoView({block:'nearest'});
 }
+
+// Settlement feedback and view preferences belong to the signed-in leader.
+const dashboardViewMemory=new Map(),dashboardFeedback=new Map();
+function dashboardOwner(){return String(accountDiscordId()||'');}
+function dashboardViewKey(){return 'gdkp:settlements:view:v1:'+dashboardOwner();}
+function dashboardReadView(){
+ const key=dashboardViewKey();if(dashboardViewMemory.has(key))return dashboardViewMemory.get(key);
+ try{const saved=JSON.parse(sessionStorage.getItem(key)||'null');if(saved&&typeof saved==='object'){dashboardViewMemory.set(key,saved);return saved;}}catch{}
+ return {search:'',filter:'all',sort:'claim-oldest',scroll:0,details:{}};
+}
+function dashboardRememberView(dialog){
+ if(!dialog||dialog.dataset.dashboardLoaded!=='true'||dialog.dataset.dashboardOwner!==dashboardOwner())return;
+ const prior=dashboardReadView(),details={...(prior.details||{})};
+ for(const el of dialog.querySelectorAll('details.dashboard-claim')){
+  const key=el.closest('[data-hybrid-key]')?.getAttribute('data-hybrid-key');if(key)details[key]=el.open;
+ }
+ const saved={search:dialog.querySelector('.dashboard-toolbar input')?.value||'',filter:dialog.querySelector('[data-dashboard-filter]')?.value||'all',sort:dialog.querySelector('[data-dashboard-sort]')?.value||'claim-oldest',scroll:dialog.scrollTop,details};
+ dashboardViewMemory.set(dashboardViewKey(),saved);
+ try{sessionStorage.setItem(dashboardViewKey(),JSON.stringify(saved));}catch{}
+}
+function dashboardRestoreView(dialog,controls=false){
+ const saved=dashboardReadView();
+ if(controls){
+  dialog.dataset.dashboardOwner=dashboardOwner();
+  dialog.querySelector('.dashboard-toolbar input').value=String(saved.search||'');
+  for(const [selector,value] of [['[data-dashboard-filter]',saved.filter],['[data-dashboard-sort]',saved.sort]]){
+   const field=dialog.querySelector(selector);if([...field.options].some(o=>o.value===value))field.value=value;
+  }
+ }else{
+  for(const el of dialog.querySelectorAll('details.dashboard-claim')){
+   const key=el.closest('[data-hybrid-key]')?.getAttribute('data-hybrid-key');
+   if(Object.prototype.hasOwnProperty.call(saved.details||{},key))el.open=!!saved.details[key];
+  }
+  dialog.scrollTop=Math.max(0,Number(saved.scroll)||0);dialog.dataset.dashboardLoaded='true';
+ }
+}
+function dashboardAttentionReason(entry,runs=settlementsDashboardRuns){
+ if(entry.category==='paid'||entry.saving)return '';
+ if(entry.category==='dispute')return 'Dispute awaiting review';
+ if(entry.category==='correction')return 'Claim needs correction';
+ if(entry.expired)return 'Claim window expired';
+ const r=runs[entry.key]?.settlement?.raiders?.[entry.raiderKey];
+ if(!r)return 'Payout details unavailable';
+ const method=r.gsPayoutMethod||r.submission?.method;
+ if(!method)return 'Payout method needed';
+ if(r.submission?.submittedAt&&['usd','usdc'].includes(method)&&!validEthAddress(r.submission.walletAddress||''))return 'Ethereum wallet address needed';
+ if(entry.category==='unclaimed')return r.submission?.submittedAt?'Claim details incomplete':'Claim not submitted';
+ return '';
+}
+function dashboardFeedbackState(owner=dashboardOwner()){
+ if(!dashboardFeedback.has(owner))dashboardFeedback.set(owner,{pending:0,receipts:[],errors:[]});
+ return dashboardFeedback.get(owner);
+}
+function dashboardRenderFeedback(){
+ if(typeof document==='undefined')return;
+ const dialog=document.getElementById('settlements-dashboard');if(!dialog||dialog.dataset.dashboardOwner!==dashboardOwner())return;
+ const root=dialog.querySelector('[data-dashboard-feedback]');if(!root)return;
+ const state=dashboardFeedbackState();root.replaceChildren();
+ const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ status.textContent=state.pending?'Saving '+state.pending+' payment'+(state.pending===1?'':'s')+'…':state.errors.length?'Payment needs review':state.receipts.length?'Payments saved':'';
+ root.append(status);
+ for(const failure of state.errors){
+  const row=document.createElement('div');row.className='dashboard-feedback-row';row.setAttribute('role','alert');
+  const note=document.createElement('span');note.textContent=failure.message;
+  const review=document.createElement('button');review.type='button';review.className='btn btn-outline btn-sm';review.textContent='Review payout';
+  review.onclick=()=>{dialog.querySelector('.dashboard-toolbar input').value=failure.entry.name;dialog.querySelector('[data-dashboard-filter]').value='all';renderSettlementsDashboard();};
+  const dismiss=document.createElement('button');dismiss.type='button';dismiss.className='btn btn-outline btn-sm';dismiss.textContent='Dismiss';dismiss.onclick=()=>{state.errors=state.errors.filter(e=>e!==failure);dashboardRenderFeedback();};
+  row.append(note,review,dismiss);root.append(row);
+ }
+ for(const receipt of state.receipts.slice(-3).reverse()){
+  const row=document.createElement('div');row.className='dashboard-feedback-row';
+  const note=document.createElement('span');note.textContent=receipt.name+' · '+receipt.amount+' · '+receipt.title+' · Saved';
+  const review=document.createElement('button');review.type='button';review.className='btn btn-outline btn-sm';review.textContent='View paid record';
+  review.onclick=()=>{
+   const index=settlementsDashboardEntries.findIndex(e=>e.key===receipt.key&&e.raiderKey===receipt.raiderKey);
+   if(index<0){toast('The record is updating. Try again shortly.');return;}
+   const current=settlementsDashboardEntries[index];
+   dialog.querySelector('.dashboard-toolbar input').value=current.name;
+   dialog.querySelector('[data-dashboard-filter]').value=current.category==='paid'?'paid':'all';renderSettlementsDashboard();
+  };
+  row.append(note,review);root.append(row);
+ }
+}
+
 function dashboardActionDialog(title,body,save){
  const dialog=document.createElement('dialog');dialog.className='dashboard-action-dialog';
  dialog.innerHTML=`<form><h2>${settlementEsc(title)}</h2>${body}<p role="status"></p><div class="uniform-actions">${save?'<button class="btn btn-gold" type="submit">Confirm</button>':''}<button class="btn btn-outline" type="button" data-close>Close</button></div></form>`;
  const close=()=>{dialog.close();dialog.remove();};
  dialog.querySelector('[data-close]').onclick=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close();});
- dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();if(!save)return;const button=dialog.querySelector('[type=submit]');if(button.disabled)return;button.disabled=true;try{await save(dialog);close();}catch(error){dialog.querySelector('[role=status]').textContent=error.message||'Could not save';button.disabled=false;}};
+ dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();if(!save)return;const button=dialog.querySelector('[type=submit]');if(button.disabled)return;button.disabled=true;dialog.querySelector('[role=status]').textContent='Saving…';try{await save(dialog);toast('Saved');close();}catch(error){dialog.querySelector('[role=status]').textContent=(error.message||'Could not save')+' Your entries have been kept. Review and retry.';button.disabled=false;button.textContent='Retry';}};
  document.body.append(dialog);dialog.showModal();return dialog;
 }
 function dashboardPayoutAction(index,action){
@@ -142,3 +237,5 @@ document.head.append(dashboardStyle);
 dashboardStyle.textContent+='.dashboard-totals{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin:16px 0}.dashboard-total{padding:14px;border:1px solid var(--border-gold);background:var(--bg-input)}.dashboard-total strong{display:block;color:var(--gold);font-size:1.25rem;margin:6px 0}.dashboard-total>div{margin-top:4px}';
 // Update age labels without rerendering or closing the user's disclosures.
 setInterval(()=>{for(const label of document.querySelectorAll('#settlements-dashboard [data-claim-elapsed]'))label.textContent=settlementElapsedText(Number(label.dataset.claimElapsed));},60000);
+
+dashboardStyle.textContent+="\n.dashboard-feedback-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border-gold)}\n.dashboard-feedback-row>span{flex:1 1 260px;overflow-wrap:anywhere}\n.dashboard-table td:nth-child(2){font-variant-numeric:tabular-nums}\n.dashboard-table thead th{position:sticky;top:0;background:var(--bg-card,#17140e);z-index:1}\n.dashboard-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.dashboard-row-actions select{min-width:0;max-width:100%}\n.dashboard-claim-body{overflow-wrap:anywhere}\n.dashboard-action-dialog{box-sizing:border-box}\n.dashboard-action-dialog input{min-width:0;width:100%;box-sizing:border-box}\n@media(max-width:600px){.dashboard-toolbar>label,.dashboard-toolbar>input{width:100%;min-width:0}.dashboard-toolbar select{min-width:0;flex:1}.dashboard-totals{grid-template-columns:1fr}.dashboard-feedback-row .btn{flex:1 1 auto}.dashboard-action-dialog{padding:16px}}\n";

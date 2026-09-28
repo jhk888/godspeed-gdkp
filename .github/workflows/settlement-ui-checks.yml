@@ -1,0 +1,31 @@
+name: Settlement UI checks
+on:
+  pull_request:
+    paths:
+      - godspeed-github-setup/github-upload/app/**
+      - .github/workflows/settlement-ui-checks.yml
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: godspeed-github-setup/github-upload/app
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Unit tests and build
+        run: |
+          node --test tests/dashboard-interactions.test.cjs tests/settlements-dashboard.test.cjs tests/settlement-experience.test.cjs tests/core.test.js tests/payout-methods.test.cjs tests/payout-optimism.test.cjs tests/payment-routing.test.cjs
+          node build.cjs
+          node --input-type=module --check < client.js
+          for file in ui/*.js; do node --check "$file"; done
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save --ignore-scripts --package-lock=false playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Check settlement interactions in Chromium
+        run: node tests/settlement-experience.browser.cjs

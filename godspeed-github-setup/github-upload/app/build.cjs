@@ -2,9 +2,9 @@ const fs=require('node:fs'),path=require('node:path');const {calculateCuts}=requ
 const source=path.resolve(__dirname,'source/base.html');let html=fs.readFileSync(source,'utf8');
 function replace(a,b){if(!html.includes(a))throw Error('Missing integration anchor: '+a.slice(0,90));html=html.replace(a,()=>b);}
 replace("import { initializeApp }", "import {getAuth,signInWithCustomToken,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';\nimport {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';\nimport { initializeApp }");
-replace('const _urlParams = new URLSearchParams(window.location.search);','const GS_CALCULATE='+calculateCuts.toString()+';\n'+['ui/runtime.js','client.js','ui/settlements.js','ui/navigation.js'].map(file=>fs.readFileSync(path.join(__dirname,file),'utf8')).join('\n')+'\nconst _urlParams = new URLSearchParams(window.location.search);');
+replace('const _urlParams = new URLSearchParams(window.location.search);','const GS_CALCULATE='+calculateCuts.toString()+';\n'+['ui/runtime.js','client.js','ui/settlements.js','ui/raider-guidance.js','ui/navigation.js'].map(file=>fs.readFileSync(path.join(__dirname,file),'utf8')).join('\n')+'\nconst _urlParams = new URLSearchParams(window.location.search);');
 replace('</style>','.gs-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin:1rem 0}.gs-fields label{display:flex;flex-direction:column;gap:.35rem}.gs-fields input,.gs-fields select{min-width:0;width:100%;box-sizing:border-box;background:var(--bg-input);color:var(--text-bright);padding:.5rem;border:1px solid var(--border-gold)}.gs-address{overflow-wrap:anywhere}.gs-payout-row{padding:.8rem 0;border-bottom:1px solid var(--border-gold)}\n</style>');
-replace('Build 45','Build 63 · Claim sorting and totals');
+replace('Build 45','Build 64 · Settlement workflow');
 replace('Start bid (g)',"Start bid (${gsContext()?'GS':'g'})");
 replace('Bid buttons (g increments)',"Bid buttons (${gsContext()?'GS':'g'} increments)");
 replace('>g each</span>',">${gsContext()?'GS':'g'} each</span>");

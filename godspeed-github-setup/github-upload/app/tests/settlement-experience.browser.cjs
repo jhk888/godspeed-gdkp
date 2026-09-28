@@ -1,0 +1,47 @@
+'use strict';
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+(async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{
+  const page=await browser.newPage({viewport:{width:1365,height:900}});
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.route('**/*',route=>route.abort());
+  const read=p=>fs.readFileSync(path.join(__dirname,'..',p),'utf8'),base=read('source/base.html');
+  const styles=[...base.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m=>m[1]).join('\n');
+  await page.setContent('<html><head><style>'+styles+'</style></head><body><main id="main"></main></body></html>');
+  const fixture="\nvar isRL=true,user='Leader',runId='current',db={},settlementsDashboardUnsubscribe=null,settlementsDashboardRuns={},settlementsDashboardEntries=[];\nvar fixtureRuns={archive:{archived:true,settlement:{payoutStarted:true,usdPer1000:10,raiders:{}}}};\nfor(let i=0;i<30;i++)fixtureRuns.archive.settlement.raiders['r'+i]={name:'Raider '+String(i).padStart(2,'0'),lockedCut:1000,submission:{method:'usdc',submittedAt:1000+i,walletAddress:'0x'+'a'.repeat(40)}};\nvar snapshotCallback;\nfunction accountDiscordId(){return 'leader'}\nfunction settlementEsc(s){return String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('\"','&quot;').replaceAll(\"'\",'&#39;')}\nfunction validEthAddress(s){return /^0x[0-9a-f]{40}$/i.test(s)}\nfunction payoutSafeImage(s){return s||''}\nfunction closeUserSettings(){}function closePanel(){}function toast(){}\nfunction hybridError(message){throw Error(message)}\nfunction ref(_,p){return p}\nfunction onValue(_,callback){snapshotCallback=callback;callback({val:()=>fixtureRuns});return ()=>{}}\nfunction collectSettlementTasks(runs){return Object.entries(runs.archive.settlement.raiders).map(([key,r])=>({key:'archive',raiderKey:key,name:r.name,title:'Archived run',date:1,archived:true,category:r.paid?'paid':'usdc',amount:'10.00 USDC',submittedAt:r.submission.submittedAt,walletAddress:r.submission.walletAddress}));}\n";
+  const dashboard=base.slice(base.indexOf('function closeSettlementsDashboard('),base.indexOf('async function openDashboardSettlement('));
+  await page.addScriptTag({content:fixture+'\n'+read('ui/runtime.js')+'\n'+dashboard+'\n'+read('ui/settlements.js')});
+  await page.evaluate(()=>openSettlementsDashboard());
+  await page.locator('[data-dashboard-sort]').selectOption('name');
+  const details=page.locator('.dashboard-claim').nth(10);
+  await details.locator('summary').click();
+  const key=await details.evaluate(el=>el.closest('tr').dataset.hybridKey);
+  await page.evaluate(()=>{document.getElementById('settlements-dashboard').scrollTop=500;});
+  const scroll=await page.locator('#settlements-dashboard').evaluate(el=>el.scrollTop);
+  await page.evaluate(()=>closeSettlementsDashboard());
+  await page.evaluate(()=>openSettlementsDashboard());
+  assert.equal(await page.locator('[data-dashboard-sort]').inputValue(),'name');
+  assert.equal(await page.evaluate(key=>[...document.querySelectorAll('.dashboard-claim')].find(el=>el.closest('tr').dataset.hybridKey===key).open,key),true);
+  assert.ok(Math.abs(await page.locator('#settlements-dashboard').evaluate(el=>el.scrollTop)-scroll)<3);
+  await page.evaluate(()=>{dashboardSavePaid=()=>new Promise(resolve=>window.finishPayment=resolve);});
+  await page.locator('[data-dashboard-paid="0"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-dashboard-feedback]').textContent.includes('Saving 1 payment'));
+  assert.equal(await page.locator('[data-dashboard-paid="0"]').count(),0);
+  await page.evaluate(()=>window.finishPayment());
+  await page.waitForFunction(()=>document.querySelector('[data-dashboard-feedback]').textContent.includes('Raider 00'));
+  await page.evaluate(()=>{fixtureRuns.archive.settlement.raiders.r0.paid=true;fixtureRuns.archive.settlement.raiders.r0.paidAmount=1000;snapshotCallback({val:()=>fixtureRuns});});
+  await page.getByRole('button',{name:'View paid record'}).click();
+  assert.equal(await page.locator('[data-dashboard-filter]').inputValue(),'paid');
+  await page.locator('.dashboard-toolbar input').fill('');
+  await page.getByRole('button',{name:/^All open/}).click();
+  await page.evaluate(()=>{dashboardSavePaid=async()=>{throw Error('Test save failure')};});
+  await page.locator('[data-dashboard-paid="1"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-dashboard-feedback]').textContent.includes('Test save failure'));
+  assert.equal(await page.locator('[data-dashboard-paid="1"]').isChecked(),false);
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.locator('#settlements-dashboard').evaluate(el=>el.scrollWidth<=el.clientWidth+2),'Mobile dialog overflows');
+  assert.equal(errors.length,0,errors.join('\n'));
+  console.log('Browser checks passed: view restoration, payment feedback, failure recovery, and 390px layout.');
+ }finally{await browser.close();}
+})().catch(error=>{console.error(error);process.exitCode=1;});

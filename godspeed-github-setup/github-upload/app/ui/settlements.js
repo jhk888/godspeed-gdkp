@@ -145,6 +145,17 @@ function dashboardRestoreView(dialog,controls=false){
   dialog.scrollTop=Math.max(0,Number(saved.scroll)||0);dialog.dataset.dashboardLoaded='true';
  }
 }
+function dashboardCaptureAnchor(dialog){
+ const edge=dialog.getBoundingClientRect().top+80;
+ return [...dialog.querySelectorAll('[data-dashboard-list] tr[data-hybrid-key]')].filter(row=>row.getBoundingClientRect().bottom>edge).slice(0,3).map(row=>({key:row.getAttribute('data-hybrid-key'),top:row.getBoundingClientRect().top}));
+}
+function dashboardRestoreAnchor(dialog,anchors){
+ const rows=[...dialog.querySelectorAll('[data-dashboard-list] tr[data-hybrid-key]')];
+ for(const anchor of anchors){
+  const row=rows.find(el=>el.getAttribute('data-hybrid-key')===anchor.key);
+  if(row){dialog.scrollTop+=row.getBoundingClientRect().top-anchor.top;break;}
+ }
+}
 function dashboardAttentionReason(entry,runs=settlementsDashboardRuns){
  if(entry.category==='paid'||entry.saving)return '';
  if(entry.category==='dispute')return 'Dispute awaiting review';
@@ -239,3 +250,12 @@ dashboardStyle.textContent+='.dashboard-totals{display:grid;grid-template-column
 setInterval(()=>{for(const label of document.querySelectorAll('#settlements-dashboard [data-claim-elapsed]'))label.textContent=settlementElapsedText(Number(label.dataset.claimElapsed));},60000);
 
 dashboardStyle.textContent+="\n.dashboard-feedback-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border-gold)}\n.dashboard-feedback-row>span{flex:1 1 260px;overflow-wrap:anywhere}\n.dashboard-table td:nth-child(2){font-variant-numeric:tabular-nums}\n.dashboard-table thead th{position:sticky;top:0;background:var(--bg-card,#17140e);z-index:1}\n.dashboard-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}\n.dashboard-row-actions select{min-width:0;max-width:100%}\n.dashboard-claim-body{overflow-wrap:anywhere}\n.dashboard-action-dialog{box-sizing:border-box}\n.dashboard-action-dialog input{min-width:0;width:100%;box-sizing:border-box}\n@media(max-width:600px){.dashboard-toolbar>label,.dashboard-toolbar>input{width:100%;min-width:0}.dashboard-toolbar select{min-width:0;flex:1}.dashboard-totals{grid-template-columns:1fr}.dashboard-feedback-row .btn{flex:1 1 auto}.dashboard-action-dialog{padding:16px}}\n";
+
+dashboardStyle.textContent+='.dashboard-table{min-width:0}#settlements-dashboard .dashboard-toolbar input{box-sizing:border-box}';
+const dashboardRenderAnchoredOriginal=renderSettlementsDashboard;
+renderSettlementsDashboard=function(...args){
+ const dialog=document.getElementById('settlements-dashboard'),anchors=dialog?dashboardCaptureAnchor(dialog):[];
+ const result=dashboardRenderAnchoredOriginal(...args);
+ if(dialog?.isConnected)dashboardRestoreAnchor(dialog,anchors);
+ return result;
+};
